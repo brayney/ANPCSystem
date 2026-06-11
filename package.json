@@ -1,10 +1,5 @@
 {
   "name": "anpc-yard",
   "version": "1.0.0",
-  "description": "ANPC Yard Internal Tracking System - Full Stack",
-  "scripts": {
-    "start": "cd backend && npm start",
-    "build": "cd backend && npm install",
-    "dev": "cd backend && npm run dev"
-  }
+  "description": "ANPC Yard Internal Tracking System"
 }
