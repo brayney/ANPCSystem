@@ -1,0 +1,189 @@
+import React, { useState } from 'react';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import {
+  HomeIcon, TruckIcon, Square3Stack3DIcon, LinkIcon,
+  DocumentTextIcon, ChartBarIcon, Cog6ToothIcon, Bars3Icon, XMarkIcon,
+  ArrowRightOnRectangleIcon, MoonIcon, SunIcon, BoltIcon
+} from '@heroicons/react/24/outline';
+
+const nav = [
+  { to: '/dashboard', icon: HomeIcon, label: 'Dashboard' },
+  { to: '/cranes', icon: TruckIcon, label: 'Cranes' },
+  { to: '/counterweights', icon: Square3Stack3DIcon, label: 'Counterweights' },
+  { to: '/boom-sections', icon: BoltIcon, label: 'Boom Sections' },
+  { to: '/hooks', icon: LinkIcon, label: 'Hooks' },
+  { to: '/transactions', icon: DocumentTextIcon, label: 'Transactions' },
+];
+
+const SidebarContent = ({ setSidebarOpen }) => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => { logout(); navigate('/login'); };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--sidebar-bg)' }}>
+      {/* Logo */}
+      <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid var(--sidebar-border)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{
+            width: '34px', height: '34px', borderRadius: '8px',
+            background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0, boxShadow: '0 2px 8px rgba(31,107,235,0.4)',
+          }}>
+            <TruckIcon style={{ width: '18px', height: '18px', color: '#fff' }} />
+          </div>
+          <div>
+            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '15px', fontWeight: 800, color: '#f0f6fc', lineHeight: 1.1 }}>ANPC Yard</p>
+            <p style={{ fontSize: '10px', color: 'var(--sidebar-text)', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '1px' }}>Tracking System</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Nav Section Label */}
+      <div style={{ padding: '16px 20px 8px' }}>
+        <p style={{ fontSize: '10px', fontWeight: 600, color: '#3d444d', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Navigation</p>
+      </div>
+
+      {/* Nav Items */}
+      <nav style={{ flex: 1, overflowY: 'auto', padding: '0 10px' }}>
+        {nav.map(({ to, icon: Icon, label }) => (
+          <NavLink key={to} to={to}
+            onClick={() => setSidebarOpen && setSidebarOpen(false)}
+            style={({ isActive }) => ({
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: '9px 10px', borderRadius: '7px', marginBottom: '2px',
+              fontSize: '13px', fontWeight: isActive ? 600 : 400,
+              color: isActive ? '#f0f6fc' : 'var(--sidebar-text)',
+              background: isActive ? 'var(--accent)' : 'transparent',
+              textDecoration: 'none',
+              transition: 'background 0.15s, color 0.15s',
+              boxShadow: isActive ? '0 2px 8px rgba(31,107,235,0.3)' : 'none',
+            })}
+            onMouseEnter={e => { if (!e.currentTarget.classList.contains('active')) { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; } }}
+            onMouseLeave={e => {
+              const isActive = window.location.pathname.startsWith(to);
+              if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--sidebar-text)'; }
+            }}
+          >
+            {({ isActive }) => (
+              <>
+                <Icon style={{ width: '16px', height: '16px', flexShrink: 0, opacity: isActive ? 1 : 0.7 }} />
+                <span>{label}</span>
+              </>
+            )}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* Settings link */}
+      <div style={{ padding: '10px', borderTop: '1px solid var(--sidebar-border)' }}>
+        <NavLink to="/reports"
+          style={({ isActive }) => ({
+            display: 'flex', alignItems: 'center', gap: '10px',
+            padding: '9px 10px', borderRadius: '7px', marginBottom: '2px',
+            fontSize: '13px', fontWeight: isActive ? 600 : 400,
+            color: isActive ? '#f0f6fc' : 'var(--sidebar-text)',
+            background: isActive ? 'var(--accent)' : 'transparent',
+            textDecoration: 'none', transition: 'background 0.15s, color 0.15s',
+          })}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; }}
+          onMouseLeave={e => { if (!window.location.pathname.startsWith('/reports')) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--sidebar-text)'; } }}>
+          {({ isActive }) => (<><ChartBarIcon style={{ width: '16px', height: '16px', opacity: isActive ? 1 : 0.7 }} /><span>Reports</span></>)}
+        </NavLink>
+        <NavLink to="/settings"
+          style={({ isActive }) => ({
+            display: 'flex', alignItems: 'center', gap: '10px',
+            padding: '9px 10px', borderRadius: '7px',
+            fontSize: '13px', fontWeight: isActive ? 600 : 400,
+            color: isActive ? '#f0f6fc' : 'var(--sidebar-text)',
+            background: isActive ? 'var(--accent)' : 'transparent',
+            textDecoration: 'none', transition: 'background 0.15s, color 0.15s',
+          })}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; }}
+          onMouseLeave={e => { if (!window.location.pathname.startsWith('/settings')) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--sidebar-text)'; } }}>
+          {({ isActive }) => (<><Cog6ToothIcon style={{ width: '16px', height: '16px', opacity: isActive ? 1 : 0.7 }} /><span>Settings</span></>)}
+        </NavLink>
+      </div>
+
+      {/* User footer */}
+      <div style={{ padding: '10px', borderTop: '1px solid var(--sidebar-border)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '7px', background: 'rgba(255,255,255,0.04)' }}>
+          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+            {user?.name?.[0]?.toUpperCase() || '?'}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: '12px', fontWeight: 600, color: '#e6edf3', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name || 'Admin'}</p>
+            <p style={{ fontSize: '10px', color: '#3d444d', textTransform: 'capitalize' }}>{user?.role || 'user'}</p>
+          </div>
+          <button onClick={handleLogout} title="Logout" style={{ padding: '4px', borderRadius: '5px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#3d444d', transition: 'color 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.color = '#f85149'}
+            onMouseLeave={e => e.currentTarget.style.color = '#3d444d'}>
+            <ArrowRightOnRectangleIcon style={{ width: '15px', height: '15px' }} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default function Layout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
+
+  const toggleDark = () => {
+    document.documentElement.classList.toggle('dark');
+    setDark(!dark);
+  };
+
+  return (
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--surface-2)' }}>
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:block no-print" style={{ width: '220px', flexShrink: 0, borderRight: '1px solid var(--sidebar-border)', overflow: 'hidden' }}>
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile Sidebar */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50 flex lg:hidden no-print">
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(1,4,9,0.7)', backdropFilter: 'blur(2px)' }} onClick={() => setSidebarOpen(false)} />
+          <div className="animate-slide-in" style={{ position: 'relative', width: '220px', height: '100%', flexShrink: 0, borderRight: '1px solid var(--sidebar-border)', overflow: 'hidden' }}>
+            <SidebarContent setSidebarOpen={setSidebarOpen} />
+            <button onClick={() => setSidebarOpen(false)} style={{ position: 'absolute', top: '14px', right: '14px', padding: '4px', background: 'var(--sidebar-hover)', border: '1px solid var(--sidebar-border)', borderRadius: '6px', cursor: 'pointer', color: 'var(--sidebar-text)' }}>
+              <XMarkIcon style={{ width: '14px', height: '14px' }} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Main Area */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+        {/* Top Bar */}
+        <header className="no-print" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '0 16px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, boxShadow: 'var(--shadow-sm)' }}>
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden" style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+            <Bars3Icon style={{ width: '16px', height: '16px' }} />
+          </button>
+          <div className="hidden lg:flex items-center gap-2">
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 6px var(--success)' }} />
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>ANPC Yard — Internal Operations Dashboard</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button onClick={toggleDark} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '7px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text-secondary)', transition: 'background 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-3)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'var(--surface-2)'}>
+              {dark
+                ? <SunIcon style={{ width: '15px', height: '15px' }} />
+                : <MoonIcon style={{ width: '15px', height: '15px' }} />}
+            </button>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+}

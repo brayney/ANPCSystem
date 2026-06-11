@@ -1,0 +1,3 @@
+equipmentNo,craneModel,yearModel,capacity,client,status,supervisor,division,comments
+SSN-CC-001,LR1280,2007,280t,EXAMPLE CLIENT,Available,SUPERVISOR NAME,OPS,Sample crane entry
+SSN-AT-002,LTM1055/3,2010,55t,EXAMPLE CLIENT,Available,SUPERVISOR NAME,SPD,Sample crane entry

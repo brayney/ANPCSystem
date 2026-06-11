@@ -1,0 +1,202 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { PageHeader, StatusBadge, Spinner, Pagination, EmptyState, Modal, ConfirmDialog } from '../components/common';
+import CSVImport from '../components/common/CSVImport';
+import api from '../utils/api';
+
+const STATUS_OPTIONS = ['Available', 'On Hire', 'Standby', 'Under Maintenance', 'Out of Yard', 'Reserved'];
+
+const CraneForm = ({ initial, onSave, onClose }) => {
+  const [form, setForm] = useState(initial || {
+    equipmentNo: '', craneModel: '', yearModel: '', capacity: '', location: 'RAG YARD',
+    client: '', status: 'Available', supervisor: '', division: '', comments: ''
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault(); setSaving(true);
+    try {
+      if (initial?._id) { await api.put(`/cranes/${initial._id}`, form); toast.success('Crane updated'); }
+      else { await api.post('/cranes', form); toast.success('Crane created'); }
+      onSave();
+    } catch (err) { toast.error(err.response?.data?.message || 'Error saving crane'); }
+    finally { setSaving(false); }
+  };
+
+  const F = ({ label, name, type = 'text', options, required }) => (
+    <div>
+      <label className="label">{label}{required && ' *'}</label>
+      {options ? (
+        <select className="input-field" value={form[name] || ''} onChange={e => setForm({ ...form, [name]: e.target.value })}>
+          <option value="">Select...</option>
+          {options.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      ) : (
+        <input type={type} className="input-field" required={required}
+          value={form[name] || ''} onChange={e => setForm({ ...form, [name]: e.target.value })} />
+      )}
+    </div>
+  );
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <F label="Equipment No." name="equipmentNo" required />
+        <F label="Crane Model" name="craneModel" />
+        <F label="Year Model" name="yearModel" />
+        <F label="Weight" name="capacity" />
+        <div>
+          <label className="label">Location</label>
+          <input type="text" className="input-field" value={form.location || ''} disabled
+            style={{ backgroundColor: 'var(--bg-muted)', cursor: 'not-allowed' }} />
+        </div>
+        <F label="Client" name="client" />
+        <F label="Status" name="status" options={STATUS_OPTIONS} />
+        <F label="Supervisor" name="supervisor" />
+        <F label="Division" name="division" />
+      </div>
+      <div style={{ marginTop: '16px' }}>
+        <label className="label">Comments</label>
+        <textarea className="input-field" rows={2} value={form.comments || ''}
+          onChange={e => setForm({ ...form, comments: e.target.value })} style={{ resize: 'vertical' }} />
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border-muted)' }}>
+        <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
+        <button type="submit" disabled={saving} className="btn-primary">
+          {saving ? 'Saving...' : (initial ? 'Update Crane' : 'Create Crane')}
+        </button>
+      </div>
+    </form>
+  );
+};
+
+export default function CranesPage() {
+  const [cranes, setCranes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [modal, setModal] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const fetchCranes = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = { page, limit: 15 };
+      if (search) params.search = search;
+      if (statusFilter) params.status = statusFilter;
+      const { data } = await api.get('/cranes', { params });
+      setCranes(data.data); setPages(data.pages); setTotal(data.total);
+    } catch { toast.error('Failed to load cranes'); }
+    finally { setLoading(false); }
+  }, [page, search, statusFilter]);
+
+  useEffect(() => { fetchCranes(); }, [fetchCranes]);
+
+  const handleDelete = async () => {
+    try {
+      await api.delete(`/cranes/${deleteTarget._id}`);
+      toast.success('Crane archived');
+      setDeleteTarget(null); fetchCranes();
+    } catch { toast.error('Delete failed'); }
+  };
+
+  return (
+    <div className="animate-fade-in">
+      <PageHeader title="Cranes" subtitle={`${total} total cranes`}
+        actions={
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <CSVImport endpoint="/cranes/import" templateUrl="/templates/cranes-template.csv" onImportSuccess={fetchCranes} />
+            <button onClick={() => setModal('create')} className="btn-primary">
+              <PlusIcon style={{ width: '14px', height: '14px' }} /> Add Crane
+            </button>
+          </div>
+        }
+      />
+
+      {/* Filters */}
+      <div className="card" style={{ padding: '14px 16px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+            <MagnifyingGlassIcon style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: 'var(--text-muted)' }} />
+            <input className="input-field" style={{ paddingLeft: '34px' }} placeholder="Search equipment no, model, client..."
+              value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+          </div>
+          <select className="input-field" style={{ width: '160px' }} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
+            <option value="">All Status</option>
+            {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}><Spinner size="lg" /></div>
+        ) : cranes.length === 0 ? (
+          <EmptyState message="No cranes found" icon="🏗️" />
+        ) : (
+          <>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    {['Equipment No.', 'Model', 'Weight', 'Location', 'Client', 'Status', ''].map(h => (
+                      <th key={h} className="table-header">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {cranes.map(c => (
+                    <tr key={c._id} style={{ transition: 'background 0.1s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      <td className="table-cell">
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', fontWeight: 600, color: 'var(--accent)' }}>{c.equipmentNo}</span>
+                      </td>
+                      <td className="table-cell" style={{ color: 'var(--text-secondary)' }}>{c.craneModel || '—'}</td>
+                      <td className="table-cell" style={{ color: 'var(--text-secondary)' }}>{c.capacity || '—'}</td>
+                      <td className="table-cell" style={{ color: 'var(--text-secondary)' }}>{c.location || '—'}</td>
+                      <td className="table-cell" style={{ fontWeight: 500 }}>{c.client || '—'}</td>
+                      <td className="table-cell"><StatusBadge status={c.status} /></td>
+                      <td className="table-cell">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Link to={`/cranes/${c._id}`} title="View"
+                            style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--accent)', textDecoration: 'none', transition: 'background 0.15s' }}>
+                            <EyeIcon style={{ width: '13px', height: '13px' }} />
+                          </Link>
+                          <button onClick={() => setModal(c)} title="Edit"
+                            style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--text-secondary)', cursor: 'pointer', transition: 'background 0.15s' }}>
+                            <PencilIcon style={{ width: '13px', height: '13px' }} />
+                          </button>
+                          <button onClick={() => setDeleteTarget(c)} title="Archive"
+                            style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--danger-bg)', background: 'var(--danger-bg)', display: 'flex', color: 'var(--danger)', cursor: 'pointer', transition: 'opacity 0.15s' }}>
+                            <TrashIcon style={{ width: '13px', height: '13px' }} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination page={page} pages={pages} total={total} onPage={setPage} />
+          </>
+        )}
+      </div>
+
+      <Modal open={!!modal} onClose={() => setModal(null)}
+        title={modal === 'create' ? 'Add New Crane' : `Edit ${modal?.equipmentNo}`} size="xl">
+        <CraneForm initial={modal === 'create' ? null : modal}
+          onSave={() => { setModal(null); fetchCranes(); }} onClose={() => setModal(null)} />
+      </Modal>
+
+      <ConfirmDialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} danger
+        title="Archive Crane" message={`Are you sure you want to archive ${deleteTarget?.equipmentNo}? This action is difficult to undo.`} />
+    </div>
+  );
+}

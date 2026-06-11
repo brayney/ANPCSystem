@@ -1,0 +1,3 @@
+itemName,serialNo,assignedCrane,weightKg,capacity,location,condition,status,comments
+Counterweight 3.0T,SSN-CW-001,,3000,3T,RAG YARD,OK,Available,Sample counterweight
+Counterweight 5.0T,SSN-CW-002,,5000,5T,RAG YARD,OK,Available,Sample counterweight
