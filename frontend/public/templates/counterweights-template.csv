@@ -1,1 +1,12 @@
+# ============================================================
+# SARENS NASS (ANPC YARD)
+# ============================================================
+# Template       : COUNTERWEIGHTS Import Template
+# Instructions   : Fill in data starting from Row 10 (below this header block).
+#                  Do NOT modify column headers in Row 9.
+#                  Required field: itemName (Equipment Name)
+# ============================================================
+# Status Values  : Available | Out of Yard | Under Maintenance
+# Condition      : OK | NOT OK | For Repair | Unknown
+# ============================================================
 itemName,serialNo,assignedCrane,weightKg,capacity,location,condition,status,client

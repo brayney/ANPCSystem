@@ -90,7 +90,9 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
                             {c.badge ? <StatusBadge status={item[c.key]} /> :
                               ci === 0 ?
                                 <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', fontWeight: 600, color: 'var(--accent)' }}>{item[c.key] || '—'}</span> :
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{item[c.key] || '—'}</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+                                  {c.format ? c.format(item[c.key]) : (item[c.key] || '—')}
+                                </span>
                             }
                           </td>
                         ))}

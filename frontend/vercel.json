@@ -1,5 +1,8 @@
 {
-  "env": {
-    "REACT_APP_API_URL": "https://anpc-yard.onrender.com/api"
-  }
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }

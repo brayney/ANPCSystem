@@ -60,17 +60,26 @@ exports.deleteBoomSection = async (req, res, next) => {
 
 exports.importBoomSections = async (req, res, next) => {
   try {
-    const { parseCSV, cleanRow } = require('../utils/csvParser');
-    const { data } = req.body;
-    if (!data) return res.status(400).json({ success: false, message: 'CSV data required' });
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'CSV file is required' });
+    }
 
-    const rows = parseCSV(data);
+    const { parseCSV } = require('../utils/csvParser');
+    const fs = require('fs');
+    
+    const csvContent = fs.readFileSync(req.file.path, 'utf-8');
+    const rows = parseCSV(csvContent);
+    fs.unlinkSync(req.file.path);
+    
     const results = { success: 0, failed: 0, errors: [] };
 
     for (let i = 0; i < rows.length; i++) {
       try {
-        const row = cleanRow(rows[i]);
+        const row = rows[i];
         if (!row.itemName) throw new Error('itemName is required');
+        
+        // Delete any existing record (archived or active) with same itemName
+        await BoomSection.deleteOne({ itemName: row.itemName });
         
         await BoomSection.create({ ...row, location: row.location || 'RAG YARD' });
         results.success++;

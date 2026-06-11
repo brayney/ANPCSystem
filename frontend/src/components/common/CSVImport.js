@@ -12,14 +12,31 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
     if (!file) return;
 
     if (!file.name.endsWith('.csv')) {
-      toast.error('Please select a CSV file');
+      toast.error('Please select a CSV file (.csv)');
       return;
     }
 
     setImporting(true);
     try {
-      const text = await file.text();
-      const { data } = await api.post(endpoint, { data: text });
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const url = api.defaults.baseURL + endpoint;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `Upload failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
 
       if (data.success) {
         const result = data.data;
@@ -27,13 +44,18 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
           `Import complete: ${result.success} succeeded, ${result.failed} failed`,
           { duration: 4000 }
         );
-        if (result.errors.length > 0) {
-          console.log('Import errors:', result.errors);
+        if (result.errors && result.errors.length > 0) {
+          // Show first few errors
+          result.errors.slice(0, 3).forEach(err => {
+            toast.error(err, { duration: 3000 });
+          });
         }
         onImportSuccess?.();
+      } else {
+        throw new Error(data.message || 'Import failed');
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Import failed');
+      toast.error(err.message || 'Import failed');
     } finally {
       setImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -41,7 +63,7 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
   };
 
   return (
-    <div style={{ display: 'flex', gap: '8px' }}>
+    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
       <input
         type="file"
         ref={fileInputRef}
@@ -58,6 +80,7 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
         <ArrowUpTrayIcon style={{ width: '14px', height: '14px' }} />
         {importing ? 'Importing...' : 'Import CSV'}
       </button>
+      
       <a
         href={templateUrl}
         download
@@ -65,7 +88,7 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
         style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
       >
         <DocumentArrowDownIcon style={{ width: '14px', height: '14px' }} />
-        Template
+        Download Template
       </a>
     </div>
   );

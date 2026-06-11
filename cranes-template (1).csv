@@ -1,0 +1,12 @@
+# ============================================================,,,,,,,
+# SARENS NASS (ANPC YARD),,,,,,,
+# ============================================================,,,,,,,
+# Template       : CRANES Import Template,,,,,,,
+# Instructions   : Fill in data starting from Row 10 (below this header block).,,,,,,,
+#                  Do NOT modify column headers in Row 9.,,,,,,,
+#                  Required field: equipmentNo (Equipment ID),,,,,,,
+# ============================================================,,,,,,,
+# Status Values  : Available | Out of Yard | Under Maintenance | On Hire,,,,,,,
+# ============================================================,,,,,,,
+equipmentNo,craneModel,yearModel,capacity,supervisor,client,status,condition
+SSN-CC-224,LTM 1100,2018,100t,John Doe,-,Available,OK

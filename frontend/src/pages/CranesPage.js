@@ -9,58 +9,102 @@ import api from '../utils/api';
 const STATUS_OPTIONS = ['Available', 'On Hire', 'Standby', 'Under Maintenance', 'Out of Yard', 'Reserved'];
 
 const CraneForm = ({ initial, onSave, onClose }) => {
-  const [form, setForm] = useState(initial || {
-    equipmentNo: '', craneModel: '', yearModel: '', capacity: '', location: 'RAG YARD',
+  const [form, setForm] = useState({
+    equipmentNo: '', craneModel: '', yearModel: '', capacity: '', weightKg: '', location: 'RAG YARD',
     client: '', status: 'Available', supervisor: '', division: '', comments: ''
   });
   const [saving, setSaving] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault(); setSaving(true);
-    try {
-      if (initial?._id) { await api.put(`/cranes/${initial._id}`, form); toast.success('Crane updated'); }
-      else { await api.post('/cranes', form); toast.success('Crane created'); }
-      onSave();
-    } catch (err) { toast.error(err.response?.data?.message || 'Error saving crane'); }
-    finally { setSaving(false); }
-  };
+  useEffect(() => {
+    if (initial) {
+      setForm(initial);
+    }
+  }, [initial]);
 
-  const F = ({ label, name, type = 'text', options, required }) => (
-    <div>
-      <label className="label">{label}{required && ' *'}</label>
-      {options ? (
-        <select className="input-field" value={form[name] || ''} onChange={e => setForm({ ...form, [name]: e.target.value })}>
-          <option value="">Select...</option>
-          {options.map(o => <option key={o} value={o}>{o}</option>)}
-        </select>
-      ) : (
-        <input type={type} className="input-field" required={required}
-          value={form[name] || ''} onChange={e => setForm({ ...form, [name]: e.target.value })} />
-      )}
-    </div>
-  );
+  const handleChange = useCallback((name, value) => {
+    setForm(prev => ({ ...prev, [name]: value }));
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault(); 
+    setSaving(true);
+    try {
+      if (initial?._id) { 
+        await api.put(`/cranes/${initial._id}`, form); 
+        toast.success('Crane updated'); 
+      } else { 
+        await api.post('/cranes', form); 
+        toast.success('Crane created'); 
+      }
+      onSave();
+    } catch (err) { 
+      toast.error(err.response?.data?.message || 'Error saving crane'); 
+    }
+    finally { 
+      setSaving(false); 
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <F label="Equipment No." name="equipmentNo" required />
-        <F label="Crane Model" name="craneModel" />
-        <F label="Year Model" name="yearModel" />
-        <F label="Weight" name="capacity" />
+        <div>
+          <label className="label">Equipment No. *</label>
+          <input type="text" className="input-field" required
+            value={form.equipmentNo || ''} onChange={e => handleChange('equipmentNo', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Crane Model</label>
+          <input type="text" className="input-field"
+            value={form.craneModel || ''} onChange={e => handleChange('craneModel', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Year Model</label>
+          <input type="text" className="input-field"
+            value={form.yearModel || ''} onChange={e => handleChange('yearModel', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Capacity</label>
+          <input type="text" className="input-field"
+            value={form.capacity || ''} onChange={e => handleChange('capacity', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Weight (KG)</label>
+          <input type="text" className="input-field"
+            value={form.weightKg || ''} onChange={e => handleChange('weightKg', e.target.value)} />
+        </div>
         <div>
           <label className="label">Location</label>
           <input type="text" className="input-field" value={form.location || ''} disabled
             style={{ backgroundColor: 'var(--bg-muted)', cursor: 'not-allowed' }} />
         </div>
-        <F label="Client" name="client" />
-        <F label="Status" name="status" options={STATUS_OPTIONS} />
-        <F label="Supervisor" name="supervisor" />
-        <F label="Division" name="division" />
+        <div>
+          <label className="label">Client</label>
+          <input type="text" className="input-field"
+            value={form.client || ''} onChange={e => handleChange('client', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Status</label>
+          <select className="input-field" value={form.status || ''} onChange={e => handleChange('status', e.target.value)}>
+            <option value="">Select...</option>
+            {STATUS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="label">Supervisor</label>
+          <input type="text" className="input-field"
+            value={form.supervisor || ''} onChange={e => handleChange('supervisor', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Division</label>
+          <input type="text" className="input-field"
+            value={form.division || ''} onChange={e => handleChange('division', e.target.value)} />
+        </div>
       </div>
       <div style={{ marginTop: '16px' }}>
         <label className="label">Comments</label>
         <textarea className="input-field" rows={2} value={form.comments || ''}
-          onChange={e => setForm({ ...form, comments: e.target.value })} style={{ resize: 'vertical' }} />
+          onChange={e => handleChange('comments', e.target.value)} style={{ resize: 'vertical' }} />
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border-muted)' }}>
         <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
@@ -145,7 +189,7 @@ export default function CranesPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
-                    {['Equipment No.', 'Model', 'Weight', 'Location', 'Client', 'Status', ''].map(h => (
+                    {['Equipment No.', 'Model', 'Capacity', 'Weight (KG)', 'Location', 'Client', 'Status', ''].map(h => (
                       <th key={h} className="table-header">{h}</th>
                     ))}
                   </tr>
@@ -160,6 +204,7 @@ export default function CranesPage() {
                       </td>
                       <td className="table-cell" style={{ color: 'var(--text-secondary)' }}>{c.craneModel || '—'}</td>
                       <td className="table-cell" style={{ color: 'var(--text-secondary)' }}>{c.capacity || '—'}</td>
+                      <td className="table-cell" style={{ color: 'var(--text-secondary)' }}>{c.weightKg ? `${c.weightKg}kg` : '—'}</td>
                       <td className="table-cell" style={{ color: 'var(--text-secondary)' }}>{c.location || '—'}</td>
                       <td className="table-cell" style={{ fontWeight: 500 }}>{c.client || '—'}</td>
                       <td className="table-cell"><StatusBadge status={c.status} /></td>

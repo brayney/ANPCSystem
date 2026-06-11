@@ -5,6 +5,7 @@ const craneSchema = new mongoose.Schema({
   craneModel: { type: String, trim: true },
   yearModel: { type: String, trim: true },
   capacity: { type: String, trim: true },
+  weightKg: { type: String, trim: true },
   location: { type: String, trim: true, default: 'RAG YARD' },
   client: { type: String, trim: true, default: '-' },
   status: {

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { createEquipmentPage } from '../components/modules/EquipmentPageFactory';
 
 const BoomSectionForm = ({ initial, onSave, onClose, endpoint }) => {
-  const [form, setForm] = useState(initial || {
+  const [form, setForm] = useState({
     assignedCrane: '', boomCode: '', itemName: '', length: '',
     weightKg: '', location: '', condition: 'Ok', status: 'Available', comments: ''
   });
@@ -12,6 +12,12 @@ const BoomSectionForm = ({ initial, onSave, onClose, endpoint }) => {
   const [cranes, setCranes] = useState([]);
   const [craneSearch, setCraneSearch] = useState('');
   const [showCraneDropdown, setShowCraneDropdown] = useState(false);
+
+  useEffect(() => {
+    if (initial) {
+      setForm(initial);
+    }
+  }, [initial]);
 
   useEffect(() => {
     fetchCranes();
@@ -29,6 +35,10 @@ const BoomSectionForm = ({ initial, onSave, onClose, endpoint }) => {
   const filteredCranes = cranes.filter(crane =>
     crane.equipmentNo.toLowerCase().includes(craneSearch.toLowerCase())
   );
+
+  const handleChange = useCallback((name, value) => {
+    setForm(prev => ({ ...prev, [name]: value }));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,16 +59,31 @@ const BoomSectionForm = ({ initial, onSave, onClose, endpoint }) => {
   return (
     <form onSubmit={handleSubmit}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {[
-          ['Boom Code', 'boomCode'], ['Item Name', 'itemName'],
-          ['Length', 'length'], ['Weight (kg)', 'weightKg'], ['Location', 'location'],
-        ].map(([label, name]) => (
-          <div key={name}>
-            <label className="label">{label}</label>
-            <input type="text" className="input-field" value={form[name] || ''}
-              onChange={e => setForm({ ...form, [name]: e.target.value })} />
-          </div>
-        ))}
+        <div>
+          <label className="label">Boom Code</label>
+          <input type="text" className="input-field" value={form.boomCode || ''}
+            onChange={e => handleChange('boomCode', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Item Name</label>
+          <input type="text" className="input-field" value={form.itemName || ''}
+            onChange={e => handleChange('itemName', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Length</label>
+          <input type="text" className="input-field" value={form.length || ''}
+            onChange={e => handleChange('length', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Weight (kg)</label>
+          <input type="text" className="input-field" value={form.weightKg || ''}
+            onChange={e => handleChange('weightKg', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Location</label>
+          <input type="text" className="input-field" value={form.location || ''}
+            onChange={e => handleChange('location', e.target.value)} />
+        </div>
         <div style={{ position: 'relative' }}>
           <label className="label">Assigned Crane</label>
           <input
@@ -67,7 +92,7 @@ const BoomSectionForm = ({ initial, onSave, onClose, endpoint }) => {
             placeholder="Search crane..."
             value={form.assignedCrane || ''}
             onChange={e => {
-              setForm({ ...form, assignedCrane: e.target.value });
+              handleChange('assignedCrane', e.target.value);
               setCraneSearch(e.target.value);
               setShowCraneDropdown(true);
             }}
@@ -94,7 +119,7 @@ const BoomSectionForm = ({ initial, onSave, onClose, endpoint }) => {
                   <div
                     key={crane._id}
                     onClick={() => {
-                      setForm({ ...form, assignedCrane: crane.equipmentNo });
+                      handleChange('assignedCrane', crane.equipmentNo);
                       setShowCraneDropdown(false);
                       setCraneSearch('');
                     }}
@@ -122,13 +147,13 @@ const BoomSectionForm = ({ initial, onSave, onClose, endpoint }) => {
         </div>
         <div>
           <label className="label">Condition</label>
-          <select className="input-field" value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value })}>
+          <select className="input-field" value={form.condition} onChange={e => handleChange('condition', e.target.value)}>
             {['Ok', 'NOT OK', 'For Repair', 'Unknown'].map(o => <option key={o}>{o}</option>)}
           </select>
         </div>
         <div>
           <label className="label">Status</label>
-          <select className="input-field" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+          <select className="input-field" value={form.status} onChange={e => handleChange('status', e.target.value)}>
             {['Available', 'In Use', 'Under Maintenance', 'Out of Yard'].map(o => <option key={o}>{o}</option>)}
           </select>
         </div>
@@ -136,7 +161,7 @@ const BoomSectionForm = ({ initial, onSave, onClose, endpoint }) => {
       <div className="mt-4">
         <label className="label">Comments</label>
         <textarea className="input-field" rows={2} value={form.comments || ''}
-          onChange={e => setForm({ ...form, comments: e.target.value })} />
+          onChange={e => handleChange('comments', e.target.value)} />
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "20px", paddingTop: "16px", borderTop: "1px solid var(--border-muted)" }}>
         <button type="button" onClick={() => { onClose(); setShowCraneDropdown(false); }} className="btn-secondary">Cancel</button>
@@ -157,6 +182,7 @@ export default createEquipmentPage({
     { key: 'boomCode', label: 'Boom Code' },
     { key: 'assignedCrane', label: 'Assigned Crane' },
     { key: 'length', label: 'Length' },
+    { key: 'weightKg', label: 'Weight (KG)', format: v => v ? `${v}kg` : '—' },
     { key: 'craneModel', label: 'Model' },
     { key: 'location', label: 'Location' },
     { key: 'condition', label: 'Condition', badge: true },

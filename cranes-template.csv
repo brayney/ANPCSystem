@@ -1,12 +1,12 @@
 # ============================================================
 # SARENS NASS (ANPC YARD)
 # ============================================================
-# Template       : HOOKS Import Template
+# Template       : CRANES Import Template
 # Instructions   : Fill in data starting from Row 10 (below this header block).
 #                  Do NOT modify column headers in Row 9.
-#                  Required field: itemName (Equipment Name)
+#                  Required field: equipmentNo (Equipment ID)
 # ============================================================
-# Status Values  : Available | Out of Yard | Under Maintenance | Allocated
-# Condition      : OK | NOT OK | For Repair | Unknown
+# Status Values  : Available | Out of Yard | Under Maintenance | On Hire
 # ============================================================
-itemName,hookSerialNo,capacity,assignedCrane,location,status,weightKg,condition,client
+equipmentNo,craneModel,yearModel,capacity,supervisor,client,status,condition
+CR-001,Liebherr LTM 1100,2018,100,John Doe,-,Available,OK

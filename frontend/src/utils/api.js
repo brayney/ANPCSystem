@@ -1,7 +1,18 @@
 import axios from 'axios';
 
+const getBaseURL = () => {
+  const configuredUrl = process.env.REACT_APP_API_URL?.trim();
+  if (configuredUrl) return configuredUrl;
+
+  if (process.env.NODE_ENV === 'production' && typeof window !== 'undefined') {
+    return `${window.location.origin}/api`;
+  }
+
+  return 'http://localhost:5000/api';
+};
+
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+  baseURL: getBaseURL(),
   timeout: 30000,
 });
 

@@ -97,29 +97,28 @@ exports.getCraneAttachments = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-// POST /api/cranes/import
 exports.importCranes = async (req, res, next) => {
   try {
-    const { csvParser } = require('../utils/csvParser');
-    const { data } = req.body;
-    if (!data) return res.status(400).json({ success: false, message: 'CSV data required' });
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'CSV file is required' });
+    }
 
-    const { parseCSV, cleanRow } = require('../utils/csvParser');
-    const rows = parseCSV(data);
+    const { parseCSV } = require('../utils/csvParser');
+    const fs = require('fs');
+    
+    const csvContent = fs.readFileSync(req.file.path, 'utf-8');
+    const rows = parseCSV(csvContent);
+    fs.unlinkSync(req.file.path);
+    
     const results = { success: 0, failed: 0, errors: [] };
 
     for (let i = 0; i < rows.length; i++) {
       try {
-        const row = cleanRow(rows[i]);
+        const row = rows[i];
         if (!row.equipmentNo) throw new Error('equipmentNo is required');
         
-        // Check if already exists
-        const existing = await Crane.findOne({ equipmentNo: row.equipmentNo });
-        if (existing) {
-          results.failed++;
-          results.errors.push(`Row ${i + 2}: Crane ${row.equipmentNo} already exists`);
-          continue;
-        }
+        // Delete any existing record (archived or active) with same equipmentNo
+        await Crane.deleteOne({ equipmentNo: row.equipmentNo });
 
         await Crane.create({ ...row, location: row.location || 'RAG YARD', client: row.client || '-' });
         results.success++;
@@ -129,6 +128,10 @@ exports.importCranes = async (req, res, next) => {
       }
     }
 
+    console.log('📊 Import results:', results);
     res.json({ success: true, data: results });
-  } catch (error) { next(error); }
+  } catch (error) { 
+    console.error('💥 Import error:', error.message);
+    next(error); 
+  }
 };

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANPC Yard - CSV Import Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+            color: #c9d1d9;
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            color: #58a6ff;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            color: #8b949e;
+            font-size: 16px;
+        }
+        
+        .template-section {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .template-title {
+            background: linear-gradient(90deg, #1f6feb 0%, #0969da 100%);
+            padding: 16px 24px;
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            border-bottom: 2px solid #0969da;
+        }
+        
+        .template-content {
+            padding: 24px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+        
+        th {
+            background: #1f6feb;
+            color: white;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+            border-bottom: 2px solid #0969da;
+        }
+        
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #30363d;
+            color: #8b949e;
+            font-size: 13px;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover {
+            background: rgba(31, 111, 235, 0.05);
+        }
+        
+        .field-name {
+            color: #58a6ff;
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
+        }
+        
+        .field-type {
+            color: #79c0ff;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .field-desc {
+            color: #8b949e;
+        }
+        
+        .info-box {
+            background: rgba(31, 111, 235, 0.1);
+            border-left: 4px solid #1f6feb;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        .info-box strong {
+            color: #58a6ff;
+        }
+        
+        .notes {
+            background: #161b22;
+            border: 1px solid #30363d;
+            padding: 16px;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        
+        .notes h4 {
+            color: #58a6ff;
+            margin-bottom: 8px;
+        }
+        
+        .notes ul {
+            margin-left: 20px;
+            color: #8b949e;
+        }
+        
+        .notes li {
+            margin-bottom: 6px;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #6e7681;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #30363d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ANPC Yard CSV Import Templates</h1>
+            <p>Equipment Data Import Guide with Required Fields</p>
+        </div>
+        
+        <!-- CRANES TEMPLATE -->
+        <div class="template-section">
+            <div class="template-title">🏗️ Cranes Template</div>
+            <div class="template-content">
+                <div class="info-box">
+                    <strong>File:</strong> cranes-template.csv | <strong>Required Fields:</strong> equipmentNo, craneModel, yearModel, capacity
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Example</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="field-name">equipmentNo</span></td>
+                            <td><span class="field-type">String (Unique)</span></td>
+                            <td>Unique equipment identifier</td>
+                            <td>CRANE-001</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">craneModel</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Model name/number of the crane</td>
+                            <td>Liebherr LTM 1100</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">yearModel</span></td>
+                            <td><span class="field-type">Number</span></td>
+                            <td>Year of manufacture</td>
+                            <td>2020</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">capacity</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Lifting capacity (e.g., "150T", "200T MAX")</td>
+                            <td>150T</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">location</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Current storage/operational location</td>
+                            <td>RAG YARD</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">client</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Assigned client or "-" if none</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">status</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Available / In Use / Under Maintenance / Out of Yard</td>
+                            <td>Available</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">condition</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>OK / NOT OK / For Repair / Unknown</td>
+                            <td>OK</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="notes">
+                    <h4>Notes:</h4>
+                    <ul>
+                        <li>equipmentNo must be unique and is the primary identifier</li>
+                        <li>supervisor field has been removed from import</li>
+                        <li>Default location is "RAG YARD" if not specified</li>
+                        <li>Default status is "Available"</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- BOOM SECTIONS TEMPLATE -->
+        <div class="template-section">
+            <div class="template-title">📐 Boom Sections Template</div>
+            <div class="template-content">
+                <div class="info-box">
+                    <strong>File:</strong> boom-sections-template.csv | <strong>Required Fields:</strong> itemName, boomCode
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Example</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="field-name">itemName</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Name/description of boom section</td>
+                            <td>Main Boom 150T</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">boomCode</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Unique boom identification code</td>
+                            <td>BOOM-LTM-001</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">assignedCrane</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Associated crane equipment number (optional)</td>
+                            <td>CRANE-001</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">length</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Boom section length (e.g., "40m", "60ft")</td>
+                            <td>40m</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">weightKg</span></td>
+                            <td><span class="field-type">Number</span></td>
+                            <td>Weight in kilograms</td>
+                            <td>5000</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">location</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Current location</td>
+                            <td>RAG YARD</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">client</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Current assigned client or "-"</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">status</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Available / In Use / Under Maintenance / Out of Yard</td>
+                            <td>Available</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">condition</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>OK / NOT OK / For Repair / Unknown</td>
+                            <td>OK</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="notes">
+                    <h4>Notes:</h4>
+                    <ul>
+                        <li>boomCode should be unique within the system</li>
+                        <li>Field order has been optimized for data entry efficiency</li>
+                        <li>Location and client default to "RAG YARD" and "-" respectively</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- COUNTERWEIGHTS TEMPLATE -->
+        <div class="template-section">
+            <div class="template-title">⚖️ Counterweights Template</div>
+            <div class="template-content">
+                <div class="info-box">
+                    <strong>File:</strong> counterweights-template.csv | <strong>Required Fields:</strong> itemName, serialNo
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Example</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="field-name">itemName</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Name/description of counterweight</td>
+                            <td>Steel Counterweight 10T</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">serialNo</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Unique serial number</td>
+                            <td>CW-10T-2020-001</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">assignedCrane</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Associated crane equipment number (optional)</td>
+                            <td>CRANE-001</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">weightKg</span></td>
+                            <td><span class="field-type">Number</span></td>
+                            <td>Weight in kilograms</td>
+                            <td>10000</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">capacity</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Capacity specification (e.g., "10T", "5-15T range")</td>
+                            <td>10T</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">location</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Current storage location</td>
+                            <td>RAG YARD</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">client</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Current assigned client or "-"</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">status</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Available / In Use / Under Maintenance / Out of Yard</td>
+                            <td>Available</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">condition</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>OK / NOT OK / For Repair / Unknown</td>
+                            <td>OK</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="notes">
+                    <h4>Notes:</h4>
+                    <ul>
+                        <li>serialNo must be unique for each counterweight</li>
+                        <li>Both weightKg and capacity fields provide complementary information</li>
+                        <li>Weight is numeric (in kg), Capacity is descriptive (e.g., "10T")</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- HOOKS TEMPLATE -->
+        <div class="template-section">
+            <div class="template-title">🪝 Hooks Template</div>
+            <div class="template-content">
+                <div class="info-box">
+                    <strong>File:</strong> hooks-template.csv | <strong>Required Fields:</strong> itemName, hookSerialNo
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Example</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="field-name">itemName</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Name/description of hook</td>
+                            <td>Spreader Bar 20T</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">hookSerialNo</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Unique hook serial number</td>
+                            <td>HOOK-20T-001</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">assignedCrane</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Associated crane equipment number (optional)</td>
+                            <td>CRANE-001</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">capacity</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Lifting capacity (e.g., "20T", "30T MAX")</td>
+                            <td>20T</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">weightKg</span></td>
+                            <td><span class="field-type">Number</span></td>
+                            <td>Weight of the hook in kilograms</td>
+                            <td>2000</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">location</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Current storage location</td>
+                            <td>RAG YARD</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">client</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Current assigned client or "-"</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">status</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Available / Allocated / In Use / Under Maintenance / Out of Yard</td>
+                            <td>Available</td>
+                        </tr>
+                        <tr>
+                            <td><span class="field-name">condition</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>OK / NOT OK / For Repair / Unknown</td>
+                            <td>OK</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="notes">
+                    <h4>Notes:</h4>
+                    <ul>
+                        <li>hookSerialNo must be unique and is the primary identifier</li>
+                        <li>Hooks have an additional "Allocated" status state beyond other equipment</li>
+                        <li>Field order optimized for import accuracy and data consistency</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- GENERAL NOTES -->
+        <div class="template-section">
+            <div class="template-title">📋 General Import Guidelines</div>
+            <div class="template-content">
+                <div class="notes">
+                    <h4>CSV Format Requirements:</h4>
+                    <ul>
+                        <li>Use UTF-8 encoding for proper character support</li>
+                        <li>First row must contain field headers (column names)</li>
+                        <li>Do not include row numbers or empty columns</li>
+                        <li>Empty cells are allowed; defaults will be applied based on field type</li>
+                        <li>Use commas to separate fields; quote values containing commas: "Value, with comma"</li>
+                    </ul>
+                    
+                    <h4 style="margin-top: 20px;">Status Values (Case-Sensitive):</h4>
+                    <ul>
+                        <li><strong>Cranes:</strong> Available, In Use, Under Maintenance, Out of Yard</li>
+                        <li><strong>Boom Sections:</strong> Available, In Use, Under Maintenance, Out of Yard</li>
+                        <li><strong>Counterweights:</strong> Available, In Use, Under Maintenance, Out of Yard</li>
+                        <li><strong>Hooks:</strong> Available, Allocated, In Use, Under Maintenance, Out of Yard</li>
+                    </ul>
+                    
+                    <h4 style="margin-top: 20px;">Condition Values (Case-Sensitive):</h4>
+                    <ul>
+                        <li>OK - Equipment is in good working condition</li>
+                        <li>NOT OK - Equipment requires attention</li>
+                        <li>For Repair - Equipment is undergoing repair</li>
+                        <li>Unknown - Condition status not yet determined</li>
+                    </ul>
+                    
+                    <h4 style="margin-top: 20px;">Changes Made to Templates:</h4>
+                    <ul>
+                        <li>✓ Removed "supervisor" column from Cranes (no longer used in system)</li>
+                        <li>✓ Reorganized all fields in logical order: Identification → Specifications → Operational</li>
+                        <li>✓ Consistent field ordering across all equipment types for improved UX</li>
+                        <li>✓ Added "condition" field to Cranes for consistency with other equipment types</li>
+                        <li>✓ Standardized location defaults to "RAG YARD" and client defaults to "-"</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>ANPC Yard Equipment Tracking System | Last Updated: 2026-06-11</p>
+            <p>For questions or issues with CSV imports, contact system administrator</p>
+        </div>
+    </div>
+</body>
+</html>

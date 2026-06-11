@@ -1,13 +1,41 @@
 const router = require('express').Router();
 const c = require('../controllers/boomSectionController');
 const { protect, adminOnly } = require('../middleware/auth');
+const multer = require('multer');
+const path = require('path');
+const os = require('os');
+
+// Configure multer for file uploads
+const upload = multer({
+  dest: path.join(os.tmpdir(), 'anpc-imports'),
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ext === '.csv') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only CSV files are allowed'), false);
+    }
+  },
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
 
 router.use(protect);
 router.get('/', c.getBoomSections);
-router.post('/import', adminOnly, c.importBoomSections);
+router.post('/import', adminOnly, upload.single('file'), c.importBoomSections);
 router.get('/:id', c.getBoomSection);
 router.post('/', adminOnly, c.createBoomSection);
 router.put('/:id', adminOnly, c.updateBoomSection);
 router.delete('/:id', adminOnly, c.deleteBoomSection);
+
+// Multer error handler
+router.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({ success: false, message: `Upload error: ${err.message}` });
+  }
+  if (err.message && err.message.includes('Only CSV')) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+  next(err);
+});
 
 module.exports = router;
