@@ -3,8 +3,8 @@ services:
     name: anpc-yard-backend
     env: node
     plan: free
-    buildCommand: bash -c 'cd backend && npm install'
-    startCommand: bash -c 'cd backend && npm start'
+    buildCommand: bash ./build.sh
+    startCommand: bash -c "cd backend && npm start"
     envVars:
       - key: NODE_ENV
         value: production
