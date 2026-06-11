@@ -64,13 +64,46 @@ This guide will help you deploy the ANPC Yard equipment tracking system to **Ren
 
 ## Phase 3: Backend Deployment (Render)
 
-### Step 1: Create Render Service
+### Option A: Using render.yaml (Recommended - Easiest)
+
+**Step 1: Create Render Service from Blueprint**
 1. Go to https://render.com and log in
 2. Click "New +" → "Web Service"
-3. Connect your GitHub repository
-4. Select the branch (usually `main`)
+3. Select "Public Git Repository"
+4. Paste: `https://github.com/brayney/ANPCSystem.git`
+5. Click "Continue"
 
-### Step 2: Configure Render Service
+**Step 2: Let render.yaml Configure Everything**
+Render will automatically detect and use `render.yaml`:
+- Build Command: `cd backend && npm install`
+- Start Command: `cd backend && npm start`
+- Environment: Node
+- Plan: Free
+- Environment Variables: All configured in render.yaml
+
+**Step 3: Just Add Missing Secrets**
+You'll need to manually add these environment variables (they're marked `sync: false` in render.yaml):
+- `MONGODB_URI`
+- `JWT_SECRET`
+- `FRONTEND_URL`
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+
+**Step 4: Click Deploy**
+
+---
+
+### Option B: Manual Configuration (If render.yaml Doesn't Work)
+
+**Step 1: Create Render Service**
+1. Go to https://render.com and log in
+2. Click "New +" → "Web Service"
+3. Select "Public Git Repository"
+4. Paste: `https://github.com/brayney/ANPCSystem.git`
+5. Click "Continue"
+
+**Step 2: Configure Render Service**
 Fill in the following:
 - **Name:** `anpc-yard-backend`
 - **Environment:** `Node`
@@ -78,7 +111,7 @@ Fill in the following:
 - **Start Command:** `cd backend && npm start`
 - **Plan:** Free (recommended for testing)
 
-### Step 3: Add Environment Variables
+**Step 3: Add Environment Variables**
 Click "Environment" and add these variables:
 
 | Key | Value |
@@ -92,11 +125,12 @@ Click "Environment" and add these variables:
 | CLOUDINARY_API_KEY | Your API key from Cloudinary |
 | CLOUDINARY_API_SECRET | Your API secret from Cloudinary |
 
-### Step 4: Deploy
+**Step 4: Deploy**
 1. Click "Create Web Service"
-2. Render will automatically build and deploy
+2. Render will clone your repository and build
 3. Wait for the build to complete (5-10 minutes)
-4. Copy your backend URL: `https://anpc-yard-backend.onrender.com`
+4. If it fails, check the logs for specific errors
+5. Copy your backend URL once it's deployed: `https://anpc-yard-backend.onrender.com`
 
 **Note:** Free tier instances go to sleep after 15 minutes of inactivity. For production, upgrade to Starter plan.
 
@@ -161,10 +195,39 @@ After getting your Vercel frontend URL:
 
 ## Troubleshooting
 
-### "Cannot connect to database" error
-- Verify MongoDB URI is correct
-- Check IP whitelist in MongoDB Atlas (should be 0.0.0.0/0)
-- Ensure database user password is correct
+### "Backend directory not found" error on Render
+**This error means Render can't find the `backend/` folder in the cloned repository.**
+
+**Solution - Try these in order:**
+
+1. **First, verify the code is in GitHub:**
+   - Go to: https://github.com/brayney/ANPCSystem
+   - You should see a `backend` folder listed
+   - If it's missing, push code again:
+     ```bash
+     git add backend/
+     git commit -m "Add backend code"
+     git push
+     ```
+
+2. **Use render.yaml automatically (Easiest):**
+   - Delete your failed Render service
+   - Start over with "Public Git Repository" method
+   - Render will auto-detect and use `render.yaml`
+   - You don't need to manually enter build commands
+
+3. **If render.yaml still doesn't work:**
+   - Make sure repository is **public** (not private)
+   - In Render, manually specify start commands:
+     - Build: `cd backend && npm install`
+     - Start: `cd backend && npm start`
+   - This should work even if render.yaml fails
+
+4. **Last resort - Clone locally first:**
+   - Go to Render → failed service → Logs
+   - Look for the exact clone error
+   - If you see permission errors, make your GitHub repo **public**
+   - If files don't exist, verify with: `git ls-tree HEAD backend/package.json`
 
 ### "CORS error" when trying to use the app
 - Verify `FRONTEND_URL` is set in backend environment variables
