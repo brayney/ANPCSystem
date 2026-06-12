@@ -18,13 +18,9 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
       <div className="p-4 md:p-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start justify-between gap-4 md:gap-6 border-b-2 border-blue-900 pb-3 mb-4">
-          <div className="flex gap-2 md:gap-3 flex-shrink-0">
+          <div className="flex gap-2 md:gap-3 flex-shrink-0 items-center">
             <QRCodeSVG value={publicUrl} size={60} className="md:w-auto" />
-            <div>
-              <h1 className="text-lg md:text-xl font-bold text-blue-900">ANPC YARD</h1>
-              <p className="text-xs text-gray-600">Internal Tracking System</p>
-              <p className="text-xs text-gray-500">EQUIPMENT PULL-OUT / RENTAL FORM</p>
-            </div>
+            <img src="/logo.png" alt="NASS Logo" style={{ height: '50px', objectFit: 'contain' }} />
           </div>
           <div className="text-right text-xs md:text-xs whitespace-nowrap">
             <p className="font-bold text-blue-900">TXN No: {txn.transactionNo}</p>
