@@ -15,6 +15,7 @@ import HooksPage from './pages/HooksPage';
 import TransactionsPage from './pages/TransactionsPage';
 import CreateTransactionPage from './pages/CreateTransactionPage';
 import TransactionDetailPage from './pages/TransactionDetailPage';
+import PublicTransactionPage from './pages/PublicTransactionPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 
@@ -29,7 +30,13 @@ function App() {
       <BrowserRouter>
         <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
         <Routes>
+          {/* Public Routes */}
+          <Route path="/public/transactions/:id" element={<PublicTransactionPage />} />
+          
+          {/* Auth */}
           <Route path="/login" element={<LoginPage />} />
+          
+          {/* Private Routes */}
           <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />

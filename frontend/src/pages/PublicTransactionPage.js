@@ -1,24 +1,16 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import toast from 'react-hot-toast';
-import { ArrowLeftIcon, PrinterIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import { StatusBadge, Spinner } from '../components/common';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '../utils/api';
 import { format } from 'date-fns';
 
-const InfoRow = ({ label, value }) => (
-  <div className="flex justify-between py-1.5 border-b dark:border-gray-700 last:border-0">
-    <span className="text-sm text-gray-500 dark:text-gray-400">{label}</span>
-    <span className="text-sm font-medium text-gray-800 dark:text-gray-200 text-right max-w-xs">{value || '—'}</span>
-  </div>
-);
-
 const PrintView = React.forwardRef(({ txn }, ref) => {
   if (!txn) return null;
   const fmt = (d) => d ? format(new Date(d), 'MMMM d, yyyy') : '—';
-  // Generate public URL for the QR code
   const publicUrl = `${window.location.origin}/public/transactions/${txn._id}`;
 
   return (
@@ -200,7 +192,7 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
   );
 });
 
-export default function TransactionDetailPage() {
+export default function PublicTransactionPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [txn, setTxn] = useState(null);
@@ -208,131 +200,86 @@ export default function TransactionDetailPage() {
   const printRef = useRef();
 
   useEffect(() => {
-    api.get(`/transactions/${id}`)
+    // Fetch from public endpoint
+    api.get(`/transactions/public/${id}`)
       .then(r => setTxn(r.data.data))
-      .catch(() => { toast.error('Transaction not found'); navigate('/transactions'); })
+      .catch(() => {
+        toast.error('Transaction not found');
+        setTimeout(() => navigate('/'), 2000);
+      })
       .finally(() => setLoading(false));
   }, [id, navigate]);
 
   const handlePrint = useReactToPrint({ content: () => printRef.current });
 
-  const handleReturn = async () => {
-    if (!window.confirm('Mark this transaction as returned?')) return;
-    try {
-      await api.put(`/transactions/${id}/return`);
-      toast.success('Marked as returned');
-      const { data } = await api.get(`/transactions/${id}`);
-      setTxn(data.data);
-    } catch { toast.error('Failed'); }
-  };
-
-  if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <Spinner size="lg" />
+    </div>
+  );
+  
   if (!txn) return null;
 
   const fmt = (d) => d ? format(new Date(d), 'MMMM d, yyyy') : '—';
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       {/* Top Bar */}
-      <div className="flex items-center gap-4 mb-6 no-print flex-wrap">
-        <button onClick={() => navigate('/transactions')} className="btn-secondary flex items-center gap-2">
-          <ArrowLeftIcon className="w-4 h-4" /> Back
-        </button>
-        <div className="flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white font-mono">{txn.transactionNo}</h1>
+      <div className="bg-white shadow-sm border-b border-gray-200 no-print">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate('/')} className="btn-secondary flex items-center gap-2">
+              <ArrowLeftIcon className="w-4 h-4" /> Back
+            </button>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900 font-mono">{txn.transactionNo}</h1>
+              <p className="text-sm text-gray-500">{txn.companyName}</p>
+            </div>
             <StatusBadge status={txn.status} />
           </div>
-          <p className="text-sm text-gray-500 mt-0.5">{txn.companyName} — {fmt(txn.transactionDate)}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {txn.status === 'Active' && (
-            <button onClick={handleReturn} className="btn-success flex items-center gap-2">
-              <CheckCircleIcon className="w-4 h-4" /> Mark Returned
-            </button>
-          )}
-          <button onClick={handlePrint} className="btn-secondary flex items-center gap-2">
-            <PrinterIcon className="w-4 h-4" /> Print
+          <button onClick={handlePrint} className="btn-primary flex items-center gap-2">
+            <PrinterIcon className="w-4 h-4" /> Print Transaction
           </button>
         </div>
       </div>
 
-      {/* Screen view */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 no-print mb-6">
-        {/* Left */}
-        <div className="card">
-          <h3 className="font-semibold text-gray-800 dark:text-white mb-3">Transaction Details</h3>
-          <InfoRow label="Transaction No." value={txn.transactionNo} />
-          <InfoRow label="Type" value={txn.type} />
-          <InfoRow label="Status" value={<StatusBadge status={txn.status} />} />
-          <InfoRow label="Date" value={fmt(txn.transactionDate)} />
-          <InfoRow label="Time" value={txn.transactionTime} />
-          <InfoRow label="Expected Return" value={fmt(txn.expectedReturnDate)} />
-          <InfoRow label="Actual Return" value={fmt(txn.actualReturnDate)} />
-          <InfoRow label="Purpose" value={txn.purpose} />
-          <InfoRow label="Remarks" value={txn.remarks} />
+      {/* Content */}
+      <div className="max-w-4xl mx-auto py-8">
+        {/* Print View */}
+        <div className="bg-white p-4">
+          <PrintView ref={printRef} txn={txn} />
         </div>
 
-        {/* Right */}
-        <div className="space-y-4">
-          <div className="card">
-            <h3 className="font-semibold text-gray-800 dark:text-white mb-3">Company & Logistics</h3>
-            <InfoRow label="Company" value={txn.companyName} />
-            <InfoRow label="Address" value={txn.companyAddress} />
-            <InfoRow label="Contact Person" value={txn.contactPerson} />
-            <InfoRow label="Contact Number" value={txn.contactNumber} />
-            <InfoRow label="Pull-Out Location" value={txn.pullOutLocation} />
-            <InfoRow label="Delivery Location" value={txn.deliveryLocation} />
-            <InfoRow label="Driver" value={txn.driverName} />
-            <InfoRow label="Vehicle" value={txn.vehicleType} />
-            <InfoRow label="Plate No." value={txn.vehiclePlateNo} />
+        {/* Screen View Summary */}
+        <div className="mt-8 no-print bg-white rounded-lg shadow p-6 max-w-2xl">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Transaction Summary</h2>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-gray-500">Transaction Number</p>
+              <p className="font-mono font-bold text-lg text-blue-600">{txn.transactionNo}</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Status</p>
+              <p className="font-medium"><StatusBadge status={txn.status} /></p>
+            </div>
+            <div>
+              <p className="text-gray-500">Company</p>
+              <p className="font-medium">{txn.companyName}</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Crane</p>
+              <p className="font-mono font-bold text-blue-600">{txn.crane}</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Transaction Date</p>
+              <p className="font-medium">{fmt(txn.transactionDate)}</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Expected Return</p>
+              <p className="font-medium">{fmt(txn.expectedReturnDate)}</p>
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Crane & Attachments */}
-      <div className="card no-print mb-6">
-        <h3 className="font-semibold text-gray-800 dark:text-white mb-4">Equipment</h3>
-        <div className="mb-4">
-          <p className="text-xs font-semibold text-gray-400 uppercase mb-1">Crane</p>
-          <Link to={`/cranes`} className="font-mono text-blue-700 dark:text-blue-400 font-bold hover:underline">{txn.crane}</Link>
-          <span className="text-gray-500 text-sm ml-2">{txn.craneModel}</span>
-        </div>
-        {txn.counterweights?.length > 0 && (
-          <div className="mb-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Counterweights ({txn.counterweights.length})</p>
-            <div className="flex flex-wrap gap-2">
-              {txn.counterweights.map(cw => (
-                <span key={cw._id} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs">{cw.itemName}</span>
-              ))}
-            </div>
-          </div>
-        )}
-        {txn.boomSections?.length > 0 && (
-          <div className="mb-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Boom Sections ({txn.boomSections.length})</p>
-            <div className="flex flex-wrap gap-2">
-              {txn.boomSections.map(bs => (
-                <span key={bs._id} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs">{bs.itemName}</span>
-              ))}
-            </div>
-          </div>
-        )}
-        {txn.hooks?.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Hooks ({txn.hooks.length})</p>
-            <div className="flex flex-wrap gap-2">
-              {txn.hooks.map(h => (
-                <span key={h._id} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs">{h.itemName}</span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Hidden Print View */}
-      <div className="hidden print-only">
-        <PrintView ref={printRef} txn={txn} />
       </div>
     </div>
   );
