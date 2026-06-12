@@ -25,7 +25,7 @@ const SidebarContent = ({ setSidebarOpen }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--sidebar-bg)' }}>
       {/* Logo */}
-      <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid var(--sidebar-border)', flexShrink: 0 }}>
+      <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid var(--sidebar-border)', flexShrink: 0, transition: 'all 0.3s ease' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <img 
             src="/logo.png" 
@@ -36,12 +36,12 @@ const SidebarContent = ({ setSidebarOpen }) => {
       </div>
 
       {/* Nav Section Label */}
-      <div style={{ padding: '16px 20px 8px' }}>
+      <div style={{ padding: '16px 20px 8px', transition: 'all 0.3s ease' }}>
         <p style={{ fontSize: '10px', fontWeight: 600, color: '#3d444d', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Navigation</p>
       </div>
 
       {/* Nav Items */}
-      <nav style={{ flex: 1, overflowY: 'auto', padding: '0 10px' }}>
+      <nav style={{ flex: 1, overflowY: 'auto', padding: '0 10px', transition: 'all 0.3s ease' }}>
         {nav.map(({ to, icon: Icon, label }) => (
           <NavLink key={to} to={to}
             onClick={() => setSidebarOpen && setSidebarOpen(false)}
@@ -72,7 +72,7 @@ const SidebarContent = ({ setSidebarOpen }) => {
       </nav>
 
       {/* Settings link */}
-      <div style={{ padding: '10px', borderTop: '1px solid var(--sidebar-border)' }}>
+      <div style={{ padding: '10px', borderTop: '1px solid var(--sidebar-border)', transition: 'all 0.3s ease' }}>
         <NavLink to="/reports"
           style={({ isActive }) => ({
             display: 'flex', alignItems: 'center', gap: '10px',
@@ -102,7 +102,7 @@ const SidebarContent = ({ setSidebarOpen }) => {
       </div>
 
       {/* User footer */}
-      <div style={{ padding: '10px', borderTop: '1px solid var(--sidebar-border)', flexShrink: 0 }}>
+      <div style={{ padding: '10px', borderTop: '1px solid var(--sidebar-border)', flexShrink: 0, transition: 'all 0.3s ease' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '7px', background: 'rgba(255,255,255,0.04)' }}>
           <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
             {user?.name?.[0]?.toUpperCase() || '?'}
@@ -124,18 +124,112 @@ const SidebarContent = ({ setSidebarOpen }) => {
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const toggleDark = () => {
     document.documentElement.classList.toggle('dark');
     setDark(!dark);
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--surface-2)' }}>
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:block no-print" style={{ width: '220px', flexShrink: 0, borderRight: '1px solid var(--sidebar-border)', overflow: 'hidden' }}>
-        <SidebarContent />
+      <aside className="hidden lg:block no-print" style={{ width: sidebarCollapsed ? '60px' : '220px', flexShrink: 0, borderRight: '1px solid var(--sidebar-border)', overflow: 'hidden', transition: 'width 0.3s ease' }}>
+        {sidebarCollapsed ? (
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--sidebar-bg)', alignItems: 'center', padding: '12px 0', transition: 'all 0.3s ease' }}>
+            {/* Collapsed Logo */}
+            <div style={{ padding: '10px', marginBottom: '16px', transition: 'all 0.3s ease' }}>
+              <img 
+                src="/logo.png" 
+                alt="NASS Logo" 
+                style={{ height: '30px', objectFit: 'contain', flexShrink: 0, filter: 'brightness(1.15) contrast(1.1)' }}
+              />
+            </div>
+            
+            {/* Collapsed Nav Items */}
+            <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', transition: 'all 0.3s ease' }}>
+              {nav.map(({ to, icon: Icon, label }) => (
+                <NavLink key={to} to={to}
+                  title={label}
+                  style={({ isActive }) => ({
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '10px', borderRadius: '7px',
+                    color: isActive ? '#f0f6fc' : 'var(--sidebar-text)',
+                    background: isActive ? 'var(--accent)' : 'transparent',
+                    textDecoration: 'none',
+                    transition: 'background 0.15s, color 0.15s',
+                    boxShadow: isActive ? '0 2px 8px rgba(31,107,235,0.3)' : 'none',
+                  })}
+                  onMouseEnter={e => { if (!window.location.pathname.startsWith(to)) { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; } }}
+                  onMouseLeave={e => {
+                    const isActive = window.location.pathname.startsWith(to);
+                    if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--sidebar-text)'; }
+                  }}
+                >
+                  {({ isActive }) => (
+                    <Icon style={{ width: '18px', height: '18px', flexShrink: 0, opacity: isActive ? 1 : 0.7 }} />
+                  )}
+                </NavLink>
+              ))}
+            </nav>
+            
+            {/* Collapsed Footer Icons & User */}
+            <div style={{ padding: '10px', borderTop: '1px solid var(--sidebar-border)', display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', alignItems: 'center', transition: 'all 0.3s ease' }}>
+              <NavLink to="/reports" title="Reports"
+                style={({ isActive }) => ({
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '10px', borderRadius: '7px',
+                  color: isActive ? '#f0f6fc' : 'var(--sidebar-text)',
+                  background: isActive ? 'var(--accent)' : 'transparent',
+                  textDecoration: 'none', transition: 'background 0.15s, color 0.15s',
+                })}
+                onMouseEnter={e => { if (!window.location.pathname.startsWith('/reports')) { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; } }}
+                onMouseLeave={e => { if (!window.location.pathname.startsWith('/reports')) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--sidebar-text)'; } }}>
+                {({ isActive }) => (<ChartBarIcon style={{ width: '18px', height: '18px', opacity: isActive ? 1 : 0.7 }} />)}
+              </NavLink>
+              <NavLink to="/settings" title="Settings"
+                style={({ isActive }) => ({
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '10px', borderRadius: '7px',
+                  color: isActive ? '#f0f6fc' : 'var(--sidebar-text)',
+                  background: isActive ? 'var(--accent)' : 'transparent',
+                  textDecoration: 'none', transition: 'background 0.15s, color 0.15s',
+                })}
+                onMouseEnter={e => { if (!window.location.pathname.startsWith('/settings')) { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; } }}
+                onMouseLeave={e => { if (!window.location.pathname.startsWith('/settings')) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--sidebar-text)'; } }}>
+                {({ isActive }) => (<Cog6ToothIcon style={{ width: '18px', height: '18px', opacity: isActive ? 1 : 0.7 }} />)}
+              </NavLink>
+            </div>
+
+            {/* Collapsed User Avatar */}
+            <div style={{ padding: '10px', borderTop: '1px solid var(--sidebar-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s ease' }}>
+              <div style={{ position: 'relative' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: '#fff', cursor: 'pointer' }} title={`${user?.name || 'Admin'} (${user?.role || 'user'})`}>
+                  {user?.name?.[0]?.toUpperCase() || '?'}
+                </div>
+              </div>
+            </div>
+
+            {/* Logout button for collapsed view */}
+            <div style={{ padding: '10px', display: 'flex', justifyContent: 'center' }}>
+              <button onClick={handleLogout} title="Logout" style={{ padding: '8px', borderRadius: '5px', border: '1px solid var(--sidebar-border)', background: 'transparent', cursor: 'pointer', color: '#3d444d', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#f85149'; e.currentTarget.style.borderColor = '#f85149'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#3d444d'; e.currentTarget.style.borderColor = 'var(--sidebar-border)'; }}>
+                <ArrowRightOnRectangleIcon style={{ width: '16px', height: '16px' }} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <SidebarContent />
+        )}
       </aside>
 
       {/* Mobile Sidebar */}
@@ -155,9 +249,14 @@ export default function Layout() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
         {/* Top Bar */}
         <header className="no-print" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '0 16px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, boxShadow: 'var(--shadow-sm)' }}>
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden" style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text-secondary)' }}>
-            <Bars3Icon style={{ width: '16px', height: '16px' }} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden" style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+              <Bars3Icon style={{ width: '16px', height: '16px' }} />
+            </button>
+            <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="hidden lg:flex" title={sidebarCollapsed ? 'Expand' : 'Collapse'} style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text-secondary)', alignItems: 'center', justifyContent: 'center' }}>
+              <Bars3Icon style={{ width: '16px', height: '16px' }} />
+            </button>
+          </div>
           <div className="hidden lg:flex items-center gap-2">
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 6px var(--success)' }} />
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>ANPC Yard — Internal Operations Dashboard</span>
