@@ -35,7 +35,6 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
           <p className="text-sm text-gray-600">{fmt(txn.transactionDate)}</p>
           {txn.transactionTime && <p className="text-sm text-gray-600">{txn.transactionTime}</p>}
           <QRCodeSVG value={publicUrl} size={80} className="mt-2 ml-auto" />
-          <p className="text-xs text-gray-500 mt-1 text-center">Scan to view transaction</p>
         </div>
       </div>
 
