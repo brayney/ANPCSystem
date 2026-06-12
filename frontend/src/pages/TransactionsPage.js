@@ -6,13 +6,11 @@ import { PageHeader, StatusBadge, Spinner, Pagination, EmptyState, ConfirmDialog
 import api from '../utils/api';
 import { format } from 'date-fns';
 
-const STATUS_OPTIONS = ['Active', 'Returned', 'Overdue', 'Cancelled'];
-
 export default function TransactionsPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [tab, setTab] = useState('active');
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -23,12 +21,12 @@ export default function TransactionsPage() {
     try {
       const params = { page, limit: 15 };
       if (search) params.search = search;
-      if (statusFilter) params.status = statusFilter;
+      params.status = tab === 'active' ? 'Active' : 'Returned';
       const { data } = await api.get('/transactions', { params });
       setItems(data.data); setPages(data.pages); setTotal(data.total);
     } catch { toast.error('Failed to load transactions'); }
     finally { setLoading(false); }
-  }, [page, search, statusFilter]);
+  }, [page, search, tab]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
@@ -42,13 +40,49 @@ export default function TransactionsPage() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Transactions" subtitle={`${total} total records`}
+      <PageHeader title="Transactions" subtitle={`${total} total ${tab === 'active' ? 'active' : 'returned'} records`}
         actions={
           <Link to="/transactions/create" className="btn-primary" style={{ textDecoration: 'none' }}>
             <PlusIcon style={{ width: '14px', height: '14px' }} /> New Transaction
           </Link>
         }
       />
+
+      {/* Tabs */}
+      <div className="card" style={{ padding: '8px 16px', marginBottom: '16px', display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-muted)' }}>
+        <button
+          onClick={() => { setTab('active'); setPage(1); }}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '0',
+            border: 'none',
+            background: 'transparent',
+            color: tab === 'active' ? 'var(--accent)' : 'var(--text-secondary)',
+            fontWeight: tab === 'active' ? 600 : 500,
+            cursor: 'pointer',
+            borderBottom: tab === 'active' ? '2px solid var(--accent)' : '2px solid transparent',
+            transition: 'all 0.2s'
+          }}
+        >
+          Active
+        </button>
+        <button
+          onClick={() => { setTab('returned'); setPage(1); }}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '0',
+            border: 'none',
+            background: 'transparent',
+            color: tab === 'returned' ? 'var(--accent)' : 'var(--text-secondary)',
+            fontWeight: tab === 'returned' ? 600 : 500,
+            cursor: 'pointer',
+            borderBottom: tab === 'returned' ? '2px solid var(--accent)' : '2px solid transparent',
+            transition: 'all 0.2s'
+          }}
+        >
+          Returned
+        </button>
+      </div>
 
       {/* Filters */}
       <div className="card" style={{ padding: '14px 16px', marginBottom: '16px' }}>
@@ -58,10 +92,6 @@ export default function TransactionsPage() {
             <input className="input-field" style={{ paddingLeft: '34px' }} placeholder="Search transaction no, company, crane..."
               value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
           </div>
-          <select className="input-field" style={{ width: '160px' }} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
-            <option value="">All Status</option>
-            {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
-          </select>
         </div>
       </div>
 
