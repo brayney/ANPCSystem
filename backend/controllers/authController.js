@@ -198,3 +198,34 @@ exports.updatePassword = async (req, res, next) => {
     res.json({ success: true, message: 'Password updated' });
   } catch (error) { next(error); }
 };
+
+// PUT /api/auth/users/:id/toggle-status (admin only)
+exports.toggleUserStatus = async (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+
+    if (req.user._id.toString() === req.params.id) {
+      return res.status(400).json({ success: false, message: 'Cannot change your own account status' });
+    }
+
+    const account = await User.findById(req.params.id);
+    if (!account) {
+      return res.status(404).json({ success: false, message: 'Account not found' });
+    }
+
+    if (account.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL) {
+      return res.status(400).json({ success: false, message: 'Primary admin account status cannot be changed' });
+    }
+
+    account.isActive = !account.isActive;
+    await account.save({ validateBeforeSave: false });
+
+    res.json({ 
+      success: true, 
+      message: account.isActive ? 'Account activated' : 'Account deactivated', 
+      user: account 
+    });
+  } catch (error) { next(error); }
+};

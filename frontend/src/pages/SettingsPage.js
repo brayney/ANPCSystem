@@ -33,6 +33,7 @@ export default function SettingsPage() {
   const [accounts, setAccounts] = useState([]);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [deletingAccountId, setDeletingAccountId] = useState(null);
+  const [togglingStatusId, setTogglingStatusId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
@@ -105,6 +106,23 @@ export default function SettingsPage() {
 
   const handleDeleteAccount = async (account) => {
     setConfirmDelete({ open: true, account });
+  };
+
+  const handleToggleAccountStatus = async (account) => {
+    setTogglingStatusId(account._id);
+    try {
+      const { data } = await api.put(`/auth/users/${account._id}/toggle-status`);
+      toast.success(data.message);
+      setAccounts(currentAccounts =>
+        currentAccounts.map(acc =>
+          acc._id === account._id ? { ...acc, isActive: !acc.isActive } : acc
+        )
+      );
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update account status');
+    } finally {
+      setTogglingStatusId(null);
+    }
   };
 
   const handleBackgroundUpload = async (file) => {
@@ -331,7 +349,15 @@ export default function SettingsPage() {
                             </div>
 
                             {canDeleteAccount && (
-                              <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                              <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleAccountStatus(account)}
+                                  disabled={togglingStatusId === account._id}
+                                  style={{ padding: '10px 14px', borderRadius: '9px', border: '1px solid var(--border)', background: account.isActive ? 'var(--danger-bg)' : 'var(--success-bg)', color: account.isActive ? 'var(--danger)' : 'var(--success)', cursor: togglingStatusId === account._id ? 'not-allowed' : 'pointer', opacity: togglingStatusId === account._id ? 0.55 : 1, fontSize: '13px', fontWeight: 500 }}
+                                >
+                                  {togglingStatusId === account._id ? <><Spinner size="sm" /> Processing...</> : (account.isActive ? 'Deactivate' : 'Activate')}
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteAccount(account)}
