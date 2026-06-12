@@ -27,18 +27,54 @@ exports.getTransactions = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit));
+    
+    // Fetch crane details for items missing capacity/weight
+    const craneEquipmentNos = items
+      .filter(item => !item.capacity || !item.weightKg)
+      .map(item => item.crane);
+    
+    if (craneEquipmentNos.length > 0) {
+      const cranes = await Crane.find({ equipmentNo: { $in: craneEquipmentNos } });
+      const craneMap = {};
+      cranes.forEach(c => { craneMap[c.equipmentNo] = c; });
+      
+      items.forEach((item, idx) => {
+        if (!item.capacity || !item.weightKg) {
+          const craneData = craneMap[item.crane];
+          if (craneData) {
+            items[idx] = item.toObject ? item.toObject() : item;
+            items[idx].capacity = items[idx].capacity || craneData.capacity;
+            items[idx].weightKg = items[idx].weightKg || craneData.weightKg;
+            items[idx].craneModel = items[idx].craneModel || craneData.craneModel;
+          }
+        }
+      });
+    }
+    
     res.json({ success: true, data: items, total, page: Number(page), pages: Math.ceil(total / limit) });
   } catch (error) { next(error); }
 };
 
 exports.getTransaction = async (req, res, next) => {
   try {
-    const item = await Transaction.findById(req.params.id)
+    let item = await Transaction.findById(req.params.id)
       .populate('counterweights')
       .populate('boomSections')
       .populate('hooks')
       .populate('createdBy', 'name email');
     if (!item) return res.status(404).json({ success: false, message: 'Not found' });
+    
+    // Fetch crane details if capacity/weight are missing
+    if (!item.capacity || !item.weightKg) {
+      const craneData = await Crane.findOne({ equipmentNo: item.crane });
+      if (craneData) {
+        item = item.toObject ? item.toObject() : item;
+        item.capacity = item.capacity || craneData.capacity;
+        item.weightKg = item.weightKg || craneData.weightKg;
+        item.craneModel = item.craneModel || craneData.craneModel;
+      }
+    }
+    
     res.json({ success: true, data: item });
   } catch (error) { next(error); }
 };
