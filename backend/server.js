@@ -52,6 +52,9 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/settings', settingsRoutes);
 
+// Root route - API status
+app.get('/', (req, res) => res.json({ success: true, message: 'ANPC Yard Backend API running' }));
+
 app.get('/api/health', (req, res) => res.json({ status: 'OK', message: 'ANPC Yard API running' }));
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
