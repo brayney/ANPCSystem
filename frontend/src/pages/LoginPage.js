@@ -129,22 +129,6 @@ export default function LoginPage() {
         <p style={{ fontSize: '14px', color: '#e6edf3', lineHeight: 1.7, maxWidth: '360px', marginBottom: '40px', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
           Manage cranes, hooks, and attachments with precision. Track every pull-out, return, and rental from one unified dashboard.
         </p>
-
-        {/* Feature cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', maxWidth: '380px' }}>
-          {[
-            { icon: '🏗️', label: 'Track Equipment', sub: 'Cranes, hooks & attachments' },
-            { icon: '📋', label: 'Log Transactions', sub: 'Pull-outs & returns' },
-            { icon: '📊', label: 'Live Reports', sub: 'Analytics & history' },
-            { icon: '🔐', label: 'Role-Based Access', sub: 'Admin & manager' },
-          ].map(f => (
-            <div key={f.label} style={{ padding: '14px', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--sidebar-border)' }}>
-              <div style={{ fontSize: '20px', marginBottom: '6px' }}>{f.icon}</div>
-              <p style={{ fontSize: '12px', fontWeight: 600, color: '#e6edf3', marginBottom: '2px', textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>{f.label}</p>
-              <p style={{ fontSize: '11px', color: '#e6edf3', textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>{f.sub}</p>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Right panel — login form */}
