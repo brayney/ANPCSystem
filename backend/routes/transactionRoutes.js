@@ -2,8 +2,8 @@ const router = require('express').Router();
 const c = require('../controllers/transactionController');
 const { protect, adminOnly, adminOrManager } = require('../middleware/auth');
 
-// Public route - no authentication required
-router.get('/public/:id', c.getTransaction);
+// Public route - no authentication required (sanitized response)
+router.get('/public/:id', c.getPublicTransaction);
 
 router.use(protect);
 router.get('/', c.getTransactions);

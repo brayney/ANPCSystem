@@ -79,6 +79,35 @@ exports.getTransaction = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+// Public endpoint - returns sanitized transaction data (no user/audit info)
+exports.getPublicTransaction = async (req, res, next) => {
+  try {
+    let item = await Transaction.findById(req.params.id)
+      .populate('counterweights', 'itemName serialNo weightKg')
+      .populate('boomSections', 'itemName boomCode length weightKg')
+      .populate('hooks', 'itemName hookSerialNo weightKg');
+    if (!item) return res.status(404).json({ success: false, message: 'Transaction not found' });
+    
+    // Fetch crane details if capacity/weight are missing
+    if (!item.capacity || !item.weightKg) {
+      const craneData = await Crane.findOne({ equipmentNo: item.crane });
+      if (craneData) {
+        item = item.toObject ? item.toObject() : item;
+        item.capacity = item.capacity || craneData.capacity;
+        item.weightKg = item.weightKg || craneData.weightKg;
+        item.craneModel = item.craneModel || craneData.craneModel;
+      }
+    }
+    
+    // Remove sensitive fields for public access
+    const sanitized = item.toObject ? item.toObject() : item;
+    delete sanitized.createdBy;
+    delete sanitized.__v;
+    
+    res.json({ success: true, data: sanitized });
+  } catch (error) { next(error); }
+};
+
 exports.createTransaction = async (req, res, next) => {
   try {
     const { crane, counterweights, boomSections, hooks } = req.body;
@@ -174,14 +203,20 @@ exports.updateTransaction = async (req, res, next) => {
     const wasReturned = txn.status === 'Returned';
     const isNowActive = req.body.status === 'Active';
 
-    // If crane is being changed, fetch the new crane's details
+    // If crane is being changed, fetch and validate the new crane's details
     if (req.body.crane && req.body.crane !== txn.crane) {
       const newCraneData = await Crane.findOne({ equipmentNo: req.body.crane });
-      if (newCraneData) {
-        req.body.capacity = newCraneData.capacity;
-        req.body.weightKg = newCraneData.weightKg;
-        req.body.craneModel = newCraneData.craneModel;
+      if (!newCraneData) return res.status(404).json({ success: false, message: `Crane ${req.body.crane} not found` });
+      
+      // Validate new crane status
+      const restrictedStatuses = ['Out of Yard', 'Under Maintenance', 'On Hire'];
+      if (restrictedStatuses.includes(newCraneData.status)) {
+        return res.status(400).json({ success: false, message: `Crane ${req.body.crane} cannot be assigned (Status: ${newCraneData.status})` });
       }
+      
+      req.body.capacity = newCraneData.capacity;
+      req.body.weightKg = newCraneData.weightKg;
+      req.body.craneModel = newCraneData.craneModel;
     }
 
     // Update transaction
