@@ -48,50 +48,46 @@ export default function TransactionsPage() {
         }
       />
 
-      {/* Tabs */}
-      <div className="card" style={{ padding: '8px 16px', marginBottom: '16px', display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-muted)' }}>
-        <button
-          onClick={() => { setTab('active'); setPage(1); }}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '0',
-            border: 'none',
-            background: 'transparent',
-            color: tab === 'active' ? 'var(--accent)' : 'var(--text-secondary)',
-            fontWeight: tab === 'active' ? 600 : 500,
-            cursor: 'pointer',
-            borderBottom: tab === 'active' ? '2px solid var(--accent)' : '2px solid transparent',
-            transition: 'all 0.2s'
-          }}
-        >
-          Active
-        </button>
-        <button
-          onClick={() => { setTab('returned'); setPage(1); }}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '0',
-            border: 'none',
-            background: 'transparent',
-            color: tab === 'returned' ? 'var(--accent)' : 'var(--text-secondary)',
-            fontWeight: tab === 'returned' ? 600 : 500,
-            cursor: 'pointer',
-            borderBottom: tab === 'returned' ? '2px solid var(--accent)' : '2px solid transparent',
-            transition: 'all 0.2s'
-          }}
-        >
-          Returned
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div className="card" style={{ padding: '14px 16px', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
-            <MagnifyingGlassIcon style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: 'var(--text-muted)' }} />
-            <input className="input-field" style={{ paddingLeft: '34px' }} placeholder="Search transaction no, company, crane..."
-              value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
-          </div>
+      {/* Filters & Tabs */}
+      <div className="card" style={{ padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+          <MagnifyingGlassIcon style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: 'var(--text-muted)' }} />
+          <input className="input-field" style={{ paddingLeft: '34px' }} placeholder="Search transaction no, company, crane..."
+            value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+        </div>
+        <div style={{ display: 'flex', gap: '4px', borderLeft: '1px solid var(--border-muted)', paddingLeft: '16px' }}>
+          <button
+            onClick={() => { setTab('active'); setPage(1); }}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '4px',
+              border: 'none',
+              background: tab === 'active' ? 'var(--accent)' : 'transparent',
+              color: tab === 'active' ? 'white' : 'var(--text-secondary)',
+              fontWeight: tab === 'active' ? 600 : 500,
+              fontSize: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            Active
+          </button>
+          <button
+            onClick={() => { setTab('returned'); setPage(1); }}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '4px',
+              border: 'none',
+              background: tab === 'returned' ? 'var(--accent)' : 'transparent',
+              color: tab === 'returned' ? 'white' : 'var(--text-secondary)',
+              fontWeight: tab === 'returned' ? 600 : 500,
+              fontSize: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            Returned
+          </button>
         </div>
       </div>
 
