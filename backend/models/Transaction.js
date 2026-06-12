@@ -7,6 +7,8 @@ const transactionSchema = new mongoose.Schema({
   // Crane & Attachments
   crane: { type: String, required: true },
   craneModel: { type: String },
+  capacity: { type: String },
+  weightKg: { type: String },
   counterweights: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Counterweight' }],
   boomSections: [{ type: mongoose.Schema.Types.ObjectId, ref: 'BoomSection' }],
   hooks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Hook' }],

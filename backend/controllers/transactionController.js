@@ -82,7 +82,9 @@ exports.createTransaction = async (req, res, next) => {
       }
     }
 
-    const txn = await Transaction.create({ ...req.body, createdBy: req.user._id });
+    // Capture crane capacity and weight from crane data
+    const txnData = { ...req.body, createdBy: req.user._id, capacity: craneData.capacity, weightKg: craneData.weightKg, craneModel: craneData.craneModel };
+    const txn = await Transaction.create(txnData);
 
     const newLocation = txn.deliveryLocation || txn.companyAddress || 'In Transit';
     const clientName = txn.companyName;
@@ -135,6 +137,16 @@ exports.updateTransaction = async (req, res, next) => {
 
     const wasReturned = txn.status === 'Returned';
     const isNowActive = req.body.status === 'Active';
+
+    // If crane is being changed, fetch the new crane's details
+    if (req.body.crane && req.body.crane !== txn.crane) {
+      const newCraneData = await Crane.findOne({ equipmentNo: req.body.crane });
+      if (newCraneData) {
+        req.body.capacity = newCraneData.capacity;
+        req.body.weightKg = newCraneData.weightKg;
+        req.body.craneModel = newCraneData.craneModel;
+      }
+    }
 
     // Update transaction
     Object.assign(txn, req.body);
