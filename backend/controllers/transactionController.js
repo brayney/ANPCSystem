@@ -130,8 +130,49 @@ exports.createTransaction = async (req, res, next) => {
 
 exports.updateTransaction = async (req, res, next) => {
   try {
-    const txn = await Transaction.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const txn = await Transaction.findById(req.params.id);
     if (!txn) return res.status(404).json({ success: false, message: 'Not found' });
+
+    const wasReturned = txn.status === 'Returned';
+    const isNowActive = req.body.status === 'Active';
+
+    // Update transaction
+    Object.assign(txn, req.body);
+    await txn.save();
+
+    // If changing from Returned back to Active, update associated items
+    if (wasReturned && isNowActive) {
+      const newLocation = txn.deliveryLocation || txn.companyAddress || 'In Transit';
+      const clientName = txn.companyName;
+
+      console.log('🔄 Reactivating transaction:', txn.transactionNo);
+      console.log('  - New Location:', newLocation);
+      console.log('  - Client Name:', clientName);
+
+      // Update crane and attachments back to Out of Yard status
+      await Crane.findOneAndUpdate(
+        { equipmentNo: txn.crane },
+        { $set: { status: 'Out of Yard', location: newLocation, client: clientName } }
+      );
+      if (txn.counterweights?.length)
+        await Counterweight.updateMany(
+          { _id: { $in: txn.counterweights } },
+          { $set: { status: 'Out of Yard', location: newLocation, client: clientName } }
+        );
+      if (txn.boomSections?.length)
+        await BoomSection.updateMany(
+          { _id: { $in: txn.boomSections } },
+          { $set: { status: 'Out of Yard', location: newLocation, client: clientName } }
+        );
+      if (txn.hooks?.length)
+        await Hook.updateMany(
+          { _id: { $in: txn.hooks } },
+          { $set: { status: 'Out of Yard', location: newLocation, client: clientName } }
+        );
+
+      console.log('  ✓ Associated items updated to Out of Yard');
+    }
+
     res.json({ success: true, data: txn });
   } catch (error) { next(error); }
 };
