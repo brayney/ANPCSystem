@@ -1,4 +1,3 @@
-const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -56,16 +55,8 @@ app.use('/api/settings', settingsRoutes);
 app.get('/api/health', (req, res) => res.json({ status: 'OK', message: 'ANPC Yard API running' }));
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/build')));
-
-  app.get('*', (req, res) => {
-    if (req.path.startsWith('/api')) {
-      return res.status(404).json({ success: false, message: 'Not found' });
-    }
-    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
-  });
-}
+// Frontend is deployed separately on Vercel, not served from this API
+// This backend is API-only
 
 // Multer error handler (before general error handler)
 app.use((err, req, res, next) => {
