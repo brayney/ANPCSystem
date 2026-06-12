@@ -186,17 +186,17 @@ exports.returnTransaction = async (req, res, next) => {
     txn.actualReturnDate = new Date();
     await txn.save();
 
-    // Return crane and attachments to RAG YARD and mark as Available, reset client to "-"
+    // Return crane and attachments to RAG YARD and mark as Under Maintenance, reset client to "-"
     await Crane.findOneAndUpdate(
       { equipmentNo: txn.crane },
-      { $set: { status: 'Available', location: 'RAG YARD', client: '-' } }
+      { $set: { status: 'Under Maintenance', location: 'RAG YARD', client: '-' } }
     );
     if (txn.counterweights?.length)
-      await Counterweight.updateMany({ _id: { $in: txn.counterweights } }, { $set: { status: 'Available', location: 'RAG YARD', client: '-' } });
+      await Counterweight.updateMany({ _id: { $in: txn.counterweights } }, { $set: { status: 'Under Maintenance', location: 'RAG YARD', client: '-' } });
     if (txn.boomSections?.length)
-      await BoomSection.updateMany({ _id: { $in: txn.boomSections } }, { $set: { status: 'Available', location: 'RAG YARD', client: '-' } });
+      await BoomSection.updateMany({ _id: { $in: txn.boomSections } }, { $set: { status: 'Under Maintenance', location: 'RAG YARD', client: '-' } });
     if (txn.hooks?.length)
-      await Hook.updateMany({ _id: { $in: txn.hooks } }, { $set: { status: 'Available', location: 'RAG YARD', client: '-' } });
+      await Hook.updateMany({ _id: { $in: txn.hooks } }, { $set: { status: 'Under Maintenance', location: 'RAG YARD', client: '-' } });
 
     await AuditLog.create({ user: req.user._id, userName: req.user.name, action: 'RETURN', module: 'Transaction', targetId: txn.transactionNo, details: `Returned transaction ${txn.transactionNo}` });
     res.json({ success: true, data: txn });
