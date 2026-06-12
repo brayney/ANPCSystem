@@ -15,27 +15,21 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
 
   return (
     <div ref={ref} className="p-6 bg-white text-gray-900 font-sans max-w-4xl mx-auto" style={{ width: '210mm', height: '297mm', margin: '0 auto', overflow: 'hidden' }}>
-      {/* QR Code at Top Center */}
-      <div className="flex justify-center mb-4">
-        <QRCodeSVG value={publicUrl} size={70} />
-      </div>
-
       {/* Header */}
-      <div className="border-b-2 border-blue-900 pb-3 mb-4 text-center">
-        <h1 className="text-xl font-bold text-blue-900">ANPC YARD</h1>
-        <p className="text-xs text-gray-600">Internal Tracking System</p>
-        <p className="text-xs text-gray-500">EQUIPMENT PULL-OUT / RENTAL FORM</p>
-      </div>
-
-      {/* Transaction Header Info */}
-      <div className="flex justify-between mb-4 text-xs">
-        <div>
+      <div className="flex items-start justify-between border-b-2 border-blue-900 pb-3 mb-4">
+        <div className="flex gap-3">
+          <QRCodeSVG value={publicUrl} size={70} />
+          <div>
+            <h1 className="text-xl font-bold text-blue-900">ANPC YARD</h1>
+            <p className="text-xs text-gray-600">Internal Tracking System</p>
+            <p className="text-xs text-gray-500">EQUIPMENT PULL-OUT / RENTAL FORM</p>
+          </div>
+        </div>
+        <div className="text-right text-xs">
           <p className="font-bold text-blue-900">TXN No: {txn.transactionNo}</p>
           <p className="text-gray-600">{fmt(txn.transactionDate)}</p>
           {txn.transactionTime && <p className="text-gray-600">{txn.transactionTime}</p>}
-        </div>
-        <div className="text-right">
-          <p className="font-bold">Status: {txn.status}</p>
+          <p className="font-bold mt-1">Status: {txn.status}</p>
         </div>
       </div>
 
