@@ -27,17 +27,11 @@ const SidebarContent = ({ setSidebarOpen }) => {
       {/* Logo */}
       <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid var(--sidebar-border)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '34px', height: '34px', borderRadius: '8px',
-            background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0, boxShadow: '0 2px 8px rgba(31,107,235,0.4)',
-          }}>
-            <TruckIcon style={{ width: '18px', height: '18px', color: '#fff' }} />
-          </div>
-          <div>
-            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '15px', fontWeight: 800, color: '#f0f6fc', lineHeight: 1.1 }}>ANPC Yard</p>
-            <p style={{ fontSize: '10px', color: 'var(--sidebar-text)', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '1px' }}>Tracking System</p>
-          </div>
+          <img 
+            src="/logo.png" 
+            alt="NASS Logo" 
+            style={{ height: '40px', objectFit: 'contain', flexShrink: 0, filter: 'brightness(1.15) contrast(1.1)' }}
+          />
         </div>
       </div>
 

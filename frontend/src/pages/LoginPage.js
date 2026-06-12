@@ -110,16 +110,12 @@ export default function LoginPage() {
       {/* Left panel */}
       <div style={{ position: 'absolute', inset: '0 auto 0 0', width: 'min(42vw, 560px)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 80px', zIndex: 1, pointerEvents: 'none' }} className="hidden xl:flex">
         {/* Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '48px' }}>
-          <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 24px rgba(31,107,235,0.5)' }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-            </svg>
-          </div>
-          <div>
-            <p style={{ fontSize: '10px', fontWeight: 600, color: '#f0f6fc', textTransform: 'uppercase', letterSpacing: '0.12em', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>Sarens NASS</p>
-            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '18px', fontWeight: 800, color: '#f0f6fc', lineHeight: 1, textShadow: '0 2px 8px rgba(0,0,0,0.7)' }}>ANPC YARD</p>
-          </div>
+        <div style={{ marginBottom: '48px' }}>
+          <img 
+            src="/logo.png" 
+            alt="NASS Logo" 
+            style={{ height: '80px', objectFit: 'contain', filter: 'brightness(1.2) contrast(1.15)' }}
+          />
         </div>
 
         <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: '42px', fontWeight: 800, color: '#f0f6fc', lineHeight: 1.15, maxWidth: '420px', marginBottom: '20px', textShadow: '0 3px 12px rgba(0,0,0,0.7)' }}>
@@ -136,15 +132,11 @@ export default function LoginPage() {
         <div className="animate-fade-in w-full" style={{ maxWidth: '360px' }}>
           {/* Mobile brand */}
           <div className="flex lg:hidden items-center gap-3 mb-8 justify-center">
-            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-              </svg>
-            </div>
-            <div>
-              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '16px', fontWeight: 800, color: '#f0f6fc', textShadow: '0 2px 8px rgba(0,0,0,0.7)' }}>ANPC YARD</p>
-              <p style={{ fontSize: '10px', color: '#e6edf3', textTransform: 'uppercase', letterSpacing: '0.08em', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>Tracking System</p>
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="NASS Logo" 
+              style={{ height: '50px', objectFit: 'contain', filter: 'brightness(1.2) contrast(1.15)' }}
+            />
           </div>
 
           <div style={{ background: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '14px', padding: '32px', boxShadow: '0 16px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)' }}>
