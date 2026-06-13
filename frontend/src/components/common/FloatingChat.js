@@ -145,7 +145,7 @@ const FloatingChat = ({ user }) => {
       {/* Floating Chat Heads (when collapsed) */}
       {!isOpen && (
         <div style={{ display: 'flex', gap: '12px', flexDirection: 'column', alignItems: 'flex-end' }}>
-          {chats.slice(0, 3).map(chat => {
+          {chats.slice(0, 1).map(chat => {
             const other = getOtherParticipant(chat);
             return (
               <button
