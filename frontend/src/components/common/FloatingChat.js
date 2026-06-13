@@ -74,23 +74,6 @@ const FloatingChat = ({ user }) => {
     }
   };
 
-  // Fetch messages for selected chat
-  const fetchMessages = async () => {
-    if (!selectedChat) return;
-    try {
-      setLoading(true);
-      const { data } = await api.get(`/chats/${selectedChat._id}/messages`);
-      setMessages(data.data);
-
-      // Mark as read
-      await api.put(`/chats/${selectedChat._id}/read`);
-    } catch (error) {
-      console.error('Failed to fetch messages');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
