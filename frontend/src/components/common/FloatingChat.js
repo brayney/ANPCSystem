@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { XMarkIcon, PaperAirplaneIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PaperAirplaneIcon, UserGroupIcon, EllipsisVerticalIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -14,6 +14,9 @@ const FloatingChat = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [tab, setTab] = useState('chats'); // 'chats' or 'users'
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef(null);
 
   // Fetch chats
@@ -62,6 +65,8 @@ const FloatingChat = ({ user }) => {
     try {
       const { data } = await api.post('/chats', { userId });
       setSelectedChat(data.data);
+      setSearchOpen(false);
+      setSearchQuery('');
       await fetchChats();
       setTab('chats');
     } catch (error) {
@@ -134,6 +139,66 @@ const FloatingChat = ({ user }) => {
   // Get other participant name
   const getOtherParticipant = (chat) => {
     return chat.participants.find(p => p._id !== user._id);
+  };
+
+  const localDateKey = (dateValue) => format(new Date(dateValue), 'yyyy-MM-dd');
+
+  const formatDateDivider = (dateValue) => format(new Date(dateValue), 'MMM d, yyyy');
+
+  const formatConversationDate = (dateValue) => {
+    if (!dateValue) return '';
+    const date = new Date(dateValue);
+    return localDateKey(date) === localDateKey(new Date())
+      ? format(date, 'h:mm a')
+      : format(date, 'MMM d');
+  };
+
+  const handleSelectChat = (chat) => {
+    setSelectedChat(chat);
+    setOptionsOpen(false);
+    setSearchOpen(false);
+    setSearchQuery('');
+  };
+
+  const handleCloseChat = () => {
+    setIsOpen(false);
+    setSelectedChat(null);
+    setOptionsOpen(false);
+    setSearchOpen(false);
+    setSearchQuery('');
+  };
+
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const visibleMessages = normalizedSearch
+    ? messages.filter(msg => msg.text?.toLowerCase().includes(normalizedSearch))
+    : messages;
+
+  const renderMessageText = (text) => {
+    if (!normalizedSearch || !text?.toLowerCase().includes(normalizedSearch)) return text;
+
+    const lowerText = text.toLowerCase();
+    const parts = [];
+    let currentIndex = 0;
+    let matchIndex = lowerText.indexOf(normalizedSearch);
+
+    while (matchIndex !== -1) {
+      if (matchIndex > currentIndex) {
+        parts.push(text.slice(currentIndex, matchIndex));
+      }
+      parts.push(
+        <mark key={`${matchIndex}-${parts.length}`} style={{ background: '#fff8c5', color: '#1f2328', borderRadius: '3px', padding: '0 2px' }}>
+          {text.slice(matchIndex, matchIndex + normalizedSearch.length)}
+        </mark>
+      );
+      currentIndex = matchIndex + normalizedSearch.length;
+      matchIndex = lowerText.indexOf(normalizedSearch, currentIndex);
+    }
+
+    if (currentIndex < text.length) {
+      parts.push(text.slice(currentIndex));
+    }
+
+    return parts;
   };
 
   return (
@@ -227,22 +292,78 @@ const FloatingChat = ({ user }) => {
                 </p>
               )}
             </div>
-            <button
-              onClick={() => {
-                setIsOpen(false);
-                setSelectedChat(null);
-              }}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'white',
-                cursor: 'pointer',
-                padding: '4px',
-                display: 'flex'
-              }}
-            >
-              <XMarkIcon style={{ width: '20px', height: '20px' }} />
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
+              {selectedChat && (
+                <button
+                  onClick={() => setOptionsOpen(!optionsOpen)}
+                  title="Conversation options"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'white',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    display: 'flex'
+                  }}
+                >
+                  <EllipsisVerticalIcon style={{ width: '20px', height: '20px' }} />
+                </button>
+              )}
+              {optionsOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: '30px',
+                  right: '30px',
+                  width: '190px',
+                  background: 'var(--surface, #ffffff)',
+                  color: 'var(--text-primary, #1f2328)',
+                  border: '1px solid var(--border, #d0d7de)',
+                  borderRadius: '8px',
+                  boxShadow: 'var(--shadow-lg, 0 8px 24px rgba(31,35,40,0.12))',
+                  padding: '6px',
+                  zIndex: 3
+                }}>
+                  <button
+                    onClick={() => {
+                      setSearchOpen(true);
+                      setOptionsOpen(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px',
+                      border: 'none',
+                      borderRadius: '6px',
+                      background: 'transparent',
+                      color: 'inherit',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      textAlign: 'left'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2, #f6f8fa)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <MagnifyingGlassIcon style={{ width: '15px', height: '15px' }} />
+                    Search conversation
+                  </button>
+                </div>
+              )}
+              <button
+                onClick={handleCloseChat}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'white',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex'
+                }}
+              >
+                <XMarkIcon style={{ width: '20px', height: '20px' }} />
+              </button>
+            </div>
           </div>
 
           {/* Chat List / Messages */}
@@ -315,7 +436,7 @@ const FloatingChat = ({ user }) => {
                       return (
                         <button
                           key={chat._id}
-                          onClick={() => setSelectedChat(chat)}
+                          onClick={() => handleSelectChat(chat)}
                           style={{
                             width: '100%',
                             padding: '12px',
@@ -332,9 +453,14 @@ const FloatingChat = ({ user }) => {
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div style={{ flex: 1 }}>
-                              <p style={{ margin: '0 0 4px 0', fontWeight: 600, fontSize: '13px' }}>
-                                {other?.name}
-                              </p>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
+                                <p style={{ margin: 0, fontWeight: 600, fontSize: '13px' }}>
+                                  {other?.name}
+                                </p>
+                                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                                  {formatConversationDate(chat.lastMessageAt || chat.updatedAt || chat.createdAt)}
+                                </span>
+                              </div>
                               <p style={{
                                 margin: 0,
                                 fontSize: '12px',
@@ -440,6 +566,47 @@ const FloatingChat = ({ user }) => {
             </>
           ) : (
             <>
+              {searchOpen && (
+                <div style={{
+                  padding: '10px 12px',
+                  borderBottom: '1px solid var(--border, #e5e7eb)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'var(--surface-2, #f9fafb)'
+                }}>
+                  <MagnifyingGlassIcon style={{ width: '16px', height: '16px', color: 'var(--text-secondary)' }} />
+                  <input
+                    type="text"
+                    placeholder="Search conversation"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    autoFocus
+                    style={{
+                      flex: 1,
+                      border: '1px solid var(--border, #e5e7eb)',
+                      borderRadius: '6px',
+                      padding: '7px 9px',
+                      fontSize: '13px',
+                      fontFamily: 'inherit',
+                      background: 'var(--surface, #ffffff)',
+                      color: 'var(--text-primary)',
+                      outline: 'none'
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      setSearchOpen(false);
+                      setSearchQuery('');
+                    }}
+                    title="Close search"
+                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px', display: 'flex' }}
+                  >
+                    <XMarkIcon style={{ width: '16px', height: '16px' }} />
+                  </button>
+                </div>
+              )}
+
               {/* Messages List */}
               <div style={{
                 flex: 1,
@@ -470,45 +637,79 @@ const FloatingChat = ({ user }) => {
                   }}>
                     No messages yet. Start the conversation!
                   </div>
+                ) : visibleMessages.length === 0 ? (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100%',
+                    color: 'var(--text-secondary)',
+                    fontSize: '13px',
+                    textAlign: 'center',
+                    padding: '16px'
+                  }}>
+                    No messages match your search.
+                  </div>
                 ) : (
-                  messages.map(msg => (
-                    <div
-                      key={msg._id}
-                      style={{
-                        display: 'flex',
-                        justifyContent: msg.sender._id === user._id ? 'flex-end' : 'flex-start',
-                        marginBottom: '4px'
-                      }}
-                    >
-                      <div style={{
-                        maxWidth: '70%',
-                        padding: '8px 12px',
-                        borderRadius: '8px',
-                        background: msg.sender._id === user._id ? '#1F6BEB' : 'var(--surface-2, #f0f0f0)',
-                        color: msg.sender._id === user._id ? 'white' : 'var(--text-primary)',
-                        fontSize: '13px',
-                        lineHeight: '1.4'
-                      }}>
-                        <p style={{ margin: '0 0 4px 0' }}>{msg.text}</p>
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          gap: '8px',
-                          margin: 0,
-                          fontSize: '11px',
-                          opacity: 0.7
-                        }}>
-                          <span>{format(new Date(msg.createdAt), 'h:mm a')}</span>
-                          {msg.sender._id === user._id && (
-                            <span style={{ marginLeft: '4px', fontSize: '11px', fontWeight: 500 }}>
-                              {msg.isRead ? 'seen' : 'sent'}
-                            </span>
-                          )}
+                  visibleMessages.map((msg, index) => {
+                    const isOwnMessage = msg.sender?._id === user._id;
+                    const showDateDivider = index === 0 || localDateKey(msg.createdAt) !== localDateKey(visibleMessages[index - 1].createdAt);
+
+                    return (
+                      <React.Fragment key={msg._id}>
+                        {showDateDivider && (
+                          <div style={{
+                            alignSelf: 'center',
+                            padding: '3px 9px',
+                            borderRadius: '999px',
+                            background: 'var(--surface-2, #f6f8fa)',
+                            border: '1px solid var(--border, #e5e7eb)',
+                            color: 'var(--text-secondary)',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            margin: '4px 0'
+                          }}>
+                            {formatDateDivider(msg.createdAt)}
+                          </div>
+                        )}
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
+                            marginBottom: '4px'
+                          }}
+                        >
+                          <div style={{
+                            maxWidth: '70%',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            background: isOwnMessage ? '#1F6BEB' : 'var(--surface-2, #f0f0f0)',
+                            color: isOwnMessage ? 'white' : 'var(--text-primary)',
+                            fontSize: '13px',
+                            lineHeight: '1.4'
+                          }}>
+                            <p style={{ margin: '0 0 4px 0' }}>{renderMessageText(msg.text)}</p>
+                            <div style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              gap: '8px',
+                              margin: 0,
+                              fontSize: '11px',
+                              opacity: 0.7
+                            }}>
+                              <span>{format(new Date(msg.createdAt), 'h:mm a')}</span>
+                              {isOwnMessage && (
+                                <span style={{ marginLeft: '4px', fontSize: '11px', fontWeight: 500 }}>
+                                  {msg.isRead ? 'seen' : 'sent'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  ))
+                      </React.Fragment>
+                    );
+                  })
                 )}
                 <div ref={messagesEndRef} />
               </div>
