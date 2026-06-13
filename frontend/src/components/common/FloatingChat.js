@@ -490,13 +490,22 @@ const FloatingChat = ({ user }) => {
                         lineHeight: '1.4'
                       }}>
                         <p style={{ margin: '0 0 4px 0' }}>{msg.text}</p>
-                        <p style={{
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: '4px',
                           margin: 0,
                           fontSize: '11px',
                           opacity: 0.7
                         }}>
-                          {format(new Date(msg.createdAt), 'h:mm a')}
-                        </p>
+                          <span>{format(new Date(msg.createdAt), 'h:mm a')}</span>
+                          {msg.sender._id === user._id && (
+                            <span style={{ marginLeft: '4px', fontSize: '13px' }}>
+                              {msg.isRead ? '✓✓' : '✓'}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))
