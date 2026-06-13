@@ -60,6 +60,7 @@ const FloatingChat = ({ user }) => {
     if (isOpen) {
       fetchChats();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   // Fetch messages when chat is selected
@@ -68,9 +69,12 @@ const FloatingChat = ({ user }) => {
       fetchMessages();
 
       // Poll for new messages every 2 seconds
-      const interval = setInterval(fetchMessages, 2000);
+      const interval = setInterval(() => {
+        fetchMessages();
+      }, 2000);
       return () => clearInterval(interval);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedChat, isOpen]);
 
   // Send message
