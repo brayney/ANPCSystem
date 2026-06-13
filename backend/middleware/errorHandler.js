@@ -12,7 +12,7 @@ const errorHandler = (err, req, res, next) => {
   } else if (err.code === 'LIMIT_UNEXPECTED_FILE') {
     statusCode = 400;
     message = 'Unexpected file field';
-  } else if (err.message && err.message.includes('Only Excel')) {
+  } else if (err.message && (err.message.includes('Only Excel') || err.message.includes('Only CSV or XLSX'))) {
     statusCode = 400;
     message = err.message;
   } else if (err.code === 'PROTOCOL_ERROR' || err.code === 'ECONNRESET') {
