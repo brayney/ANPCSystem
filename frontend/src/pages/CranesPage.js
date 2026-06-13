@@ -154,7 +154,7 @@ export default function CranesPage() {
       <PageHeader title="Cranes" subtitle={`${total} total cranes`}
         actions={
           <div style={{ display: 'flex', gap: '8px' }}>
-            <CSVImport endpoint="/cranes/import" templateUrl="/templates/cranes-template.csv" onImportSuccess={fetchCranes} />
+            <CSVImport endpoint="/cranes/import" templateUrl="/templates/cranes-import-template.xlsx" onImportSuccess={fetchCranes} />
             <button onClick={() => setModal('create')} className="btn-primary">
               <PlusIcon style={{ width: '14px', height: '14px' }} /> Add Crane
             </button>

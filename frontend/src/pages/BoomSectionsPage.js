@@ -176,7 +176,7 @@ const BoomSectionForm = ({ initial, onSave, onClose, endpoint }) => {
 export default createEquipmentPage({
   title: 'Boom Sections',
   endpoint: '/boom-sections',
-  templateUrl: '/templates/boom-sections-template.csv',
+  templateUrl: '/templates/boom-sections-import-template.xlsx',
   columns: [
     { key: 'itemName', label: 'Item Name' },
     { key: 'boomCode', label: 'Boom Code' },

@@ -62,14 +62,13 @@ exports.importHooks = async (req, res, next) => {
   try {
     console.log('📖 Hook import received');
     if (!req.file) {
-      return res.status(400).json({ success: false, message: 'CSV file is required' });
+      return res.status(400).json({ success: false, message: 'Import file is required' });
     }
 
-    const { parseCSV } = require('../utils/csvParser');
+    const { parseImportFile } = require('../utils/importParser');
     const fs = require('fs');
     
-    const csvContent = fs.readFileSync(req.file.path, 'utf-8');
-    const rows = parseCSV(csvContent);
+    const rows = parseImportFile(req.file.path, req.file.originalname);
     fs.unlinkSync(req.file.path);
     
     const results = { success: 0, failed: 0, errors: [] };

@@ -3,16 +3,17 @@ exports.parseCSV = (csvText) => {
   const lines = csvText.trim().split('\n');
   
   // Skip comment lines (starting with #) to find the actual header
-  let headerLineIndex = 0;
+  let headerLineIndex = -1;
   for (let i = 0; i < lines.length; i++) {
-    if (!lines[i].trim().startsWith('#')) {
+    const line = lines[i].trim();
+    if (line && !line.startsWith('#')) {
       headerLineIndex = i;
       break;
     }
   }
 
-  if (headerLineIndex >= lines.length - 1) {
-    throw new Error('CSV must have header and at least one data row');
+  if (headerLineIndex === -1) {
+    throw new Error('CSV header row was not found');
   }
 
   const headers = lines[headerLineIndex].split(',').map(h => h.trim());
@@ -30,10 +31,6 @@ exports.parseCSV = (csvText) => {
       row[header] = values[index] || '';
     });
     rows.push(row);
-  }
-
-  if (rows.length === 0) {
-    throw new Error('No data rows found in CSV file');
   }
 
   return rows;

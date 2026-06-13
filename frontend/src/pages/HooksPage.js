@@ -176,7 +176,7 @@ const HookForm = ({ initial, onSave, onClose, endpoint }) => {
 export default createEquipmentPage({
   title: 'Hooks',
   endpoint: '/hooks',
-  templateUrl: '/templates/hooks-template.csv',
+  templateUrl: '/templates/hooks-import-template.xlsx',
   columns: [
     { key: 'itemName', label: 'Item Name' },
     { key: 'hookSerialNo', label: 'Serial No.' },

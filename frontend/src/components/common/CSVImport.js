@@ -11,8 +11,8 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.name.endsWith('.csv')) {
-      toast.error('Please select a CSV file (.csv)');
+    if (!file.name.endsWith('.csv') && !file.name.endsWith('.xlsx')) {
+      toast.error('Please select a CSV or Excel file (.csv, .xlsx)');
       return;
     }
 
@@ -68,7 +68,7 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
         type="file"
         ref={fileInputRef}
         onChange={handleFileSelect}
-        accept=".csv"
+        accept=".csv,.xlsx"
         style={{ display: 'none' }}
       />
       <button
@@ -78,7 +78,7 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
         style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
       >
         <ArrowUpTrayIcon style={{ width: '14px', height: '14px' }} />
-        {importing ? 'Importing...' : 'Import CSV'}
+        {importing ? 'Importing...' : 'Import File'}
       </button>
       
       <a

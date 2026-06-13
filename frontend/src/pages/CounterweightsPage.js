@@ -176,7 +176,7 @@ const CounterweightForm = ({ initial, onSave, onClose, endpoint }) => {
 export default createEquipmentPage({
   title: 'Counterweights',
   endpoint: '/counterweights',
-  templateUrl: '/templates/counterweights-template.csv',
+  templateUrl: '/templates/counterweights-import-template.xlsx',
   columns: [
     { key: 'itemName', label: 'Item Name' },
     { key: 'serialNo', label: 'Serial No.' },
