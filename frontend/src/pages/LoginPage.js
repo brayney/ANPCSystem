@@ -23,7 +23,10 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [invalidCredentials, setInvalidCredentials] = useState(false);
   const [attemptState, setAttemptState] = useState({ attemptsRemaining: null, lockUntil: null });
-  const [backgroundImage, setBackgroundImage] = useState(null);
+  const [backgroundImage, setBackgroundImage] = useState(() => {
+    // Initialize from localStorage to avoid flicker
+    return localStorage.getItem('loginBgImage') || null;
+  });
   const { login, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -34,6 +37,9 @@ export default function LoginPage() {
         const { data } = await api.get('/settings/login-background');
         if (data.success && data.data?.imageUrl) {
           setBackgroundImage(data.data.imageUrl);
+          localStorage.setItem('loginBgImage', data.data.imageUrl);
+        } else {
+          localStorage.removeItem('loginBgImage');
         }
       } catch (err) {
         // No background image set, use default
