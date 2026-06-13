@@ -130,15 +130,6 @@ export default function LoginPage() {
       {/* Right panel — login form */}
       <div style={{ width: '100%', maxWidth: '420px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 2, transform: 'translateX(clamp(0px, 15vw, 180px))' }} className="w-full">
         <div className="animate-fade-in w-full" style={{ maxWidth: '360px' }}>
-          {/* Mobile brand */}
-          <div className="flex lg:hidden items-center gap-3 mb-8 justify-center">
-            <img 
-              src="/logo.png" 
-              alt="NASS Logo" 
-              style={{ height: '50px', objectFit: 'contain', filter: 'brightness(1.2) contrast(1.15)' }}
-            />
-          </div>
-
           <div style={{ background: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '14px', padding: '32px', boxShadow: '0 16px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)' }}>
             <div style={{ marginBottom: '24px' }}>
               <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '20px', fontWeight: 800, color: '#f0f6fc', marginBottom: '4px' }}>Sign in</h2>
