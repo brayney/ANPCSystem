@@ -45,11 +45,11 @@ const FloatingChat = ({ user }) => {
     }
   };
 
-  // Fetch messages for selected chat
-  const fetchMessages = async () => {
+  // Fetch messages for selected chat (without showing loading on polls)
+  const fetchMessages = async (showLoading = false) => {
     if (!selectedChat) return;
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const { data } = await api.get(`/chats/${selectedChat._id}/messages`);
       setMessages(data.data);
 
@@ -58,7 +58,7 @@ const FloatingChat = ({ user }) => {
     } catch (error) {
       console.error('Failed to fetch messages');
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -91,11 +91,11 @@ const FloatingChat = ({ user }) => {
   // Fetch messages when chat is selected
   useEffect(() => {
     if (selectedChat && isOpen) {
-      fetchMessages();
+      fetchMessages(true);  // Show loading only on initial fetch
 
-      // Poll for new messages every 2 seconds
+      // Poll for new messages every 2 seconds (without showing loading)
       const interval = setInterval(() => {
-        fetchMessages();
+        fetchMessages(false);
       }, 2000);
       return () => clearInterval(interval);
     }
@@ -439,10 +439,10 @@ const FloatingChat = ({ user }) => {
                       No accounts available
                     </div>
                   ) : (
-                    availableUsers.map(user => (
+                    availableUsers.map(availableUser => (
                       <button
-                        key={user._id}
-                        onClick={() => handleStartChat(user._id)}
+                        key={availableUser._id}
+                        onClick={() => handleStartChat(availableUser._id)}
                         style={{
                           width: '100%',
                           padding: '12px',
@@ -460,7 +460,7 @@ const FloatingChat = ({ user }) => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div style={{ flex: 1 }}>
                             <p style={{ margin: '0 0 4px 0', fontWeight: 600, fontSize: '13px' }}>
-                              {user.name}
+                              {availableUser.name}
                             </p>
                             <p style={{
                               margin: 0,
@@ -468,10 +468,10 @@ const FloatingChat = ({ user }) => {
                               color: 'var(--text-secondary)',
                               maxWidth: '250px'
                             }}>
-                              {user.email}
+                              {availableUser.email}
                             </p>
                           </div>
-                          {user.hasChat && (
+                          {availableUser.hasChat && (
                             <span style={{
                               background: 'var(--accent-subtle, #f0f6fc)',
                               color: '#1F6BEB',
