@@ -136,10 +136,6 @@ const FloatingChat = ({ user }) => {
     return chat.participants.find(p => p._id !== user._id);
   };
 
-  const getInitials = (name) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
-  };
-
   return (
     <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 50, fontFamily: 'inherit' }}>
       {/* Floating Chat Heads (when collapsed) */}
