@@ -16,7 +16,6 @@ const nav = [
   { to: '/hooks', icon: LinkIcon, label: 'Hooks' },
   { to: '/transactions', icon: DocumentTextIcon, label: 'Transactions' },
   { to: '/transactions/calendar', icon: CalendarIcon, label: 'Calendar' },
-  { to: '/tutorials', icon: BookOpenIcon, label: 'Instructions' },
 ];
 
 const SidebarContent = ({ setSidebarOpen, onLogoutClick }) => {
@@ -73,6 +72,19 @@ const SidebarContent = ({ setSidebarOpen, onLogoutClick }) => {
 
       {/* Settings link */}
       <div style={{ padding: '10px', borderTop: '1px solid var(--sidebar-border)', transition: 'all 0.3s ease' }}>
+        <NavLink to="/tutorials"
+          style={({ isActive }) => ({
+            display: 'flex', alignItems: 'center', gap: '10px',
+            padding: '9px 10px', borderRadius: '7px', marginBottom: '2px',
+            fontSize: '13px', fontWeight: isActive ? 600 : 400,
+            color: isActive ? '#f0f6fc' : 'var(--sidebar-text)',
+            background: isActive ? 'var(--accent)' : 'transparent',
+            textDecoration: 'none', transition: 'background 0.15s, color 0.15s',
+          })}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; }}
+          onMouseLeave={e => { if (!window.location.pathname.startsWith('/tutorials')) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--sidebar-text)'; } }}>
+          {({ isActive }) => (<><BookOpenIcon style={{ width: '16px', height: '16px', opacity: isActive ? 1 : 0.7 }} /><span>Instructions</span></>)}
+        </NavLink>
         <NavLink to="/reports"
           style={({ isActive }) => ({
             display: 'flex', alignItems: 'center', gap: '10px',
@@ -199,6 +211,18 @@ export default function Layout() {
             
             {/* Collapsed Footer Icons & User */}
             <div style={{ padding: '10px', borderTop: '1px solid var(--sidebar-border)', display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', alignItems: 'center', transition: 'all 0.3s ease' }}>
+              <NavLink to="/tutorials" title="Instructions"
+                style={({ isActive }) => ({
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '10px', borderRadius: '7px',
+                  color: isActive ? '#f0f6fc' : 'var(--sidebar-text)',
+                  background: isActive ? 'var(--accent)' : 'transparent',
+                  textDecoration: 'none', transition: 'background 0.15s, color 0.15s',
+                })}
+                onMouseEnter={e => { if (!window.location.pathname.startsWith('/tutorials')) { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; } }}
+                onMouseLeave={e => { if (!window.location.pathname.startsWith('/tutorials')) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--sidebar-text)'; } }}>
+                {({ isActive }) => (<BookOpenIcon style={{ width: '18px', height: '18px', opacity: isActive ? 1 : 0.7 }} />)}
+              </NavLink>
               <NavLink to="/reports" title="Reports"
                 style={({ isActive }) => ({
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
