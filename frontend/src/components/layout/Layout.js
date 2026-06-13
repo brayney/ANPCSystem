@@ -173,6 +173,7 @@ export default function Layout() {
             <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', transition: 'all 0.3s ease' }}>
               {nav.map(({ to, icon: Icon, label }) => (
                 <NavLink key={to} to={to}
+                  end
                   title={label}
                   style={({ isActive }) => ({
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -183,9 +184,9 @@ export default function Layout() {
                     transition: 'background 0.15s, color 0.15s',
                     boxShadow: isActive ? '0 2px 8px rgba(31,107,235,0.3)' : 'none',
                   })}
-                  onMouseEnter={e => { if (!window.location.pathname.startsWith(to)) { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; } }}
+                  onMouseEnter={e => { if (window.location.pathname !== to) { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; } }}
                   onMouseLeave={e => {
-                    const isActive = window.location.pathname.startsWith(to);
+                    const isActive = window.location.pathname === to;
                     if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--sidebar-text)'; }
                   }}
                 >
