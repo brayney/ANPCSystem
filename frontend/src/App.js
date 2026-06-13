@@ -15,6 +15,7 @@ import HooksPage from './pages/HooksPage';
 import TransactionsPage from './pages/TransactionsPage';
 import CreateTransactionPage from './pages/CreateTransactionPage';
 import TransactionDetailPage from './pages/TransactionDetailPage';
+import TransactionCalendarPage from './pages/TransactionCalendarPage';
 import PublicTransactionPage from './pages/PublicTransactionPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
@@ -46,6 +47,7 @@ function App() {
             <Route path="boom-sections" element={<BoomSectionsPage />} />
             <Route path="hooks" element={<HooksPage />} />
             <Route path="transactions" element={<TransactionsPage />} />
+            <Route path="transactions/calendar" element={<TransactionCalendarPage />} />
             <Route path="transactions/create" element={<CreateTransactionPage />} />
             <Route path="transactions/:id" element={<TransactionDetailPage />} />
             <Route path="reports" element={<ReportsPage />} />

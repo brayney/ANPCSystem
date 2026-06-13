@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import {
   HomeIcon, TruckIcon, Square3Stack3DIcon, LinkIcon,
   DocumentTextIcon, ChartBarIcon, Cog6ToothIcon, Bars3Icon, XMarkIcon,
-  ArrowRightOnRectangleIcon, MoonIcon, SunIcon, BoltIcon
+  ArrowRightOnRectangleIcon, MoonIcon, SunIcon, BoltIcon, CalendarIcon
 } from '@heroicons/react/24/outline';
 
 const nav = [
@@ -14,6 +14,7 @@ const nav = [
   { to: '/boom-sections', icon: BoltIcon, label: 'Boom Sections' },
   { to: '/hooks', icon: LinkIcon, label: 'Hooks' },
   { to: '/transactions', icon: DocumentTextIcon, label: 'Transactions' },
+  { to: '/transactions/calendar', icon: CalendarIcon, label: 'Calendar' },
 ];
 
 const SidebarContent = ({ setSidebarOpen }) => {
