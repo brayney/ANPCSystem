@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  AcademicCapIcon,
+  BookOpenIcon,
   ChatBubbleLeftRightIcon,
   CheckCircleIcon,
   ClipboardDocumentListIcon,
@@ -167,7 +167,7 @@ export default function TutorialsPage() {
       <div style={{ display: 'grid', gap: '14px' }}>
         {filteredTutorials.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '36px 20px' }}>
-            <AcademicCapIcon style={{ width: '34px', height: '34px', margin: '0 auto 10px', color: 'var(--text-muted)' }} />
+            <BookOpenIcon style={{ width: '34px', height: '34px', margin: '0 auto 10px', color: 'var(--text-muted)' }} />
             <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '13px' }}>No instructions match your search.</p>
           </div>
         ) : (
