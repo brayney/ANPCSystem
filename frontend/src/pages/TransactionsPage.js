@@ -153,7 +153,7 @@ export default function TransactionsPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
-                    {['TXN No.', 'Company', 'Crane', 'Pull-Out Location', 'Date', 'Expected Return', 'Status', ''].map(h => (
+                    {['TXN No.', 'Company', 'Crane', 'Pull-Out Location', 'Date', tab === 'active' ? 'Expected Return' : 'Actual Return', 'Status', ''].map(h => (
                       <th key={h} className="table-header">{h}</th>
                     ))}
                   </tr>
@@ -175,7 +175,10 @@ export default function TransactionsPage() {
                         {t.transactionDate ? format(new Date(t.transactionDate), 'MMM d, yyyy') : '—'}
                       </td>
                       <td className="table-cell" style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
-                        {t.expectedReturnDate ? format(new Date(t.expectedReturnDate), 'MMM d, yyyy') : '—'}
+                        {tab === 'active'
+                          ? (t.expectedReturnDate ? format(new Date(t.expectedReturnDate), 'MMM d, yyyy') : '—')
+                          : (t.actualReturnDate ? format(new Date(t.actualReturnDate), 'MMM d, yyyy h:mm a') : '—')
+                        }
                       </td>
                       <td className="table-cell"><StatusBadge status={t.status} /></td>
                       <td className="table-cell">

@@ -103,6 +103,7 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
               <th className="px-2 py-1 text-left">Capacity</th>
               <th className="px-2 py-1 text-left">Weight (KG)</th>
               <th className="px-2 py-1 text-left">Expected Return</th>
+              <th className="px-2 py-1 text-left">Actual Return</th>
             </tr>
           </thead>
           <tbody>
@@ -112,6 +113,7 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
               <td className="px-2 py-1 text-xs">{txn.capacity || '—'}</td>
               <td className="px-2 py-1 text-xs">{txn.weightKg || '—'}</td>
               <td className="px-2 py-1 text-xs">{fmt(txn.expectedReturnDate)}</td>
+              <td className="px-2 py-1 text-xs">{txn.actualReturnDate ? format(new Date(txn.actualReturnDate), 'MMM d, yyyy h:mm a') : '—'}</td>
             </tr>
           </tbody>
         </table>
