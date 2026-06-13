@@ -18,6 +18,7 @@ const InfoRow = ({ label, value }) => (
 const PrintView = React.forwardRef(({ txn }, ref) => {
   if (!txn) return null;
   const fmt = (d) => d ? format(new Date(d), 'MMMM d, yyyy') : '—';
+  const fmtWithTime = (d) => d ? format(new Date(d), 'MMMM d, yyyy h:mm a') : '—';
   const publicUrl = `${window.location.origin}/public/transactions/${txn._id}`;
 
   return (
@@ -48,6 +49,7 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
                 ['Type', txn.type],
                 ['Purpose', txn.purpose],
                 ['Expected Return', fmt(txn.expectedReturnDate)],
+                ...(txn.status === 'Returned' ? [['Actual Return', fmtWithTime(txn.actualReturnDate)]] : []),
               ].map(([l, v]) => (
                 <tr key={l}><td className="text-gray-500 pr-2 py-0.5 text-xs">{l}:</td><td className="font-medium text-xs">{v || '—'}</td></tr>
               ))}

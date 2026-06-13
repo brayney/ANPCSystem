@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import FloatingChat from '../common/FloatingChat';
 import {
   HomeIcon, TruckIcon, Square3Stack3DIcon, LinkIcon,
   DocumentTextIcon, ChartBarIcon, Cog6ToothIcon, Bars3Icon, XMarkIcon,
@@ -278,6 +279,9 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Floating Chat */}
+      {user && <FloatingChat user={user} />}
     </div>
   );
 }
