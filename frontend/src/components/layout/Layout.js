@@ -18,11 +18,8 @@ const nav = [
   { to: '/transactions/calendar', icon: CalendarIcon, label: 'Calendar' },
 ];
 
-const SidebarContent = ({ setSidebarOpen }) => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = () => { logout(); navigate('/login'); };
+const SidebarContent = ({ setSidebarOpen, onLogoutClick }) => {
+  const { user } = useAuth();
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--sidebar-bg)' }}>
@@ -113,7 +110,7 @@ const SidebarContent = ({ setSidebarOpen }) => {
             <p style={{ fontSize: '12px', fontWeight: 600, color: '#e6edf3', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name || 'Admin'}</p>
             <p style={{ fontSize: '10px', color: '#3d444d', textTransform: 'capitalize' }}>{user?.role || 'user'}</p>
           </div>
-          <button onClick={handleLogout} title="Logout" style={{ padding: '4px', borderRadius: '5px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#3d444d', transition: 'color 0.15s' }}
+          <button onClick={onLogoutClick} title="Logout" style={{ padding: '4px', borderRadius: '5px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#3d444d', transition: 'color 0.15s' }}
             onMouseEnter={e => e.currentTarget.style.color = '#f85149'}
             onMouseLeave={e => e.currentTarget.style.color = '#3d444d'}>
             <ArrowRightOnRectangleIcon style={{ width: '15px', height: '15px' }} />
@@ -128,6 +125,8 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -137,7 +136,20 @@ export default function Layout() {
   };
 
   const handleLogout = () => {
-    logout();
+    setShowLogoutConfirm(true);
+  };
+
+  const cancelLogout = () => {
+    if (isLoggingOut) return;
+    setShowLogoutConfirm(false);
+  };
+
+  const confirmLogout = async () => {
+    setIsLoggingOut(true);
+    await logout();
+    setIsLoggingOut(false);
+    setShowLogoutConfirm(false);
+    setSidebarOpen(false);
     navigate('/login');
   };
 
@@ -230,7 +242,7 @@ export default function Layout() {
             </div>
           </div>
         ) : (
-          <SidebarContent />
+          <SidebarContent onLogoutClick={handleLogout} />
         )}
       </aside>
 
@@ -239,7 +251,7 @@ export default function Layout() {
         <div className="fixed inset-0 z-50 flex lg:hidden no-print">
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(1,4,9,0.7)', backdropFilter: 'blur(2px)' }} onClick={() => setSidebarOpen(false)} />
           <div className="animate-slide-in" style={{ position: 'relative', width: '220px', height: '100%', flexShrink: 0, borderRight: '1px solid var(--sidebar-border)', overflow: 'hidden' }}>
-            <SidebarContent setSidebarOpen={setSidebarOpen} />
+            <SidebarContent setSidebarOpen={setSidebarOpen} onLogoutClick={handleLogout} />
             <button onClick={() => setSidebarOpen(false)} style={{ position: 'absolute', top: '14px', right: '14px', padding: '4px', background: 'var(--sidebar-hover)', border: '1px solid var(--sidebar-border)', borderRadius: '6px', cursor: 'pointer', color: 'var(--sidebar-text)' }}>
               <XMarkIcon style={{ width: '14px', height: '14px' }} />
             </button>
@@ -282,6 +294,54 @@ export default function Layout() {
 
       {/* Floating Chat */}
       {user && <FloatingChat user={user} />}
+
+      {showLogoutConfirm && (
+        <div
+          role="presentation"
+          onClick={cancelLogout}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 80,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            background: 'rgba(1,4,9,0.58)',
+            backdropFilter: 'blur(3px)',
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-confirm-title"
+            className="animate-scale-in"
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '360px',
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: '8px',
+              boxShadow: 'var(--shadow-lg)',
+              padding: '20px',
+            }}
+          >
+            <h2 id="logout-confirm-title" style={{ fontSize: '18px', marginBottom: '8px' }}>Confirm logout</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.5, marginBottom: '18px' }}>
+              Are you sure you want to log out of your account?
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button type="button" className="btn-secondary" onClick={cancelLogout} disabled={isLoggingOut}>
+                Cancel
+              </button>
+              <button type="button" className="btn-danger" onClick={confirmLogout} disabled={isLoggingOut}>
+                {isLoggingOut ? 'Logging out...' : 'Log out'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
