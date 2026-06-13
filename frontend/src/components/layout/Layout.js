@@ -5,7 +5,7 @@ import FloatingChat from '../common/FloatingChat';
 import {
   HomeIcon, TruckIcon, Square3Stack3DIcon, LinkIcon,
   DocumentTextIcon, ChartBarIcon, Cog6ToothIcon, Bars3Icon, XMarkIcon,
-  ArrowRightOnRectangleIcon, MoonIcon, SunIcon, BoltIcon, CalendarIcon
+  ArrowRightOnRectangleIcon, MoonIcon, SunIcon, BoltIcon, CalendarIcon, AcademicCapIcon
 } from '@heroicons/react/24/outline';
 
 const nav = [
@@ -16,6 +16,7 @@ const nav = [
   { to: '/hooks', icon: LinkIcon, label: 'Hooks' },
   { to: '/transactions', icon: DocumentTextIcon, label: 'Transactions' },
   { to: '/transactions/calendar', icon: CalendarIcon, label: 'Calendar' },
+  { to: '/tutorials', icon: AcademicCapIcon, label: 'Instructions' },
 ];
 
 const SidebarContent = ({ setSidebarOpen, onLogoutClick }) => {

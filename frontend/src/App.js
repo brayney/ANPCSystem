@@ -19,6 +19,7 @@ import TransactionCalendarPage from './pages/TransactionCalendarPage';
 import PublicTransactionPage from './pages/PublicTransactionPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
+import TutorialsPage from './pages/TutorialsPage';
 
 const PrivateRoute = ({ children }) => {
   const { user } = useAuth();
@@ -50,6 +51,7 @@ function App() {
             <Route path="transactions/calendar" element={<TransactionCalendarPage />} />
             <Route path="transactions/create" element={<CreateTransactionPage />} />
             <Route path="transactions/:id" element={<TransactionDetailPage />} />
+            <Route path="tutorials" element={<TutorialsPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
