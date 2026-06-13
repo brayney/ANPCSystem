@@ -145,65 +145,6 @@ const FloatingChat = ({ user }) => {
       {/* Floating Chat Heads (when collapsed) */}
       {!isOpen && (
         <div style={{ display: 'flex', gap: '12px', flexDirection: 'column', alignItems: 'flex-end' }}>
-          {chats.slice(0, 1).map(chat => {
-            const other = getOtherParticipant(chat);
-            return (
-              <button
-                key={chat._id}
-                onClick={() => {
-                  setSelectedChat(chat);
-                  setIsOpen(true);
-                }}
-                title={other?.name}
-                style={{
-                  width: '50px',
-                  height: '50px',
-                  borderRadius: '50%',
-                  background: '#3B82F6',
-                  color: 'white',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
-                  transition: 'all 0.2s',
-                  position: 'relative'
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.transform = 'scale(1.1)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(59, 130, 246, 0.6)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.transform = 'scale(1)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.4)';
-                }}
-              >
-                {getInitials(other?.name || 'U')}
-                {chat.unreadCount > 0 && (
-                  <span style={{
-                    position: 'absolute',
-                    top: '-5px',
-                    right: '-5px',
-                    background: '#EF4444',
-                    color: 'white',
-                    borderRadius: '50%',
-                    width: '20px',
-                    height: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '11px',
-                    fontWeight: 700
-                  }}>
-                    {chat.unreadCount}
-                  </span>
-                )}
-              </button>
-            );
-          })}
 
           {/* Main Chat Button */}
           <button
