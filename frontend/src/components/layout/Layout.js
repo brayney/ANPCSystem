@@ -44,7 +44,7 @@ const SidebarContent = ({ setSidebarOpen }) => {
       {/* Nav Items */}
       <nav style={{ flex: 1, overflowY: 'auto', padding: '0 10px', transition: 'all 0.3s ease' }}>
         {nav.map(({ to, icon: Icon, label }) => (
-          <NavLink key={to} to={to}
+          <NavLink key={to} to={to} end
             onClick={() => setSidebarOpen && setSidebarOpen(false)}
             style={({ isActive }) => ({
               display: 'flex', alignItems: 'center', gap: '10px',
@@ -58,7 +58,7 @@ const SidebarContent = ({ setSidebarOpen }) => {
             })}
             onMouseEnter={e => { if (!e.currentTarget.classList.contains('active')) { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; } }}
             onMouseLeave={e => {
-              const isActive = window.location.pathname.startsWith(to);
+              const isActive = window.location.pathname === to;
               if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--sidebar-text)'; }
             }}
           >
