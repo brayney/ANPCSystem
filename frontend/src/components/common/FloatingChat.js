@@ -7,11 +7,13 @@ import { format } from 'date-fns';
 const FloatingChat = ({ user }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [chats, setChats] = useState([]);
+  const [availableUsers, setAvailableUsers] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [tab, setTab] = useState('chats'); // 'chats' or 'users'
   const messagesEndRef = useRef(null);
 
   // Fetch chats
@@ -30,6 +32,45 @@ const FloatingChat = ({ user }) => {
       }
     } catch (error) {
       console.error('Failed to fetch chats');
+    }
+  };
+
+  // Fetch available users
+  const fetchAvailableUsers = async () => {
+    try {
+      const { data } = await api.get('/available-users');
+      setAvailableUsers(data.data);
+    } catch (error) {
+      console.error('Failed to fetch available users');
+    }
+  };
+
+  // Fetch messages for selected chat
+  const fetchMessages = async () => {
+    if (!selectedChat) return;
+    try {
+      setLoading(true);
+      const { data } = await api.get(`/chats/${selectedChat._id}/messages`);
+      setMessages(data.data);
+
+      // Mark as read
+      await api.put(`/chats/${selectedChat._id}/read`);
+    } catch (error) {
+      console.error('Failed to fetch messages');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Start chat with a user
+  const handleStartChat = async (userId) => {
+    try {
+      const { data } = await api.post('/chats', { userId });
+      setSelectedChat(data.data);
+      await fetchChats();
+      setTab('chats');
+    } catch (error) {
+      toast.error('Failed to start chat');
     }
   };
 
@@ -59,6 +100,7 @@ const FloatingChat = ({ user }) => {
   useEffect(() => {
     if (isOpen) {
       fetchChats();
+      fetchAvailableUsers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -276,81 +318,197 @@ const FloatingChat = ({ user }) => {
 
           {/* Chat List / Messages */}
           {!selectedChat ? (
-            <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
-              {chats.length === 0 ? (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: '100%',
-                  color: 'var(--text-secondary)',
-                  fontSize: '13px',
-                  textAlign: 'center',
-                  padding: '16px'
-                }}>
-                  No conversations yet
-                </div>
-              ) : (
-                chats.map(chat => {
-                  const other = getOtherParticipant(chat);
-                  return (
-                    <button
-                      key={chat._id}
-                      onClick={() => setSelectedChat(chat)}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        background: 'transparent',
-                        border: '1px solid var(--border, #e5e7eb)',
-                        borderRadius: '8px',
-                        marginBottom: '8px',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        transition: 'all 0.15s'
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2, #f9fafb)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ flex: 1 }}>
-                          <p style={{ margin: '0 0 4px 0', fontWeight: 600, fontSize: '13px' }}>
-                            {other?.name}
-                          </p>
-                          <p style={{
-                            margin: 0,
-                            fontSize: '12px',
-                            color: 'var(--text-secondary)',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            maxWidth: '250px'
-                          }}>
-                            {chat.lastMessage || 'No messages yet'}
-                          </p>
+            <>
+              {/* Tabs */}
+              <div style={{
+                display: 'flex',
+                borderBottom: '1px solid var(--border, #e5e7eb)',
+                padding: '0 8px',
+                gap: '0',
+                backgroundColor: 'var(--surface-2, #f9fafb)'
+              }}>
+                <button
+                  onClick={() => setTab('chats')}
+                  style={{
+                    flex: 1,
+                    padding: '10px 12px',
+                    border: 'none',
+                    background: tab === 'chats' ? 'white' : 'transparent',
+                    borderBottom: tab === 'chats' ? '2px solid #1F6BEB' : 'none',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: tab === 'chats' ? 600 : 500,
+                    color: tab === 'chats' ? '#1F6BEB' : 'var(--text-secondary)',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  Chats
+                </button>
+                <button
+                  onClick={() => setTab('users')}
+                  style={{
+                    flex: 1,
+                    padding: '10px 12px',
+                    border: 'none',
+                    background: tab === 'users' ? 'white' : 'transparent',
+                    borderBottom: tab === 'users' ? '2px solid #1F6BEB' : 'none',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: tab === 'users' ? 600 : 500,
+                    color: tab === 'users' ? '#1F6BEB' : 'var(--text-secondary)',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  Accounts
+                </button>
+              </div>
+
+              {/* Content */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+                {tab === 'chats' ? (
+                  // Chats Tab
+                  chats.length === 0 ? (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: '100%',
+                      color: 'var(--text-secondary)',
+                      fontSize: '13px',
+                      textAlign: 'center',
+                      padding: '16px'
+                    }}>
+                      No conversations yet. Check Accounts tab!
+                    </div>
+                  ) : (
+                    chats.map(chat => {
+                      const other = getOtherParticipant(chat);
+                      return (
+                        <button
+                          key={chat._id}
+                          onClick={() => setSelectedChat(chat)}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: 'transparent',
+                            border: '1px solid var(--border, #e5e7eb)',
+                            borderRadius: '8px',
+                            marginBottom: '8px',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'all 0.15s'
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2, #f9fafb)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ flex: 1 }}>
+                              <p style={{ margin: '0 0 4px 0', fontWeight: 600, fontSize: '13px' }}>
+                                {other?.name}
+                              </p>
+                              <p style={{
+                                margin: 0,
+                                fontSize: '12px',
+                                color: 'var(--text-secondary)',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                maxWidth: '250px'
+                              }}>
+                                {chat.lastMessage || 'No messages yet'}
+                              </p>
+                            </div>
+                            {chat.unreadCount > 0 && (
+                              <span style={{
+                                background: '#1F6BEB',
+                                color: 'white',
+                                borderRadius: '50%',
+                                width: '20px',
+                                height: '20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                marginLeft: '8px'
+                              }}>
+                                {chat.unreadCount}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })
+                  )
+                ) : (
+                  // Available Users Tab
+                  availableUsers.length === 0 ? (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: '100%',
+                      color: 'var(--text-secondary)',
+                      fontSize: '13px',
+                      textAlign: 'center',
+                      padding: '16px'
+                    }}>
+                      No accounts available
+                    </div>
+                  ) : (
+                    availableUsers.map(user => (
+                      <button
+                        key={user._id}
+                        onClick={() => handleStartChat(user._id)}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          background: 'transparent',
+                          border: '1px solid var(--border, #e5e7eb)',
+                          borderRadius: '8px',
+                          marginBottom: '8px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          transition: 'all 0.15s'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2, #f9fafb)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ margin: '0 0 4px 0', fontWeight: 600, fontSize: '13px' }}>
+                              {user.name}
+                            </p>
+                            <p style={{
+                              margin: 0,
+                              fontSize: '12px',
+                              color: 'var(--text-secondary)',
+                              maxWidth: '250px'
+                            }}>
+                              {user.email}
+                            </p>
+                          </div>
+                          {user.hasChat && (
+                            <span style={{
+                              background: 'var(--accent-subtle, #f0f6fc)',
+                              color: '#1F6BEB',
+                              borderRadius: '4px',
+                              padding: '2px 8px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              marginLeft: '8px',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              Active
+                            </span>
+                          )}
                         </div>
-                        {chat.unreadCount > 0 && (
-                          <span style={{
-                            background: '#1F6BEB',
-                            color: 'white',
-                            borderRadius: '50%',
-                            width: '20px',
-                            height: '20px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            marginLeft: '8px'
-                          }}>
-                            {chat.unreadCount}
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })
-              )}
-            </div>
+                      </button>
+                    ))
+                  )
+                )}
+              </div>
+            </>
           ) : (
             <>
               {/* Messages List */}

@@ -2,6 +2,47 @@ const Chat = require('../models/Chat');
 const Message = require('../models/Message');
 const User = require('../models/User');
 
+// Get available users for chatting (admin can chat with managers, managers with admin)
+exports.getAvailableUsers = async (req, res, next) => {
+  try {
+    const currentUserId = req.user._id;
+    const isCurrentAdmin = req.user.role === 'admin';
+
+    // If admin, get all active managers. If manager, get admin user.
+    let query = {};
+    if (isCurrentAdmin) {
+      query = { role: 'manager', isActive: true, _id: { $ne: currentUserId } };
+    } else {
+      query = { role: 'admin', isActive: true, _id: { $ne: currentUserId } };
+    }
+
+    const availableUsers = await User.find(query).select('_id name email role');
+
+    // Get existing chat IDs for current user
+    const existingChats = await Chat.find({
+      participants: currentUserId,
+      isArchived: false
+    }).select('participants');
+
+    const existingChatUserIds = new Set();
+    existingChats.forEach(chat => {
+      chat.participants.forEach(pid => {
+        if (pid.toString() !== currentUserId.toString()) {
+          existingChatUserIds.add(pid.toString());
+        }
+      });
+    });
+
+    // Mark which users already have chats
+    const usersWithChatStatus = availableUsers.map(user => ({
+      ...user.toObject(),
+      hasChat: existingChatUserIds.has(user._id.toString())
+    }));
+
+    res.json({ success: true, data: usersWithChatStatus });
+  } catch (error) { next(error); }
+};
+
 // Get all chats for current user
 exports.getChats = async (req, res, next) => {
   try {
