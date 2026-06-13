@@ -494,15 +494,15 @@ const FloatingChat = ({ user }) => {
                           display: 'flex',
                           justifyContent: 'space-between',
                           alignItems: 'center',
-                          gap: '4px',
+                          gap: '8px',
                           margin: 0,
                           fontSize: '11px',
                           opacity: 0.7
                         }}>
                           <span>{format(new Date(msg.createdAt), 'h:mm a')}</span>
                           {msg.sender._id === user._id && (
-                            <span style={{ marginLeft: '4px', fontSize: '13px' }}>
-                              {msg.isRead ? '✓✓' : '✓'}
+                            <span style={{ marginLeft: '4px', fontSize: '11px', fontWeight: 500 }}>
+                              {msg.isRead ? 'seen' : 'sent'}
                             </span>
                           )}
                         </div>
