@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const craneSchema = new mongoose.Schema({
-  equipmentNo: { type: String, required: true, unique: true, trim: true },
+  equipmentNo: { type: String, required: true, trim: true },
   craneModel: { type: String, trim: true },
   yearModel: { type: String, trim: true },
   capacity: { type: String, trim: true },

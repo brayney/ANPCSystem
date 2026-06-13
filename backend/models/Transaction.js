@@ -5,6 +5,7 @@ const transactionSchema = new mongoose.Schema({
   type: { type: String, enum: ['Rental', 'Transfer', 'Return', 'Maintenance'], default: 'Rental' },
 
   // Crane & Attachments
+  craneId: { type: mongoose.Schema.Types.ObjectId, ref: 'Crane' },
   crane: { type: String, required: true },
   craneModel: { type: String },
   capacity: { type: String },

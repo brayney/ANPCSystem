@@ -116,9 +116,6 @@ exports.importCranes = async (req, res, next) => {
         const row = rows[i];
         if (!row.equipmentNo) throw new Error('equipmentNo is required');
         
-        // Delete any existing record (archived or active) with same equipmentNo
-        await Crane.deleteOne({ equipmentNo: row.equipmentNo });
-
         await Crane.create({ ...row, location: row.location || 'RAG YARD', client: row.client || '-' });
         results.success++;
       } catch (err) {

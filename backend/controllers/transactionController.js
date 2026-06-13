@@ -4,6 +4,14 @@ const Counterweight = require('../models/Counterweight');
 const BoomSection = require('../models/BoomSection');
 const Hook = require('../models/Hook');
 const AuditLog = require('../models/AuditLog');
+const mongoose = require('mongoose');
+
+const craneLookup = (txn) => {
+  if (txn.craneId && mongoose.Types.ObjectId.isValid(txn.craneId)) {
+    return { _id: txn.craneId };
+  }
+  return { equipmentNo: txn.crane };
+};
 
 exports.getTransactions = async (req, res, next) => {
   try {
@@ -66,7 +74,7 @@ exports.getTransaction = async (req, res, next) => {
     
     // Fetch crane details if capacity/weight are missing
     if (!item.capacity || !item.weightKg) {
-      const craneData = await Crane.findOne({ equipmentNo: item.crane });
+      const craneData = await Crane.findOne(craneLookup(item));
       if (craneData) {
         item = item.toObject ? item.toObject() : item;
         item.capacity = item.capacity || craneData.capacity;
@@ -90,7 +98,7 @@ exports.getPublicTransaction = async (req, res, next) => {
     
     // Fetch crane details if capacity/weight are missing
     if (!item.capacity || !item.weightKg) {
-      const craneData = await Crane.findOne({ equipmentNo: item.crane });
+      const craneData = await Crane.findOne(craneLookup(item));
       if (craneData) {
         item = item.toObject ? item.toObject() : item;
         item.capacity = item.capacity || craneData.capacity;
@@ -110,11 +118,13 @@ exports.getPublicTransaction = async (req, res, next) => {
 
 exports.createTransaction = async (req, res, next) => {
   try {
-    const { crane, counterweights, boomSections, hooks } = req.body;
+    const { crane, craneId, counterweights, boomSections, hooks } = req.body;
     const restrictedStatuses = ['Out of Yard', 'Under Maintenance', 'On Hire'];
 
     // Validate crane status
-    const craneData = await Crane.findOne({ equipmentNo: crane });
+    const craneData = craneId && mongoose.Types.ObjectId.isValid(craneId)
+      ? await Crane.findById(craneId)
+      : await Crane.findOne({ equipmentNo: crane });
     if (!craneData) return res.status(404).json({ success: false, message: `Crane ${crane} not found` });
     if (restrictedStatuses.includes(craneData.status)) {
       return res.status(400).json({ success: false, message: `Crane ${crane} cannot be added to transaction (Status: ${craneData.status})` });
@@ -148,7 +158,7 @@ exports.createTransaction = async (req, res, next) => {
     }
 
     // Capture crane capacity and weight from crane data
-    const txnData = { ...req.body, createdBy: req.user._id, capacity: craneData.capacity, weightKg: craneData.weightKg, craneModel: craneData.craneModel };
+    const txnData = { ...req.body, craneId: craneData._id, createdBy: req.user._id, capacity: craneData.capacity, weightKg: craneData.weightKg, craneModel: craneData.craneModel };
     const txn = await Transaction.create(txnData);
 
     const newLocation = txn.deliveryLocation || txn.companyAddress || 'In Transit';
@@ -163,7 +173,7 @@ exports.createTransaction = async (req, res, next) => {
 
     // Mark crane and attachments as Out of Yard and update location and client to transaction details
     const craneUpdate = await Crane.findOneAndUpdate(
-      { equipmentNo: txn.crane },
+      craneLookup(txn),
       { $set: { status: 'Out of Yard', location: newLocation, client: clientName } }
     );
     console.log('  ✓ Crane updated:', craneUpdate?.equipmentNo);
@@ -204,8 +214,10 @@ exports.updateTransaction = async (req, res, next) => {
     const isNowActive = req.body.status === 'Active';
 
     // If crane is being changed, fetch and validate the new crane's details
-    if (req.body.crane && req.body.crane !== txn.crane) {
-      const newCraneData = await Crane.findOne({ equipmentNo: req.body.crane });
+    if ((req.body.craneId && String(req.body.craneId) !== String(txn.craneId || '')) || (req.body.crane && req.body.crane !== txn.crane)) {
+      const newCraneData = req.body.craneId && mongoose.Types.ObjectId.isValid(req.body.craneId)
+        ? await Crane.findById(req.body.craneId)
+        : await Crane.findOne({ equipmentNo: req.body.crane });
       if (!newCraneData) return res.status(404).json({ success: false, message: `Crane ${req.body.crane} not found` });
       
       // Validate new crane status
@@ -214,6 +226,8 @@ exports.updateTransaction = async (req, res, next) => {
         return res.status(400).json({ success: false, message: `Crane ${req.body.crane} cannot be assigned (Status: ${newCraneData.status})` });
       }
       
+      req.body.craneId = newCraneData._id;
+      req.body.crane = newCraneData.equipmentNo;
       req.body.capacity = newCraneData.capacity;
       req.body.weightKg = newCraneData.weightKg;
       req.body.craneModel = newCraneData.craneModel;
@@ -234,7 +248,7 @@ exports.updateTransaction = async (req, res, next) => {
 
       // Update crane and attachments back to Out of Yard status
       await Crane.findOneAndUpdate(
-        { equipmentNo: txn.crane },
+        craneLookup(txn),
         { $set: { status: 'Out of Yard', location: newLocation, client: clientName } }
       );
       if (txn.counterweights?.length)
@@ -271,7 +285,7 @@ exports.returnTransaction = async (req, res, next) => {
 
     // Return crane and attachments to RAG YARD and mark as Under Maintenance, reset client to "-"
     await Crane.findOneAndUpdate(
-      { equipmentNo: txn.crane },
+      craneLookup(txn),
       { $set: { status: 'Under Maintenance', location: 'RAG YARD', client: '-' } }
     );
     if (txn.counterweights?.length)

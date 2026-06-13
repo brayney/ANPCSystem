@@ -86,7 +86,7 @@ export default function CraneDetailPage() {
           </div>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{crane.equipmentType} — {crane.craneModel}</p>
         </div>
-        <Link to="/transactions/create" state={{ crane: crane.equipmentNo }}
+        <Link to="/transactions/create" state={{ crane: crane.equipmentNo, craneId: crane._id }}
           className="btn-primary flex items-center gap-2">
           <PlusIcon className="w-4 h-4" /> Create Transaction
         </Link>

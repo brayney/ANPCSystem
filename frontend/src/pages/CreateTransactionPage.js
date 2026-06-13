@@ -54,6 +54,7 @@ export default function CreateTransactionPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const prefillCrane = location.state?.crane || '';
+  const prefillCraneId = location.state?.craneId || '';
 
   const [craneSearch, setCraneSearch] = useState(prefillCrane);
   const [craneResults, setCraneResults] = useState([]);
@@ -77,7 +78,7 @@ export default function CreateTransactionPage() {
   // Auto-search when prefill crane exists
   useEffect(() => {
     if (prefillCrane) {
-      handleCraneSelect({ equipmentNo: prefillCrane });
+      handleCraneSelect({ _id: prefillCraneId, equipmentNo: prefillCrane });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -99,7 +100,7 @@ export default function CreateTransactionPage() {
     setCraneSearch(crane.equipmentNo);
     setSelectedCW([]); setSelectedBS([]); setSelectedHooks([]);
     try {
-      const { data } = await api.get(`/cranes/by-equipment/${crane.equipmentNo}`);
+      const { data } = await api.get(crane._id ? `/cranes/${crane._id}` : `/cranes/by-equipment/${crane.equipmentNo}`);
       const restrictedStatuses = ['Out of Yard', 'Under Maintenance', 'On Hire'];
       const filterAvailable = (items) => items.filter(item => !restrictedStatuses.includes(item.status));
       setAttachments({
@@ -123,6 +124,7 @@ export default function CreateTransactionPage() {
     try {
       const payload = {
         ...form,
+        craneId: selectedCrane._id,
         crane: selectedCrane.equipmentNo,
         craneModel: selectedCrane.craneModel,
         counterweights: selectedCW,
