@@ -25,11 +25,6 @@ const FloatingChat = ({ user }) => {
       // Calculate total unread
       const total = data.data.reduce((sum, chat) => sum + (chat.unreadCount || 0), 0);
       setUnreadCount(total);
-
-      // Auto-select first chat if none selected
-      if (!selectedChat && data.data.length > 0) {
-        setSelectedChat(data.data[0]);
-      }
     } catch (error) {
       console.error('Failed to fetch chats');
     }
@@ -79,10 +74,24 @@ const FloatingChat = ({ user }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Initial fetch
+  // Initial fetch and polling
+  useEffect(() => {
+    // Initial fetch
+    fetchChats();
+    fetchAvailableUsers();
+
+    // Poll every 3 seconds to keep chats updated
+    const interval = setInterval(() => {
+      fetchChats();
+    }, 3000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fetch available users when window opens
   useEffect(() => {
     if (isOpen) {
-      fetchChats();
       fetchAvailableUsers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
