@@ -13,6 +13,23 @@ const craneLookup = (txn) => {
   return { equipmentNo: txn.crane };
 };
 
+const craneIdsFromTransaction = (txn) => {
+  const ids = [];
+  if (txn.craneId && mongoose.Types.ObjectId.isValid(txn.craneId)) ids.push(txn.craneId);
+  if (Array.isArray(txn.cranes)) {
+    txn.cranes.forEach(item => {
+      if (item.craneId && mongoose.Types.ObjectId.isValid(item.craneId)) ids.push(item.craneId);
+    });
+  }
+  return [...new Set(ids.map(id => String(id)))];
+};
+
+const craneUpdateQuery = (txn) => {
+  const ids = craneIdsFromTransaction(txn);
+  if (ids.length > 0) return { _id: { $in: ids } };
+  return craneLookup(txn);
+};
+
 exports.getTransactions = async (req, res, next) => {
   try {
     const { search, status, type, page = 1, limit = 20 } = req.query;
@@ -24,6 +41,7 @@ exports.getTransactions = async (req, res, next) => {
         { transactionNo: { $regex: search, $options: 'i' } },
         { companyName: { $regex: search, $options: 'i' } },
         { crane: { $regex: search, $options: 'i' } },
+        { 'cranes.equipmentNo': { $regex: search, $options: 'i' } },
       ];
     }
     const total = await Transaction.countDocuments(query);
@@ -118,17 +136,39 @@ exports.getPublicTransaction = async (req, res, next) => {
 
 exports.createTransaction = async (req, res, next) => {
   try {
-    const { crane, craneId, counterweights, boomSections, hooks } = req.body;
+    const { crane, craneId, cranes = [], counterweights, boomSections, hooks } = req.body;
     const restrictedStatuses = ['Out of Yard', 'Under Maintenance', 'On Hire'];
 
-    // Validate crane status
-    const craneData = craneId && mongoose.Types.ObjectId.isValid(craneId)
-      ? await Crane.findById(craneId)
-      : await Crane.findOne({ equipmentNo: crane });
-    if (!craneData) return res.status(404).json({ success: false, message: `Crane ${crane} not found` });
-    if (restrictedStatuses.includes(craneData.status)) {
-      return res.status(400).json({ success: false, message: `Crane ${crane} cannot be added to transaction (Status: ${craneData.status})` });
+    const requestedCranes = Array.isArray(cranes) && cranes.length
+      ? cranes
+      : [{ craneId, equipmentNo: crane }];
+
+    const craneDocs = [];
+    for (const requestedCrane of requestedCranes) {
+      const craneData = requestedCrane.craneId && mongoose.Types.ObjectId.isValid(requestedCrane.craneId)
+        ? await Crane.findById(requestedCrane.craneId)
+        : await Crane.findOne({ equipmentNo: requestedCrane.equipmentNo || requestedCrane.crane || crane });
+
+      const craneLabel = requestedCrane.equipmentNo || requestedCrane.crane || crane;
+      if (!craneData) return res.status(404).json({ success: false, message: `Crane ${craneLabel} not found` });
+      if (restrictedStatuses.includes(craneData.status)) {
+        return res.status(400).json({ success: false, message: `Crane ${craneData.equipmentNo} cannot be added to transaction (Status: ${craneData.status})` });
+      }
+      if (!craneDocs.some(item => String(item._id) === String(craneData._id))) craneDocs.push(craneData);
     }
+
+    if (craneDocs.length === 0) {
+      return res.status(400).json({ success: false, message: 'At least one crane is required' });
+    }
+
+    const primaryCrane = craneDocs[0];
+    const craneItems = craneDocs.map(item => ({
+      craneId: item._id,
+      equipmentNo: item.equipmentNo,
+      craneModel: item.craneModel,
+      capacity: item.capacity,
+      weightKg: item.weightKg,
+    }));
 
     // Validate counterweights status
     if (counterweights?.length) {
@@ -157,8 +197,17 @@ exports.createTransaction = async (req, res, next) => {
       }
     }
 
-    // Capture crane capacity and weight from crane data
-    const txnData = { ...req.body, craneId: craneData._id, createdBy: req.user._id, capacity: craneData.capacity, weightKg: craneData.weightKg, craneModel: craneData.craneModel };
+    // Capture crane capacity and weight from the primary crane for backward compatibility.
+    const txnData = {
+      ...req.body,
+      craneId: primaryCrane._id,
+      crane: primaryCrane.equipmentNo,
+      craneModel: primaryCrane.craneModel,
+      capacity: primaryCrane.capacity,
+      weightKg: primaryCrane.weightKg,
+      cranes: craneItems,
+      createdBy: req.user._id,
+    };
     const txn = await Transaction.create(txnData);
 
     const newLocation = txn.deliveryLocation || txn.companyAddress || 'In Transit';
@@ -172,11 +221,11 @@ exports.createTransaction = async (req, res, next) => {
     console.log('  - Client Name:', clientName);
 
     // Mark crane and attachments as Out of Yard and update location and client to transaction details
-    const craneUpdate = await Crane.findOneAndUpdate(
-      craneLookup(txn),
+    const craneUpdate = await Crane.updateMany(
+      craneUpdateQuery(txn),
       { $set: { status: 'Out of Yard', location: newLocation, client: clientName } }
     );
-    console.log('  ✓ Crane updated:', craneUpdate?.equipmentNo);
+    console.log('  ✓ Cranes updated:', craneUpdate?.modifiedCount);
 
     if (txn.counterweights?.length) {
       const cwResult = await Counterweight.updateMany(
@@ -247,8 +296,8 @@ exports.updateTransaction = async (req, res, next) => {
       console.log('  - Client Name:', clientName);
 
       // Update crane and attachments back to Out of Yard status
-      await Crane.findOneAndUpdate(
-        craneLookup(txn),
+      await Crane.updateMany(
+        craneUpdateQuery(txn),
         { $set: { status: 'Out of Yard', location: newLocation, client: clientName } }
       );
       if (txn.counterweights?.length)
@@ -284,8 +333,8 @@ exports.returnTransaction = async (req, res, next) => {
     await txn.save();
 
     // Return crane and attachments to RAG YARD and mark as Under Maintenance, reset client to "-"
-    await Crane.findOneAndUpdate(
-      craneLookup(txn),
+    await Crane.updateMany(
+      craneUpdateQuery(txn),
       { $set: { status: 'Under Maintenance', location: 'RAG YARD', client: '-' } }
     );
     if (txn.counterweights?.length)

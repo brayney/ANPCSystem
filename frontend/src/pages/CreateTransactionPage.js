@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ArrowLeftIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { Spinner, StatusBadge } from '../components/common';
 import api from '../utils/api';
 
@@ -58,7 +58,7 @@ export default function CreateTransactionPage() {
 
   const [craneSearch, setCraneSearch] = useState(prefillCrane);
   const [craneResults, setCraneResults] = useState([]);
-  const [selectedCrane, setSelectedCrane] = useState(null);
+  const [selectedCranes, setSelectedCranes] = useState([]);
   const [attachments, setAttachments] = useState({ counterweights: [], boomSections: [], hooks: [] });
   const [loadingCrane, setLoadingCrane] = useState(false);
   const [selectedCW, setSelectedCW] = useState([]);
@@ -93,26 +93,64 @@ export default function CreateTransactionPage() {
     } catch {}
   };
 
+  const mergeById = (current, incoming) => {
+    const map = new Map(current.map(item => [item._id, item]));
+    incoming.forEach(item => map.set(item._id, item));
+    return Array.from(map.values());
+  };
+
+  const loadCraneWithAttachments = async (crane) => {
+    const { data } = await api.get(
+      crane._id ? `/cranes/${crane._id}?includeShared=true` : `/cranes/by-equipment/${crane.equipmentNo}`
+    );
+    return data.data;
+  };
+
+  const reloadAttachmentsForCranes = async (cranes) => {
+    if (cranes.length === 0) {
+      setAttachments({ counterweights: [], boomSections: [], hooks: [] });
+      return;
+    }
+
+    const restrictedStatuses = ['Out of Yard', 'Under Maintenance', 'On Hire'];
+    const filterAvailable = (items) => items.filter(item => !restrictedStatuses.includes(item.status));
+    const loaded = await Promise.all(cranes.map(loadCraneWithAttachments));
+
+    setAttachments({
+      counterweights: loaded.reduce((items, craneData) => mergeById(items, filterAvailable(craneData.counterweights || [])), []),
+      boomSections: loaded.reduce((items, craneData) => mergeById(items, filterAvailable(craneData.boomSections || [])), []),
+      hooks: loaded.reduce((items, craneData) => mergeById(items, filterAvailable(craneData.hooks || [])), []),
+    });
+  };
+
   const handleCraneSelect = async (crane) => {
     setLoadingCrane(true);
-    setSelectedCrane(crane);
     setCraneResults([]);
-    setCraneSearch(crane.equipmentNo);
-    setSelectedCW([]); setSelectedBS([]); setSelectedHooks([]);
     try {
-      const { data } = await api.get(
-        crane._id ? `/cranes/${crane._id}?includeShared=true` : `/cranes/by-equipment/${crane.equipmentNo}`
-      );
-      const restrictedStatuses = ['Out of Yard', 'Under Maintenance', 'On Hire'];
-      const filterAvailable = (items) => items.filter(item => !restrictedStatuses.includes(item.status));
-      setAttachments({
-        counterweights: filterAvailable(data.data.counterweights || []),
-        boomSections: filterAvailable(data.data.boomSections || []),
-        hooks: filterAvailable(data.data.hooks || []),
-      });
-      if (data.data._id) setSelectedCrane(data.data);
+      const craneData = await loadCraneWithAttachments(crane);
+      const nextCranes = selectedCranes.some(item => item._id === craneData._id)
+        ? selectedCranes
+        : [...selectedCranes, craneData];
+
+      setSelectedCranes(nextCranes);
+      setCraneSearch('');
+      await reloadAttachmentsForCranes(nextCranes);
     } catch { toast.error('Failed to load crane attachments'); }
     finally { setLoadingCrane(false); }
+  };
+
+  const removeSelectedCrane = async (craneId) => {
+    const nextCranes = selectedCranes.filter(crane => crane._id !== craneId);
+    setSelectedCranes(nextCranes);
+    setSelectedCW([]); setSelectedBS([]); setSelectedHooks([]);
+    setLoadingCrane(true);
+    try {
+      await reloadAttachmentsForCranes(nextCranes);
+    } catch {
+      toast.error('Failed to refresh attachments');
+    } finally {
+      setLoadingCrane(false);
+    }
   };
 
   const toggle = (setter, list, id) => {
@@ -121,14 +159,21 @@ export default function CreateTransactionPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedCrane) { toast.error('Please select a crane'); return; }
+    if (selectedCranes.length === 0) { toast.error('Please select at least one crane'); return; }
     setSaving(true);
     try {
       const payload = {
         ...form,
-        craneId: selectedCrane._id,
-        crane: selectedCrane.equipmentNo,
-        craneModel: selectedCrane.craneModel,
+        craneId: selectedCranes[0]._id,
+        crane: selectedCranes[0].equipmentNo,
+        craneModel: selectedCranes[0].craneModel,
+        cranes: selectedCranes.map(crane => ({
+          craneId: crane._id,
+          equipmentNo: crane.equipmentNo,
+          craneModel: crane.craneModel,
+          capacity: crane.capacity,
+          weightKg: crane.weightKg,
+        })),
         counterweights: selectedCW,
         boomSections: selectedBS,
         hooks: selectedHooks,
@@ -159,7 +204,7 @@ export default function CreateTransactionPage() {
         <div className="card">
           <h2 className="font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
             <span className="w-6 h-6 bg-blue-600 text-white text-xs flex items-center justify-center font-bold">1</span>
-            Select Crane
+            Select Cranes
           </h2>
           <div className="relative">
             <MagnifyingGlassIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
@@ -182,17 +227,29 @@ export default function CreateTransactionPage() {
             </div>
           )}
           {loadingCrane && <div className="flex items-center gap-2 mt-3 text-sm text-gray-500"><Spinner size="sm" /> Loading attachments...</div>}
-          {selectedCrane && !loadingCrane && (
-            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-              <p className="font-semibold text-blue-800 dark:text-blue-300 font-mono">{selectedCrane.equipmentNo}</p>
-              <p className="text-sm text-blue-600 dark:text-blue-400">{selectedCrane.equipmentType} — {selectedCrane.craneModel} — {selectedCrane.capacity}</p>
-              <p className="text-xs text-blue-500 mt-1">Location: {selectedCrane.location || '—'}</p>
+          {selectedCranes.length > 0 && !loadingCrane && (
+            <div className="mt-4 space-y-2">
+              {selectedCranes.map(crane => (
+                <div key={crane._id} className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-blue-800 dark:text-blue-300 font-mono">{crane.equipmentNo}</p>
+                    <p className="text-sm text-blue-600 dark:text-blue-400">{crane.equipmentType} — {crane.craneModel} — {crane.capacity}</p>
+                    <p className="text-xs text-blue-500 mt-1">Location: {crane.location || '—'}</p>
+                  </div>
+                  <button type="button" onClick={() => removeSelectedCrane(crane._id)} className="btn-secondary" style={{ padding: '5px' }} title="Remove crane">
+                    <XMarkIcon style={{ width: '14px', height: '14px' }} />
+                  </button>
+                </div>
+              ))}
+              <div className="text-xs text-gray-500 flex items-center gap-1">
+                <PlusIcon style={{ width: '13px', height: '13px' }} /> Search above to add another crane to this transaction.
+              </div>
             </div>
           )}
         </div>
 
         {/* Step 2: Select Attachments */}
-        {selectedCrane && !loadingCrane && (
+        {selectedCranes.length > 0 && !loadingCrane && (
           <div className="card">
             <h2 className="font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
               <span className="w-6 h-6 bg-blue-600 text-white text-xs flex items-center justify-center font-bold">2</span>
@@ -313,7 +370,7 @@ export default function CreateTransactionPage() {
         {/* Submit */}
         <div className="flex justify-end gap-3">
           <button type="button" onClick={() => navigate('/transactions')} className="btn-secondary">Cancel</button>
-          <button type="submit" disabled={saving || !selectedCrane} className="btn-primary px-8 flex items-center gap-2">
+          <button type="submit" disabled={saving || selectedCranes.length === 0} className="btn-primary px-8 flex items-center gap-2">
             {saving ? <><Spinner size="sm" /> Creating...</> : 'Create Transaction'}
           </button>
         </div>

@@ -6,6 +6,12 @@ import { PageHeader, StatusBadge, Spinner, Pagination, EmptyState, ConfirmDialog
 import api from '../utils/api';
 import { format } from 'date-fns';
 
+const getTransactionCraneLabel = (transaction) => (
+  transaction.cranes?.length
+    ? transaction.cranes.map(crane => crane.equipmentNo).join(', ')
+    : transaction.crane
+);
+
 export default function TransactionsPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -169,7 +175,7 @@ export default function TransactionsPage() {
                         </Link>
                       </td>
                       <td className="table-cell" style={{ fontWeight: 500 }}>{t.companyName}</td>
-                      <td className="table-cell"><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', color: 'var(--accent)' }}>{t.crane}</span></td>
+                      <td className="table-cell"><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', color: 'var(--accent)' }}>{getTransactionCraneLabel(t)}</span></td>
                       <td className="table-cell" style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{t.pullOutLocation || '—'}</td>
                       <td className="table-cell" style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
                         {t.transactionDate ? format(new Date(t.transactionDate), 'MMM d, yyyy') : '—'}

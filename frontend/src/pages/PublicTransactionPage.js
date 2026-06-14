@@ -8,8 +8,20 @@ import { QRCodeSVG } from 'qrcode.react';
 import api from '../utils/api';
 import { format } from 'date-fns';
 
+const getTransactionCranes = (txn) => (
+  txn.cranes?.length
+    ? txn.cranes
+    : [{
+        equipmentNo: txn.crane,
+        craneModel: txn.craneModel,
+        capacity: txn.capacity,
+        weightKg: txn.weightKg,
+      }]
+);
+
 const PrintView = React.forwardRef(({ txn }, ref) => {
   if (!txn) return null;
+  const cranes = getTransactionCranes(txn);
   const fmt = (d) => d ? format(new Date(d), 'MMMM d, yyyy') : '—';
   const publicUrl = `${window.location.origin}/public/transactions/${txn._id}`;
 
@@ -97,13 +109,15 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
               </tr>
             </thead>
             <tbody>
-              <tr className="border-t border-gray-300">
-                <td className="px-2 py-1 font-mono font-bold text-xs">{txn.crane}</td>
-                <td className="px-2 py-1 text-xs">{txn.craneModel || '—'}</td>
-                <td className="px-2 py-1 text-xs">{txn.capacity || '—'}</td>
-                <td className="px-2 py-1 text-xs">{txn.weightKg || '—'}</td>
-                <td className="px-2 py-1 text-xs hidden md:table-cell">{fmt(txn.expectedReturnDate)}</td>
-              </tr>
+              {cranes.map((crane, index) => (
+                <tr key={crane.craneId || crane.equipmentNo || index} className="border-t border-gray-300">
+                  <td className="px-2 py-1 font-mono font-bold text-xs">{crane.equipmentNo}</td>
+                  <td className="px-2 py-1 text-xs">{crane.craneModel || '—'}</td>
+                  <td className="px-2 py-1 text-xs">{crane.capacity || '—'}</td>
+                  <td className="px-2 py-1 text-xs">{crane.weightKg || '—'}</td>
+                  <td className="px-2 py-1 text-xs hidden md:table-cell">{fmt(txn.expectedReturnDate)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -206,6 +220,7 @@ export default function PublicTransactionPage() {
   );
   
   if (!txn) return null;
+  const cranes = getTransactionCranes(txn);
 
   const fmt = (d) => d ? format(new Date(d), 'MMMM d, yyyy') : '—';
 
@@ -251,8 +266,8 @@ export default function PublicTransactionPage() {
               <p className="font-medium">{txn.companyName}</p>
             </div>
             <div>
-              <p className="text-gray-500">Crane</p>
-              <p className="font-mono font-bold text-blue-600">{txn.crane}</p>
+              <p className="text-gray-500">Cranes</p>
+              <p className="font-mono font-bold text-blue-600">{cranes.map(crane => crane.equipmentNo).join(', ')}</p>
             </div>
             <div>
               <p className="text-gray-500">Transaction Date</p>

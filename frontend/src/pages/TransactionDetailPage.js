@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import toast from 'react-hot-toast';
 import { ArrowLeftIcon, PrinterIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
@@ -15,9 +15,21 @@ const InfoRow = ({ label, value }) => (
   </div>
 );
 
+const getTransactionCranes = (txn) => (
+  txn.cranes?.length
+    ? txn.cranes
+    : [{
+        equipmentNo: txn.crane,
+        craneModel: txn.craneModel,
+        capacity: txn.capacity,
+        weightKg: txn.weightKg,
+      }]
+);
+
 const PrintView = React.forwardRef(({ txn }, ref) => {
   if (!txn) return null;
   const fmt = (d) => d ? format(new Date(d), 'MMMM d, yyyy') : '—';
+  const cranes = getTransactionCranes(txn);
   const fmtWithTime = (d) => d ? format(new Date(d), 'MMMM d, yyyy h:mm a') : '—';
   const publicUrl = `${window.location.origin}/public/transactions/${txn._id}`;
 
@@ -109,14 +121,16 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
             </tr>
           </thead>
           <tbody>
-            <tr className="border-t border-gray-300">
-              <td className="px-2 py-1 font-mono font-bold text-xs">{txn.crane}</td>
-              <td className="px-2 py-1 text-xs">{txn.craneModel || '—'}</td>
-              <td className="px-2 py-1 text-xs">{txn.capacity || '—'}</td>
-              <td className="px-2 py-1 text-xs">{txn.weightKg || '—'}</td>
-              <td className="px-2 py-1 text-xs">{fmt(txn.expectedReturnDate)}</td>
-              <td className="px-2 py-1 text-xs">{txn.actualReturnDate ? format(new Date(txn.actualReturnDate), 'MMM d, yyyy h:mm a') : '—'}</td>
-            </tr>
+            {cranes.map((crane, index) => (
+              <tr key={crane.craneId || crane.equipmentNo || index} className="border-t border-gray-300">
+                <td className="px-2 py-1 font-mono font-bold text-xs">{crane.equipmentNo}</td>
+                <td className="px-2 py-1 text-xs">{crane.craneModel || '—'}</td>
+                <td className="px-2 py-1 text-xs">{crane.capacity || '—'}</td>
+                <td className="px-2 py-1 text-xs">{crane.weightKg || '—'}</td>
+                <td className="px-2 py-1 text-xs">{fmt(txn.expectedReturnDate)}</td>
+                <td className="px-2 py-1 text-xs">{txn.actualReturnDate ? format(new Date(txn.actualReturnDate), 'MMM d, yyyy h:mm a') : '—'}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -217,6 +231,7 @@ export default function TransactionDetailPage() {
 
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
   if (!txn) return null;
+  const cranes = getTransactionCranes(txn);
 
   const fmt = (d) => d ? format(new Date(d), 'MMMM d, yyyy') : '—';
 
@@ -283,9 +298,15 @@ export default function TransactionDetailPage() {
       <div className="card no-print mb-6">
         <h3 className="font-semibold text-gray-800 dark:text-white mb-4">Equipment</h3>
         <div className="mb-4">
-          <p className="text-xs font-semibold text-gray-400 uppercase mb-1">Crane</p>
-          <Link to={`/cranes`} className="font-mono text-blue-700 dark:text-blue-400 font-bold hover:underline">{txn.crane}</Link>
-          <span className="text-gray-500 text-sm ml-2">{txn.craneModel}</span>
+          <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Cranes ({cranes.length})</p>
+          <div className="flex flex-wrap gap-2">
+            {cranes.map((crane, index) => (
+              <span key={crane.craneId || crane.equipmentNo || index} className="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-xs">
+                <span className="font-mono text-blue-700 dark:text-blue-400 font-bold">{crane.equipmentNo}</span>
+                <span className="text-gray-500 ml-1">{crane.craneModel}</span>
+              </span>
+            ))}
+          </div>
         </div>
         {txn.counterweights?.length > 0 && (
           <div className="mb-3">
