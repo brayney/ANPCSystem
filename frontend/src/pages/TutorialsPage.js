@@ -117,7 +117,7 @@ export default function TutorialsPage() {
       ))
     : tutorials;
 
-  return (
+  return ( 
     <div className="animate-fade-in">
       <PageHeader
         title="Instructions"
