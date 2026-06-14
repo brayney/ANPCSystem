@@ -100,7 +100,9 @@ export default function CreateTransactionPage() {
     setCraneSearch(crane.equipmentNo);
     setSelectedCW([]); setSelectedBS([]); setSelectedHooks([]);
     try {
-      const { data } = await api.get(crane._id ? `/cranes/${crane._id}` : `/cranes/by-equipment/${crane.equipmentNo}`);
+      const { data } = await api.get(
+        crane._id ? `/cranes/${crane._id}?includeShared=true` : `/cranes/by-equipment/${crane.equipmentNo}`
+      );
       const restrictedStatuses = ['Out of Yard', 'Under Maintenance', 'On Hire'];
       const filterAvailable = (items) => items.filter(item => !restrictedStatuses.includes(item.status));
       setAttachments({

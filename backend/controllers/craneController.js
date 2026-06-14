@@ -4,6 +4,16 @@ const BoomSection = require('../models/BoomSection');
 const Hook = require('../models/Hook');
 const AuditLog = require('../models/AuditLog');
 
+const sharedAttachmentQuery = (equipmentNo) => ({
+  isArchived: false,
+  $or: [
+    { assignedCrane: equipmentNo },
+    { assignedCrane: '' },
+    { assignedCrane: null },
+    { assignedCrane: { $exists: false } },
+  ],
+});
+
 // GET /api/cranes
 exports.getCranes = async (req, res, next) => {
   try {
@@ -36,6 +46,17 @@ exports.getCrane = async (req, res, next) => {
       .populate('boomSections')
       .populate('hooks');
     if (!crane) return res.status(404).json({ success: false, message: 'Crane not found' });
+
+    if (req.query.includeShared === 'true') {
+      const [counterweights, boomSections, hooks] = await Promise.all([
+        Counterweight.find(sharedAttachmentQuery(crane.equipmentNo)),
+        BoomSection.find(sharedAttachmentQuery(crane.equipmentNo)),
+        Hook.find(sharedAttachmentQuery(crane.equipmentNo)),
+      ]);
+
+      return res.json({ success: true, data: { ...crane.toJSON(), counterweights, boomSections, hooks } });
+    }
+
     res.json({ success: true, data: crane });
   } catch (error) { next(error); }
 };
@@ -47,9 +68,9 @@ exports.getCraneByEquipmentNo = async (req, res, next) => {
     if (!crane) return res.status(404).json({ success: false, message: 'Crane not found' });
 
     const [counterweights, boomSections, hooks] = await Promise.all([
-      Counterweight.find({ assignedCrane: crane.equipmentNo, isArchived: false }),
-      BoomSection.find({ assignedCrane: crane.equipmentNo, isArchived: false }),
-      Hook.find({ assignedCrane: crane.equipmentNo, isArchived: false }),
+      Counterweight.find(sharedAttachmentQuery(crane.equipmentNo)),
+      BoomSection.find(sharedAttachmentQuery(crane.equipmentNo)),
+      Hook.find(sharedAttachmentQuery(crane.equipmentNo)),
     ]);
 
     res.json({ success: true, data: { ...crane.toJSON(), counterweights, boomSections, hooks } });
@@ -89,9 +110,9 @@ exports.getCraneAttachments = async (req, res, next) => {
   try {
     const { equipmentNo } = req.params;
     const [counterweights, boomSections, hooks] = await Promise.all([
-      Counterweight.find({ assignedCrane: equipmentNo, isArchived: false }),
-      BoomSection.find({ assignedCrane: equipmentNo, isArchived: false }),
-      Hook.find({ assignedCrane: equipmentNo, isArchived: false }),
+      Counterweight.find(sharedAttachmentQuery(equipmentNo)),
+      BoomSection.find(sharedAttachmentQuery(equipmentNo)),
+      Hook.find(sharedAttachmentQuery(equipmentNo)),
     ]);
     res.json({ success: true, data: { counterweights, boomSections, hooks } });
   } catch (error) { next(error); }

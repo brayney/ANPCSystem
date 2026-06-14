@@ -89,7 +89,7 @@ const CounterweightForm = ({ initial, onSave, onClose, endpoint }) => {
           <input
             type="text"
             className="input-field"
-            placeholder="Search crane..."
+            placeholder="Leave blank for all cranes"
             value={form.assignedCrane || ''}
             onChange={e => {
               handleChange('assignedCrane', e.target.value);
@@ -99,6 +99,9 @@ const CounterweightForm = ({ initial, onSave, onClose, endpoint }) => {
             onFocus={() => setShowCraneDropdown(true)}
             autoComplete="off"
           />
+          <p style={{ margin: '5px 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>
+            Leave blank to make this counterweight available to all cranes.
+          </p>
           {showCraneDropdown && (filteredCranes.length > 0 || craneSearch) && (
             <div style={{
               position: 'absolute',
