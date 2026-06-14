@@ -138,7 +138,7 @@ export default function LoginPage() {
         <div className="animate-fade-in w-full" style={{ maxWidth: '360px' }}>
           <div style={{ background: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '14px', padding: '32px', boxShadow: '0 16px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)' }}>
             <div style={{ marginBottom: '24px' }}>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '20px', fontWeight: 800, color: '#f0f6fc', marginBottom: '4px' }}>Gabriel</h2>
+              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '20px', fontWeight: 800, color: '#f0f6fc', marginBottom: '4px' }}>Sign in</h2>
               <p style={{ fontSize: '13px', color: '#e6edf3' }}>Authorized personnel only</p>
             </div>
 
