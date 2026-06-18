@@ -59,7 +59,6 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
 
       if (data.success) {
         const result = data.data;
-        const totalParsed = result.totalRows || (result.success + result.failed);
         const message = result.totalRows 
           ? `Import complete: Total rows in file: ${result.totalRows}, Added: ${result.success}, Failed: ${result.failed}`
           : `Import complete: ${result.success} succeeded, ${result.failed} failed`;
