@@ -262,7 +262,7 @@ exports.updateProfile = async (req, res, next) => {
       }
     }
 
-    await user.save();
+    await user.save({ validateBeforeSave: false });
     res.json({ success: true, message: 'Profile updated successfully', user });
   } catch (error) { next(error); }
 };

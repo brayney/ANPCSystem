@@ -101,15 +101,18 @@ export default function SettingsPage() {
     
     setSavingProfile(true);
     try {
-      await api.put('/auth/update-profile', { 
+      console.log('Updating profile with:', { name: editProfileForm.name.trim(), email: editProfileForm.email.trim() });
+      const response = await api.put('/auth/update-profile', { 
         name: editProfileForm.name.trim(), 
         email: editProfileForm.email.trim() 
       });
+      console.log('Profile update response:', response);
       toast.success('Profile updated successfully');
       setEditProfileMode(false);
-      // Trigger a refresh of the user data - this will be reflected via the auth context
-      window.location.reload();
+      // Wait a moment before reloading to ensure changes are persisted
+      setTimeout(() => window.location.reload(), 500);
     } catch (err) { 
+      console.error('Profile update error:', err.response?.data || err.message);
       toast.error(err.response?.data?.message || 'Failed to update profile'); 
     }
     finally { setSavingProfile(false); }
