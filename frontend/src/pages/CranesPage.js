@@ -129,9 +129,6 @@ export default function CranesPage() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState([]);
-  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-  const [selectionMode, setSelectionMode] = useState(false);
 
   const fetchCranes = useCallback(async () => {
     setLoading(true);
