@@ -113,14 +113,21 @@ export default function SettingsPage() {
         name: editProfileForm.name.trim(), 
         email: editProfileForm.email.trim() 
       });
-      console.log('Profile update response:', response);
-      toast.success('Profile updated successfully');
-      setEditProfileMode(false);
-      // Wait a moment before reloading to ensure changes are persisted
-      setTimeout(() => window.location.reload(), 500);
+      console.log('Profile update response:', response.data);
+      
+      if (response.data?.success) {
+        toast.success('Profile updated successfully');
+        setEditProfileMode(false);
+        // Wait a moment before reloading to ensure changes are persisted
+        setTimeout(() => window.location.reload(), 500);
+      } else {
+        toast.error(response.data?.message || 'Failed to update profile');
+        console.error('Update failed:', response.data);
+      }
     } catch (err) { 
-      console.error('Profile update error:', err.response?.data || err.message);
-      toast.error(err.response?.data?.message || 'Failed to update profile'); 
+      console.error('Profile update error:', err);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to update profile';
+      toast.error(errorMsg);
     }
     finally { setSavingProfile(false); }
   };
