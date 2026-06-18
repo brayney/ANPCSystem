@@ -70,17 +70,27 @@ exports.importCounterweights = async (req, res, next) => {
     const rows = parseImportFile(req.file.path, req.file.originalname);
     fs.unlinkSync(req.file.path);
     
-    const results = { success: 0, failed: 0, errors: [] };
+    console.log(`📦 Total rows parsed: ${rows.length}`);
+    
+    const results = { success: 0, failed: 0, errors: [], totalRows: rows.length };
 
     for (let i = 0; i < rows.length; i++) {
       try {
         const row = rows[i];
-        if (!row.itemName) throw new Error('itemName is required');
+        
+        // Skip if no itemName (completely empty row)
+        if (!row.itemName || !String(row.itemName).trim()) {
+          throw new Error('itemName is required');
+        }
         
         // Delete any existing record (archived or active) with same itemName
         await Counterweight.deleteOne({ itemName: row.itemName });
         
-        await Counterweight.create({ ...row, location: row.location || 'RAG YARD', client: row.client || '-' });
+        await Counterweight.create({ 
+          ...row, 
+          location: row.location || 'RAG YARD', 
+          client: row.client || '-' 
+        });
         results.success++;
       } catch (err) {
         results.failed++;
@@ -88,6 +98,7 @@ exports.importCounterweights = async (req, res, next) => {
       }
     }
 
+    console.log(`✅ Import complete - Success: ${results.success}, Failed: ${results.failed}`);
     res.json({ success: true, data: results });
   } catch (error) { next(error); }
 };

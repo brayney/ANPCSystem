@@ -30,7 +30,6 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
         if (!search) delete params.search;
         const { data } = await api.get(endpoint, { params });
         setItems(data.data); setPages(data.pages); setTotal(data.total);
-        setSelectedIds([]);
       } catch { toast.error(`Failed to load ${title}`); }
       finally { setLoading(false); }
     }, [page, search]);

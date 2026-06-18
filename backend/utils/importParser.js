@@ -23,7 +23,14 @@ const KNOWN_HEADERS = new Set([
   'ropeDia',
 ]);
 
-const isEmptyRow = row => row.every(value => String(value || '').trim() === '');
+const isEmptyRow = (row) => {
+  if (!row || row.length === 0) return true;
+  // Check if all values are empty or whitespace
+  return row.every(value => {
+    const strValue = String(value || '').trim();
+    return strValue === '' || strValue === 'undefined' || strValue === 'null';
+  });
+};
 
 const findHeaderRowIndex = rows => rows.findIndex(row =>
   row.some(value => KNOWN_HEADERS.has(String(value || '').trim()))
@@ -33,6 +40,9 @@ const parseXLSX = (filePath) => {
   const workbook = XLSX.readFile(filePath, { cellDates: true });
   const worksheet = workbook.Sheets[workbook.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: false });
+  
+  console.log(`📊 XLSX: Total rows in file: ${rows.length}`);
+  
   const headerRowIndex = findHeaderRowIndex(rows);
 
   if (headerRowIndex === -1) {
@@ -40,7 +50,14 @@ const parseXLSX = (filePath) => {
   }
 
   const headers = rows[headerRowIndex].map(value => String(value || '').trim());
-  const dataRows = rows.slice(headerRowIndex + 1).filter(row => !isEmptyRow(row));
+  const dataRows = rows.slice(headerRowIndex + 1).filter((row, idx) => {
+    if (isEmptyRow(row)) {
+      return false;
+    }
+    return true;
+  });
+
+  console.log(`📦 XLSX: Total data rows after filtering: ${dataRows.length}`);
 
   return dataRows.map(row => {
     const record = {};

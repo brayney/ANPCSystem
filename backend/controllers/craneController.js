@@ -131,12 +131,14 @@ exports.importCranes = async (req, res, next) => {
     const rows = parseImportFile(req.file.path, req.file.originalname);
     fs.unlinkSync(req.file.path);
     
-    const results = { success: 0, failed: 0, errors: [] };
+    console.log(`📦 Total rows parsed: ${rows.length}`);
+    
+    const results = { success: 0, failed: 0, errors: [], totalRows: rows.length };
 
     for (let i = 0; i < rows.length; i++) {
       try {
         const row = rows[i];
-        if (!row.equipmentNo) throw new Error('equipmentNo is required');
+        if (!row.equipmentNo || !String(row.equipmentNo).trim()) throw new Error('equipmentNo is required');
         
         await Crane.create({ ...row, location: row.location || 'RAG YARD', client: row.client || '-' });
         results.success++;
@@ -146,7 +148,7 @@ exports.importCranes = async (req, res, next) => {
       }
     }
 
-    console.log('📊 Import results:', results);
+    console.log(`✅ Import complete - Success: ${results.success}, Failed: ${results.failed}, Total: ${rows.length}`);
     res.json({ success: true, data: results });
   } catch (error) { 
     console.error('💥 Import error:', error.message);
