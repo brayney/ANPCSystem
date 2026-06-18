@@ -291,12 +291,14 @@ export const EmptyState = ({ message = 'No records found', icon }) => (
 );
 
 // ── Confirm Dialog ────────────────────────────────────────────────────────────
-export const ConfirmDialog = ({ open, onClose, onConfirm, title, message, danger }) => (
+export const ConfirmDialog = ({ open, onClose, onConfirm, title, message, danger, loading }) => (
   <Modal open={open} onClose={onClose} title={title} size="sm">
     <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '20px', lineHeight: 1.6 }}>{message}</p>
     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-      <button onClick={onClose} className="btn-secondary">Cancel</button>
-      <button onClick={onConfirm} className={danger ? 'btn-danger' : 'btn-primary'}>Confirm</button>
+      <button onClick={onClose} className="btn-secondary" disabled={loading}>Cancel</button>
+      <button onClick={onConfirm} disabled={loading} className={danger ? 'btn-danger' : 'btn-primary'} style={{ opacity: loading ? 0.6 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}>
+        {loading ? 'Deleting...' : 'Confirm'}
+      </button>
     </div>
   </Modal>
 );

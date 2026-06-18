@@ -53,6 +53,7 @@ export default function CraneDetailPage() {
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteType, setDeleteType] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     api.get(`/cranes/${id}`)
@@ -67,8 +68,9 @@ export default function CraneDetailPage() {
   };
 
   const confirmDelete = async () => {
-    if (!deleteTarget || !deleteType) return;
+    if (!deleteTarget || !deleteType || deleting) return;
     
+    setDeleting(true);
     try {
       const endpoints = {
         counterweight: '/counterweights',
@@ -76,16 +78,27 @@ export default function CraneDetailPage() {
         hook: '/hooks'
       };
       
-      await api.delete(`${endpoints[deleteType]}/${deleteTarget.itemId}`);
+      const url = `${endpoints[deleteType]}/${deleteTarget.itemId}`;
+      console.log(`🗑️ Deleting ${deleteType} at ${url}`);
+      
+      const deleteResponse = await api.delete(url);
+      console.log('Delete response:', deleteResponse);
+      
       toast.success(`${deleteTarget.itemName} deleted permanently`);
       
       // Refresh crane data
+      console.log(`🔄 Refreshing crane data for ID: ${id}`);
       const { data } = await api.get(`/cranes/${id}`);
+      console.log('Updated crane data:', data.data);
+      
       setCrane(data.data);
       setDeleteTarget(null);
       setDeleteType(null);
     } catch (err) {
+      console.error('Delete error:', err);
       toast.error(err.response?.data?.message || 'Failed to delete');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -197,14 +210,17 @@ export default function CraneDetailPage() {
       />
 
       {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        open={deleteTarget !== null}
-        onClose={() => { setDeleteTarget(null); setDeleteType(null); }}
-        onConfirm={confirmDelete}
-        title="Delete Attachment"
-        message={`Are you sure you want to permanently delete "${deleteTarget?.itemName}"? This action cannot be undone.`}
-        danger
-      />
+      {deleteTarget && (
+        <ConfirmDialog
+          open={deleteTarget !== null}
+          onClose={() => { if (!deleting) { setDeleteTarget(null); setDeleteType(null); }}}
+          onConfirm={confirmDelete}
+          title="Delete Attachment"
+          message={`Are you sure you want to permanently delete "${deleteTarget?.itemName}"? This action cannot be undone.`}
+          danger
+          loading={deleting}
+        />
+      )}
     </div>
   );
 }

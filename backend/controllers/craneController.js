@@ -43,9 +43,9 @@ exports.getCranes = async (req, res, next) => {
 exports.getCrane = async (req, res, next) => {
   try {
     const crane = await Crane.findById(req.params.id)
-      .populate('counterweights')
-      .populate('boomSections')
-      .populate('hooks');
+      .populate({ path: 'counterweights', match: { isArchived: false } })
+      .populate({ path: 'boomSections', match: { isArchived: false } })
+      .populate({ path: 'hooks', match: { isArchived: false } });
     if (!crane) return res.status(404).json({ success: false, message: 'Crane not found' });
 
     if (req.query.includeShared === 'true') {
