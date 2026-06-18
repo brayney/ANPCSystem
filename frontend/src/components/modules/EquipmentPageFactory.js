@@ -181,6 +181,9 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
 
         <ConfirmDialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} danger
           title="Archive Item" message="Are you sure you want to archive this item? This is difficult to undo." />
+
+        <ConfirmDialog open={bulkDeleteOpen} onClose={() => setBulkDeleteOpen(false)} onConfirm={handleBulkDelete} danger
+          title="Archive Selected Items" message={`Are you sure you want to archive ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}? This is difficult to undo.`} />
       </div>
     );
   };
