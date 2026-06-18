@@ -144,7 +144,9 @@ exports.importCranes = async (req, res, next) => {
         results.success++;
       } catch (err) {
         results.failed++;
-        results.errors.push(`Row ${i + 2}: ${err.message}`);
+        if (results.errors.length < 10) {
+          results.errors.push(`Row ${i + 2}: ${err.message}`);
+        }
       }
     }
 

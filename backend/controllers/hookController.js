@@ -80,14 +80,13 @@ exports.importHooks = async (req, res, next) => {
         const row = rows[i];
         if (!row.itemName || !String(row.itemName).trim()) throw new Error('itemName is required');
         
-        // Delete any existing record (archived or active) with same itemName
-        await Hook.deleteOne({ itemName: row.itemName });
-        
         await Hook.create({ ...row, location: row.location || 'RAG YARD', client: row.client || '-' });
         results.success++;
       } catch (err) {
         results.failed++;
-        results.errors.push(`Row ${i + 2}: ${err.message}`);
+        if (results.errors.length < 10) {
+          results.errors.push(`Row ${i + 2}: ${err.message}`);
+        }
       }
     }
 

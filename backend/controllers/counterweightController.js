@@ -78,13 +78,10 @@ exports.importCounterweights = async (req, res, next) => {
       try {
         const row = rows[i];
         
-        // Skip if no itemName (completely empty row)
+        // Check if itemName is required
         if (!row.itemName || !String(row.itemName).trim()) {
           throw new Error('itemName is required');
         }
-        
-        // Delete any existing record (archived or active) with same itemName
-        await Counterweight.deleteOne({ itemName: row.itemName });
         
         await Counterweight.create({ 
           ...row, 
@@ -94,7 +91,9 @@ exports.importCounterweights = async (req, res, next) => {
         results.success++;
       } catch (err) {
         results.failed++;
-        results.errors.push(`Row ${i + 2}: ${err.message}`);
+        if (results.errors.length < 10) {
+          results.errors.push(`Row ${i + 2}: ${err.message}`);
+        }
       }
     }
 

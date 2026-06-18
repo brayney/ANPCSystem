@@ -45,14 +45,15 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
         
         xhr.upload.addEventListener('progress', (e) => {
           if (e.lengthComputable) {
-            const percentComplete = Math.round((e.loaded / e.total) * 100);
-            setProgress(percentComplete);
+            // Cap upload progress at 95% to leave room for server processing
+            const percentComplete = Math.round((e.loaded / e.total) * 95);
+            setProgress(Math.max(10, percentComplete)); // Start at least at 10%
           }
         });
         
         xhr.addEventListener('load', () => {
           if (xhr.status >= 200 && xhr.status < 300) {
-            setProgress(100);
+            setProgress(99); // Keep at 99% during server processing
             setIsProcessing(true);
             try {
               resolve(JSON.parse(xhr.responseText));
@@ -74,6 +75,7 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
 
       if (data.success) {
         const result = data.data;
+        setProgress(100); // Set to 100% on completion
         const message = result.totalRows 
           ? `Import complete: Total rows in file: ${result.totalRows}, Added: ${result.success}, Failed: ${result.failed}`
           : `Import complete: ${result.success} succeeded, ${result.failed} failed`;
@@ -109,10 +111,12 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
     } catch (err) {
       toast.error(err.message || 'Import failed');
     } finally {
-      setImporting(false);
-      setIsProcessing(false);
-      setProgress(0);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      setTimeout(() => {
+        setImporting(false);
+        setIsProcessing(false);
+        setProgress(0);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }, 1000); // Wait 1 second to show 100% completion
     }
   };
 
