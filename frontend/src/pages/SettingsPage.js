@@ -30,6 +30,9 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [userForm, setUserForm] = useState({ name: '', email: '', password: '' });
+  const [editProfileMode, setEditProfileMode] = useState(false);
+  const [editProfileForm, setEditProfileForm] = useState({ name: user?.name || '', email: user?.email || '' });
+  const [savingProfile, setSavingProfile] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [deletingAccountId, setDeletingAccountId] = useState(null);
@@ -88,6 +91,33 @@ export default function SettingsPage() {
       setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to update password'); }
     finally { setSaving(false); }
+  };
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    if (!editProfileForm.name.trim()) { toast.error('Name is required'); return; }
+    if (!editProfileForm.email.trim()) { toast.error('Email is required'); return; }
+    if (editProfileForm.name.trim().length < 2) { toast.error('Name must be at least 2 characters'); return; }
+    
+    setSavingProfile(true);
+    try {
+      const { data } = await api.put('/auth/update-profile', { 
+        name: editProfileForm.name.trim(), 
+        email: editProfileForm.email.trim() 
+      });
+      toast.success('Profile updated successfully');
+      setEditProfileMode(false);
+      // Trigger a refresh of the user data - this will be reflected via the auth context
+      window.location.reload();
+    } catch (err) { 
+      toast.error(err.response?.data?.message || 'Failed to update profile'); 
+    }
+    finally { setSavingProfile(false); }
+  };
+
+  const handleCancelProfileEdit = () => {
+    setEditProfileMode(false);
+    setEditProfileForm({ name: user?.name || '', email: user?.email || '' });
   };
 
   const handleCreateUser = async (e) => {
@@ -244,24 +274,80 @@ export default function SettingsPage() {
         <div style={{ flex: 1, minWidth: 0 }}>
           {activeTab === 'profile' && (
             <div className="card animate-fade-in">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '22px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--accent-subtle)', color: 'var(--accent-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 800, flexShrink: 0 }}>
-                  {user?.name?.[0]?.toUpperCase() || '?'}
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>{user?.name || 'Profile Information'}</h2>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{user?.email || 'Review your signed-in account details'}</p>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {profileRows.map(([label, value], index) => (
-                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', padding: '12px 0', borderBottom: index === profileRows.length - 1 ? 'none' : '1px solid var(--border-muted)' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>{label}</span>
-                    <span style={{ fontSize: '13px', fontWeight: 500, color: label === 'Account Status' && value === 'Active' ? 'var(--success)' : 'var(--text-primary)', textAlign: 'right', maxWidth: '60%', wordBreak: 'break-word' }}>{value}</span>
+              {editProfileMode ? (
+                <>
+                  <div style={{ marginBottom: '20px' }}>
+                    <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Edit Profile</h2>
+                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Update your full name and email address</p>
                   </div>
-                ))}
-              </div>
+                  <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div>
+                      <label className="label">Full Name</label>
+                      <input 
+                        type="text" 
+                        required 
+                        className="input-field" 
+                        value={editProfileForm.name}
+                        onChange={e => setEditProfileForm({ ...editProfileForm, name: e.target.value })} 
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Email Address</label>
+                      <input 
+                        type="email" 
+                        required 
+                        className="input-field" 
+                        value={editProfileForm.email}
+                        onChange={e => setEditProfileForm({ ...editProfileForm, email: e.target.value })} 
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button type="submit" disabled={savingProfile} className="btn-primary" style={{ flex: 1 }}>
+                        {savingProfile ? <><Spinner size="sm" /> Saving...</> : 'Save Changes'}
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={handleCancelProfileEdit}
+                        disabled={savingProfile}
+                        style={{ flex: 1, padding: '10px 14px', borderRadius: '9px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-secondary)', cursor: savingProfile ? 'not-allowed' : 'pointer', opacity: savingProfile ? 0.55 : 1, fontWeight: 500, fontSize: '13px' }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '22px' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--accent-subtle)', color: 'var(--accent-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 800, flexShrink: 0 }}>
+                      {user?.name?.[0]?.toUpperCase() || '?'}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>{user?.name || 'Profile Information'}</h2>
+                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{user?.email || 'Review your signed-in account details'}</p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    {profileRows.map(([label, value], index) => (
+                      <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', padding: '12px 0', borderBottom: index === profileRows.length - 1 ? 'none' : '1px solid var(--border-muted)' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>{label}</span>
+                        <span style={{ fontSize: '13px', fontWeight: 500, color: label === 'Account Status' && value === 'Active' ? 'var(--success)' : 'var(--text-primary)', textAlign: 'right', maxWidth: '60%', wordBreak: 'break-word' }}>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ marginTop: '20px' }}>
+                    <button 
+                      type="button"
+                      onClick={() => setEditProfileMode(true)}
+                      style={{ padding: '10px 14px', borderRadius: '9px', border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontWeight: 500, fontSize: '13px' }}
+                    >
+                      Edit Profile
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 

@@ -229,3 +229,40 @@ exports.toggleUserStatus = async (req, res, next) => {
     });
   } catch (error) { next(error); }
 };
+
+// PUT /api/auth/update-profile (update own profile)
+exports.updateProfile = async (req, res, next) => {
+  try {
+    const { name, email } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Validate inputs
+    if (name) {
+      name = name.trim();
+      if (name.length < 2) {
+        return res.status(400).json({ success: false, message: 'Name must be at least 2 characters' });
+      }
+      user.name = name;
+    }
+
+    if (email) {
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      // Check if email is already in use by another user
+      if (normalizedEmail !== user.email.toLowerCase()) {
+        const existingUser = await User.findOne({ email: normalizedEmail });
+        if (existingUser) {
+          return res.status(400).json({ success: false, message: 'Email already in use' });
+        }
+        user.email = normalizedEmail;
+      }
+    }
+
+    await user.save();
+    res.json({ success: true, message: 'Profile updated successfully', user });
+  } catch (error) { next(error); }
+};
