@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
-import { PageHeader, StatusBadge, Spinner, Pagination, EmptyState, Modal, ConfirmDialog, ActionMenu } from '../common';
+import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PageHeader, StatusBadge, Spinner, Pagination, EmptyState, Modal, ConfirmDialog } from '../common';
 import CSVImport from '../common/CSVImport';
 import api from '../../utils/api';
 import { useAuth } from '../../hooks/useAuth';
@@ -39,7 +39,7 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
     const handleDelete = async () => {
       try {
         await api.delete(`${endpoint}/${deleteTarget._id}`);
-        toast.success('Item archived');
+        toast.success('Item deleted');
         setDeleteTarget(null); fetchItems();
       } catch { toast.error('Delete failed'); }
     };
@@ -47,11 +47,11 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
     const handleBulkDelete = async () => {
       try {
         await Promise.all(selectedIds.map(id => api.delete(`${endpoint}/${id}`)));
-        toast.success(`${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'} archived`);
+        toast.success(`${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'} deleted`);
         setBulkDeleteOpen(false);
         setSelectedIds([]);
         fetchItems();
-      } catch { toast.error('Bulk archive failed'); }
+      } catch { toast.error('Bulk delete failed'); }
     };
 
     const visibleIds = items.map(item => item._id);
@@ -90,7 +90,7 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
             </div>
             {canEditOrDelete && selectedIds.length > 0 && (
               <button type="button" onClick={() => setBulkDeleteOpen(true)} className="btn-danger" style={{ fontSize: '12px' }}>
-                <TrashIcon style={{ width: '13px', height: '13px' }} /> Archive Selected ({selectedIds.length})
+                <TrashIcon style={{ width: '13px', height: '13px' }} /> Delete Selected ({selectedIds.length})
               </button>
             )}
           </div>
@@ -140,24 +140,16 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
                         ))}
                         <td className="table-cell">
                           {canEditOrDelete ? (
-                            <ActionMenu actions={[
-                              {
-                                label: 'View',
-                                icon: EyeIcon,
-                                onClick: () => setModal(item)
-                              },
-                              {
-                                label: 'Edit',
-                                icon: PencilIcon,
-                                onClick: () => setModal(item)
-                              },
-                              {
-                                label: 'Archive',
-                                icon: TrashIcon,
-                                danger: true,
-                                onClick: () => setDeleteTarget(item)
-                              }
-                            ]} />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <button onClick={() => setModal(item)} title="Edit"
+                                style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                                <PencilIcon style={{ width: '13px', height: '13px' }} />
+                              </button>
+                              <button onClick={() => setDeleteTarget(item)} title="Delete"
+                                style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--danger-bg)', background: 'var(--danger-bg)', display: 'flex', color: 'var(--danger)', cursor: 'pointer' }}>
+                                <TrashIcon style={{ width: '13px', height: '13px' }} />
+                              </button>
+                            </div>
                           ) : <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>—</span>}
                         </td>
                       </tr>
@@ -180,10 +172,10 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
         </Modal>
 
         <ConfirmDialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} danger
-          title="Archive Item" message="Are you sure you want to archive this item? This is difficult to undo." />
+          title="Delete Item" message="Are you sure you want to delete this item? This is difficult to undo." />
 
         <ConfirmDialog open={bulkDeleteOpen} onClose={() => setBulkDeleteOpen(false)} onConfirm={handleBulkDelete} danger
-          title="Archive Selected Items" message={`Are you sure you want to archive ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}? This is difficult to undo.`} />
+          title="Delete Selected Items" message={`Are you sure you want to delete ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}? This is difficult to undo.`} />
       </div>
     );
   };
