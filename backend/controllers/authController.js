@@ -273,8 +273,9 @@ exports.updateProfile = async (req, res, next) => {
     console.log('💾 Saving user...');
     await user.save({ validateBeforeSave: false });
     console.log('✅ User saved successfully');
+    console.log('📦 Returning user:', { name: user.name, email: user.email, _id: user._id });
     
-    res.json({ success: true, message: 'Profile updated successfully', user });
+    res.json({ success: true, message: 'Profile updated successfully', user: user.toJSON() });
   } catch (error) { 
     console.error('❌ updateProfile error:', error.message);
     next(error); 

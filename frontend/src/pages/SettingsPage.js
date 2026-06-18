@@ -103,6 +103,7 @@ export default function SettingsPage() {
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     console.log('🔵 Form submitted, editProfileForm:', editProfileForm);
+    console.log('🔵 Current user:', user);
     
     if (!editProfileForm.name?.trim()) { 
       console.log('❌ Name is empty');
@@ -126,22 +127,36 @@ export default function SettingsPage() {
     
     try {
       const response = await api.put('/auth/update-profile', payload);
-      console.log('📥 Response:', response);
+      console.log('📥 Full response:', response);
+      console.log('📥 Response data:', response.data);
+      console.log('📥 Response user:', response.data?.user);
       
       if (response.data?.success) {
         console.log('✅ Success response received');
+        
+        // Check if updated user data is in response
+        if (response.data?.user) {
+          console.log('📝 Updated user from response:', response.data.user);
+          // Store updated user in localStorage for immediate access
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+          console.log('💾 Stored updated user in localStorage');
+        }
+        
         toast.success('Profile updated successfully');
         setEditProfileMode(false);
+        
+        // Reload after a short delay
         setTimeout(() => {
           console.log('🔄 Reloading page...');
           window.location.reload();
-        }, 500);
+        }, 1000);
       } else {
         console.log('❌ Response not successful:', response.data);
         toast.error(response.data?.message || 'Failed to update profile');
       }
     } catch (err) { 
       console.error('❌ Error caught:', err);
+      console.error('Response status:', err.response?.status);
       console.error('Response data:', err.response?.data);
       const errorMsg = err.response?.data?.message || err.message || 'Failed to update profile';
       toast.error(errorMsg);
