@@ -158,6 +158,7 @@ export default function CranesPage() {
       toast.success(`${selectedIds.length} crane${selectedIds.length === 1 ? '' : 's'} deleted`);
       setBulkDeleteOpen(false);
       setSelectedIds([]);
+      setSelectionMode(false);
       fetchCranes();
     } catch { toast.error('Bulk delete failed'); }
   };

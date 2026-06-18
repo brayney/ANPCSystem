@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { ArrowUpTrayIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import api from '../../utils/api';
@@ -8,19 +8,6 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
   const [progress, setProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef(null);
-
-  // Add CSS animation for progress bar pulsing
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.6; }
-      }
-    `;
-    document.head.appendChild(style);
-    return () => style.remove();
-  }, []);
 
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
@@ -32,7 +19,20 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
     }
 
     setImporting(true);
-    setProgress(0);
+    setProgress(1); // Start at 1%
+    
+    // Auto-increment progress to simulate activity
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev < 90) {
+          // Increase more slowly as we go higher
+          const increment = Math.random() * (5 - 1) + 1;
+          return Math.min(prev + increment, 90);
+        }
+        return prev;
+      });
+    }, 300);
+    
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -45,15 +45,16 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
         
         xhr.upload.addEventListener('progress', (e) => {
           if (e.lengthComputable) {
-            // Cap upload progress at 95% to leave room for server processing
-            const percentComplete = Math.round((e.loaded / e.total) * 95);
-            setProgress(Math.max(10, percentComplete)); // Start at least at 10%
+            // Update progress based on upload
+            const percentComplete = Math.round((e.loaded / e.total) * 90);
+            setProgress(prev => Math.max(prev, percentComplete));
           }
         });
         
         xhr.addEventListener('load', () => {
           if (xhr.status >= 200 && xhr.status < 300) {
-            setProgress(99); // Keep at 99% during server processing
+            clearInterval(progressInterval);
+            setProgress(99); // Move to 99% during server processing
             setIsProcessing(true);
             try {
               resolve(JSON.parse(xhr.responseText));
@@ -109,8 +110,10 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
         throw new Error(data.message || 'Import failed');
       }
     } catch (err) {
+      clearInterval(progressInterval);
       toast.error(err.message || 'Import failed');
     } finally {
+      clearInterval(progressInterval);
       setTimeout(() => {
         setImporting(false);
         setIsProcessing(false);
@@ -139,51 +142,6 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
           <ArrowUpTrayIcon style={{ width: '14px', height: '14px' }} />
           {importing ? (isProcessing ? 'Processing...' : `Uploading... ${progress}%`) : 'Import File'}
         </button>
-        
-        {importing && progress > 0 && (
-          <div style={{
-            flex: 1,
-            height: '24px',
-            backgroundColor: 'var(--surface-2)',
-            borderRadius: '4px',
-            overflow: 'hidden',
-            border: '1px solid var(--border)',
-            display: 'flex',
-            alignItems: 'center'
-          }}>
-            <div style={{
-              height: '100%',
-              width: `${progress}%`,
-              backgroundColor: 'var(--accent)',
-              transition: 'width 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              animation: isProcessing ? 'pulse 1.5s ease-in-out infinite' : 'none'
-            }}>
-              {progress > 10 && (
-                <span style={{
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  color: 'white',
-                  textShadow: '0 1px 2px rgba(0,0,0,0.2)'
-                }}>
-                  {progress}%
-                </span>
-              )}
-            </div>
-            {progress <= 10 && (
-              <span style={{
-                fontSize: '11px',
-                fontWeight: '600',
-                color: 'var(--text-secondary)',
-                marginLeft: '8px'
-              }}>
-                {progress}%
-              </span>
-            )}
-          </div>
-        )}
       </div>
       
       <a

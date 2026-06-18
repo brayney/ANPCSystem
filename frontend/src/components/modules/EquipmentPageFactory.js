@@ -50,6 +50,7 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
         toast.success(`${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'} deleted`);
         setBulkDeleteOpen(false);
         setSelectedIds([]);
+        setSelectionMode(false);
         fetchItems();
       } catch { toast.error('Bulk delete failed'); }
     };
