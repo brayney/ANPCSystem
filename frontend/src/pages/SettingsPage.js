@@ -102,34 +102,54 @@ export default function SettingsPage() {
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    if (!editProfileForm.name.trim()) { toast.error('Name is required'); return; }
-    if (!editProfileForm.email.trim()) { toast.error('Email is required'); return; }
-    if (editProfileForm.name.trim().length < 2) { toast.error('Name must be at least 2 characters'); return; }
+    console.log('🔵 Form submitted, editProfileForm:', editProfileForm);
+    
+    if (!editProfileForm.name?.trim()) { 
+      console.log('❌ Name is empty');
+      toast.error('Name is required'); 
+      return; 
+    }
+    if (!editProfileForm.email?.trim()) { 
+      console.log('❌ Email is empty');
+      toast.error('Email is required'); 
+      return; 
+    }
+    if (editProfileForm.name.trim().length < 2) { 
+      console.log('❌ Name too short');
+      toast.error('Name must be at least 2 characters'); 
+      return; 
+    }
     
     setSavingProfile(true);
+    const payload = { name: editProfileForm.name.trim(), email: editProfileForm.email.trim() };
+    console.log('📤 Sending payload:', payload);
+    
     try {
-      console.log('Updating profile with:', { name: editProfileForm.name.trim(), email: editProfileForm.email.trim() });
-      const response = await api.put('/auth/update-profile', { 
-        name: editProfileForm.name.trim(), 
-        email: editProfileForm.email.trim() 
-      });
-      console.log('Profile update response:', response.data);
+      const response = await api.put('/auth/update-profile', payload);
+      console.log('📥 Response:', response);
       
       if (response.data?.success) {
+        console.log('✅ Success response received');
         toast.success('Profile updated successfully');
         setEditProfileMode(false);
-        // Wait a moment before reloading to ensure changes are persisted
-        setTimeout(() => window.location.reload(), 500);
+        setTimeout(() => {
+          console.log('🔄 Reloading page...');
+          window.location.reload();
+        }, 500);
       } else {
+        console.log('❌ Response not successful:', response.data);
         toast.error(response.data?.message || 'Failed to update profile');
-        console.error('Update failed:', response.data);
       }
     } catch (err) { 
-      console.error('Profile update error:', err);
+      console.error('❌ Error caught:', err);
+      console.error('Response data:', err.response?.data);
       const errorMsg = err.response?.data?.message || err.message || 'Failed to update profile';
       toast.error(errorMsg);
     }
-    finally { setSavingProfile(false); }
+    finally { 
+      console.log('⏹️ Saving complete');
+      setSavingProfile(false); 
+    }
   };
 
   const handleCancelProfileEdit = () => {
