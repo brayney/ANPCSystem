@@ -242,11 +242,11 @@ exports.updateProfile = async (req, res, next) => {
 
     // Validate inputs
     if (name) {
-      name = name.trim();
-      if (name.length < 2) {
+      const trimmedName = name.trim();
+      if (trimmedName.length < 2) {
         return res.status(400).json({ success: false, message: 'Name must be at least 2 characters' });
       }
-      user.name = name;
+      user.name = trimmedName;
     }
 
     if (email) {
