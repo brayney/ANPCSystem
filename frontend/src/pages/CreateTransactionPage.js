@@ -22,25 +22,50 @@ const renderDetailRow = (detail) => {
   return <p className="text-xs text-gray-500 truncate mt-1">{detail}</p>;
 };
 
-const CheckboxList = ({ items, selected, onToggle, labelFn, subFn }) => (
-  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-    {items.length === 0 ? (
-      <p className="text-sm text-gray-400 italic py-2">No items available for this crane</p>
-    ) : items.map(item => (
-      <label key={item._id}
-        className="flex items-start gap-3 p-2.5 border dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-        <input type="checkbox" className="mt-0.5 accent-blue-600"
-          checked={selected.includes(item._id)}
-          onChange={() => onToggle(item._id)} />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{labelFn(item)}</p>
-          {subFn && renderDetailRow(subFn(item))}
+const CheckboxList = ({ items, selected, onToggle, labelFn, subFn }) => {
+  const allSelected = items.length > 0 && items.every(item => selected.includes(item._id));
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      items.forEach(item => {
+        if (selected.includes(item._id)) onToggle(item._id);
+      });
+    } else {
+      items.forEach(item => {
+        if (!selected.includes(item._id)) onToggle(item._id);
+      });
+    }
+  };
+
+  return (
+    <div>
+      {items.length > 0 && (
+        <div className="flex gap-2 mb-2">
+          <button type="button" onClick={toggleSelectAll} 
+            className="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            {allSelected ? 'Deselect All' : 'Select All'}
+          </button>
         </div>
-        <StatusBadge status={item.status || item.condition} />
-      </label>
-    ))}
-  </div>
-);
+      )}
+      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+        {items.length === 0 ? (
+          <p className="text-sm text-gray-400 italic py-2">No items available for this crane</p>
+        ) : items.map(item => (
+          <label key={item._id}
+            className="flex items-start gap-3 p-2.5 border dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <input type="checkbox" className="mt-0.5 accent-blue-600"
+              checked={selected.includes(item._id)}
+              onChange={() => onToggle(item._id)} />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-800 dark:text-gray-200 break-words">{labelFn(item)}</p>
+              {subFn && renderDetailRow(subFn(item))}
+            </div>
+            <StatusBadge status={item.status || item.condition} />
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const FormField = ({ label, name, type = 'text', required, span, value, onChange }) => (
   <div className={span ? 'sm:col-span-2' : ''}>
