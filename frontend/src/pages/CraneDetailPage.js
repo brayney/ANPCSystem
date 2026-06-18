@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { StatusBadge, Spinner, EmptyState } from '../components/common';
+import { ArrowLeftIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { StatusBadge, Spinner, EmptyState, ConfirmDialog } from '../components/common';
 import api from '../utils/api';
 import { format } from 'date-fns';
 
-const AttachmentTable = ({ title, items, columns, emptyIcon }) => (
+const AttachmentTable = ({ title, items, columns, emptyIcon, onDelete, endpoint }) => (
   <div className="card mb-4">
     <h3 className="font-semibold text-gray-800 dark:text-white mb-4">{title} ({items.length})</h3>
     {items.length === 0 ? (
@@ -17,6 +17,7 @@ const AttachmentTable = ({ title, items, columns, emptyIcon }) => (
           <thead>
             <tr className="border-b dark:border-gray-700">
               {columns.map(c => <th key={c.key} className="table-header">{c.label}</th>)}
+              <th className="table-header text-center">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -27,6 +28,15 @@ const AttachmentTable = ({ title, items, columns, emptyIcon }) => (
                     {c.badge ? <StatusBadge status={item[c.key]} /> : (item[c.key] || '—')}
                   </td>
                 ))}
+                <td className="table-cell text-center">
+                  <button
+                    onClick={() => onDelete(item._id, item.itemName || item.boomCode || 'Item')}
+                    title="Delete"
+                    className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                  >
+                    <TrashIcon className="w-3 h-3" /> Delete
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -41,6 +51,8 @@ export default function CraneDetailPage() {
   const navigate = useNavigate();
   const [crane, setCrane] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteType, setDeleteType] = useState(null);
 
   useEffect(() => {
     api.get(`/cranes/${id}`)
@@ -48,6 +60,34 @@ export default function CraneDetailPage() {
       .catch(() => { toast.error('Crane not found'); navigate('/cranes'); })
       .finally(() => setLoading(false));
   }, [id, navigate]);
+
+  const handleDeleteAttachment = async (itemId, itemName, type) => {
+    setDeleteTarget({ itemId, itemName });
+    setDeleteType(type);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget || !deleteType) return;
+    
+    try {
+      const endpoints = {
+        counterweight: '/counterweights',
+        boom: '/boom-sections',
+        hook: '/hooks'
+      };
+      
+      await api.delete(`${endpoints[deleteType]}/${deleteTarget.itemId}`);
+      toast.success(`${deleteTarget.itemName} deleted permanently`);
+      
+      // Refresh crane data
+      const { data } = await api.get(`/cranes/${id}`);
+      setCrane(data.data);
+      setDeleteTarget(null);
+      setDeleteType(null);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete');
+    }
+  };
 
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
   if (!crane) return null;
@@ -114,6 +154,7 @@ export default function CraneDetailPage() {
       {/* Counterweights */}
       <AttachmentTable title="Counterweights" emptyIcon="⚖️"
         items={crane.counterweights || []}
+        onDelete={(id, name) => handleDeleteAttachment(id, name, 'counterweight')}
         columns={[
           { key: 'itemName', label: 'Item Name' },
           { key: 'serialNo', label: 'Serial No.' },
@@ -128,6 +169,7 @@ export default function CraneDetailPage() {
       {/* Boom Sections */}
       <AttachmentTable title="Boom Sections" emptyIcon="📏"
         items={crane.boomSections || []}
+        onDelete={(id, name) => handleDeleteAttachment(id, name, 'boom')}
         columns={[
           { key: 'itemName', label: 'Item Name' },
           { key: 'boomCode', label: 'Boom Code' },
@@ -142,6 +184,7 @@ export default function CraneDetailPage() {
       {/* Hooks */}
       <AttachmentTable title="Hooks" emptyIcon="🪝"
         items={crane.hooks || []}
+        onDelete={(id, name) => handleDeleteAttachment(id, name, 'hook')}
         columns={[
           { key: 'itemName', label: 'Item Name' },
           { key: 'hookSerialNo', label: 'Serial No.' },
@@ -151,6 +194,16 @@ export default function CraneDetailPage() {
           { key: 'location', label: 'Location' },
           { key: 'status', label: 'Status', badge: true },
         ]}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onClose={() => { setDeleteTarget(null); setDeleteType(null); }}
+        onConfirm={confirmDelete}
+        title="Delete Attachment"
+        message={`Are you sure you want to permanently delete "${deleteTarget?.itemName}"? This action cannot be undone.`}
+        danger
       />
     </div>
   );
