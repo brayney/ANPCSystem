@@ -49,15 +49,23 @@ const parseXLSX = (filePath) => {
     throw new Error('Template header row was not found');
   }
 
+  console.log(`📊 XLSX: Header found at row ${headerRowIndex + 1}`);
+
   const headers = rows[headerRowIndex].map(value => String(value || '').trim());
-  const dataRows = rows.slice(headerRowIndex + 1).filter((row, idx) => {
+  const allDataRows = rows.slice(headerRowIndex + 1);
+  console.log(`📊 XLSX: Total rows after header: ${allDataRows.length}`);
+
+  let emptyCount = 0;
+  const dataRows = allDataRows.filter((row, idx) => {
     if (isEmptyRow(row)) {
+      emptyCount++;
       return false;
     }
     return true;
   });
 
-  console.log(`📦 XLSX: Total data rows after filtering: ${dataRows.length}`);
+  console.log(`📊 XLSX: Filtered out ${emptyCount} empty rows`);
+  console.log(`📦 XLSX: Total data rows for import: ${dataRows.length}`);
 
   return dataRows.map(row => {
     const record = {};

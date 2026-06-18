@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { ArrowUpTrayIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import api from '../../utils/api';
@@ -6,7 +6,21 @@ import api from '../../utils/api';
 const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Add CSS animation for progress bar pulsing
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => style.remove();
+  }, []);
 
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
@@ -39,6 +53,7 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
         xhr.addEventListener('load', () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             setProgress(100);
+            setIsProcessing(true);
             try {
               resolve(JSON.parse(xhr.responseText));
             } catch (err) {
@@ -63,11 +78,30 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
           ? `Import complete: Total rows in file: ${result.totalRows}, Added: ${result.success}, Failed: ${result.failed}`
           : `Import complete: ${result.success} succeeded, ${result.failed} failed`;
         toast.success(message, { duration: 5000 });
+        
+        // Log detailed information for debugging
+        console.log('📊 Import Details:', {
+          totalRows: result.totalRows,
+          success: result.success,
+          failed: result.failed,
+          failureBreakdown: result.failureBreakdown,
+          errorCount: result.errors?.length || 0
+        });
+        
         if (result.errors && result.errors.length > 0) {
           result.errors.slice(0, 5).forEach(err => {
             toast.error(err, { duration: 3000 });
           });
         }
+        
+        // Show failure breakdown if there are failures
+        if (result.failureBreakdown && Object.keys(result.failureBreakdown).length > 0) {
+          const breakdown = Object.entries(result.failureBreakdown)
+            .map(([reason, count]) => `${count}x ${reason}`)
+            .join(', ');
+          toast.error(`Failed rows breakdown: ${breakdown}`, { duration: 4000 });
+        }
+        
         onImportSuccess?.();
       } else {
         throw new Error(data.message || 'Import failed');
@@ -76,6 +110,7 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
       toast.error(err.message || 'Import failed');
     } finally {
       setImporting(false);
+      setIsProcessing(false);
       setProgress(0);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
@@ -98,7 +133,7 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
           style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
         >
           <ArrowUpTrayIcon style={{ width: '14px', height: '14px' }} />
-          {importing ? `Importing... ${progress}%` : 'Import File'}
+          {importing ? (isProcessing ? 'Processing...' : `Uploading... ${progress}%`) : 'Import File'}
         </button>
         
         {importing && progress > 0 && (
@@ -119,7 +154,8 @@ const CSVImport = ({ endpoint, templateUrl, onImportSuccess }) => {
               transition: 'width 0.3s ease',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              animation: isProcessing ? 'pulse 1.5s ease-in-out infinite' : 'none'
             }}>
               {progress > 10 && (
                 <span style={{

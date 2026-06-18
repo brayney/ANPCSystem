@@ -98,7 +98,7 @@ exports.importCounterweights = async (req, res, next) => {
       }
     }
 
-    console.log(`✅ Import complete - Success: ${results.success}, Failed: ${results.failed}`);
+    console.log(`✅ Import complete - Success: ${results.success}, Failed: ${results.failed}, Total: ${rows.length}`);
     res.json({ success: true, data: results });
   } catch (error) { next(error); }
 };
