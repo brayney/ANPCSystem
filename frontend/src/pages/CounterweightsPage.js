@@ -190,5 +190,5 @@ export default createEquipmentPage({
     { key: 'condition', label: 'Condition', badge: true },
     { key: 'status', label: 'Status', badge: true },
   ],
-  FormComponent: CounterweightForm,
+  FormComponent: CounterweightForm,                                                                                               
 });
