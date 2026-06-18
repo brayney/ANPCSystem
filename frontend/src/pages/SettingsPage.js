@@ -80,6 +80,13 @@ export default function SettingsPage() {
     if (activeTab === 'login-background') fetchBackgroundImage();
   }, [activeTab, fetchAccounts, fetchBackgroundImage]);
 
+  useEffect(() => {
+    // Sync editProfileForm with user data when entering edit mode
+    if (editProfileMode && user) {
+      setEditProfileForm({ name: user.name || '', email: user.email || '' });
+    }
+  }, [editProfileMode, user]);
+
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (pwForm.newPassword !== pwForm.confirmPassword) { toast.error('Passwords do not match'); return; }

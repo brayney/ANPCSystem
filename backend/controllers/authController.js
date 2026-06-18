@@ -234,11 +234,16 @@ exports.toggleUserStatus = async (req, res, next) => {
 exports.updateProfile = async (req, res, next) => {
   try {
     const { name, email } = req.body;
+    console.log('🔵 updateProfile called:', { userId: req.user._id, name, email });
+    
     const user = await User.findById(req.user._id);
 
     if (!user) {
+      console.log('❌ User not found:', req.user._id);
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+
+    console.log('📝 Current user:', { name: user.name, email: user.email });
 
     // Validate inputs
     if (name) {
@@ -247,6 +252,7 @@ exports.updateProfile = async (req, res, next) => {
         return res.status(400).json({ success: false, message: 'Name must be at least 2 characters' });
       }
       user.name = trimmedName;
+      console.log('✏️ Name updated to:', trimmedName);
     }
 
     if (email) {
@@ -256,13 +262,21 @@ exports.updateProfile = async (req, res, next) => {
       if (normalizedEmail !== user.email.toLowerCase()) {
         const existingUser = await User.findOne({ email: normalizedEmail });
         if (existingUser) {
+          console.log('❌ Email already in use:', normalizedEmail);
           return res.status(400).json({ success: false, message: 'Email already in use' });
         }
         user.email = normalizedEmail;
+        console.log('✏️ Email updated to:', normalizedEmail);
       }
     }
 
+    console.log('💾 Saving user...');
     await user.save({ validateBeforeSave: false });
+    console.log('✅ User saved successfully');
+    
     res.json({ success: true, message: 'Profile updated successfully', user });
-  } catch (error) { next(error); }
+  } catch (error) { 
+    console.error('❌ updateProfile error:', error.message);
+    next(error); 
+  }
 };
