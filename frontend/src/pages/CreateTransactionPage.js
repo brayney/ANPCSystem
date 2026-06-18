@@ -156,7 +156,16 @@ export default function CreateTransactionPage() {
       // Only allow one crane per transaction
       setSelectedCranes([craneData]);
       setCraneSearch('');
-      await reloadAttachmentsForCranes([craneData]);
+      
+      // Filter and set attachments from loaded crane data
+      const restrictedStatuses = ['Out of Yard', 'Under Maintenance', 'On Hire'];
+      const filterAvailable = (items) => items.filter(item => !restrictedStatuses.includes(item.status));
+      
+      setAttachments({
+        counterweights: filterAvailable(craneData.counterweights || []),
+        boomSections: filterAvailable(craneData.boomSections || []),
+        hooks: filterAvailable(craneData.hooks || []),
+      });
     } catch { toast.error('Failed to load crane attachments'); }
     finally { setLoadingCrane(false); }
   };
