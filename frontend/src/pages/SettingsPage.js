@@ -137,7 +137,7 @@ export default function SettingsPage() {
         // Check if updated user data is in response
         if (response.data?.user) {
           console.log('📝 Updated user from response:', response.data.user);
-          // Store updated user in localStorage for immediate access
+          // Store updated user in localStorage
           localStorage.setItem('user', JSON.stringify(response.data.user));
           console.log('💾 Stored updated user in localStorage');
         }
@@ -145,11 +145,12 @@ export default function SettingsPage() {
         toast.success('Profile updated successfully');
         setEditProfileMode(false);
         
-        // Reload after a short delay
+        // Refresh the page to get latest data without clearing console
+        console.log('🔄 Page will refresh in 2 seconds...');
         setTimeout(() => {
-          console.log('🔄 Reloading page...');
-          window.location.reload();
-        }, 1000);
+          console.log('🔄 Reloading now...');
+          window.location.href = window.location.href;
+        }, 2000);
       } else {
         console.log('❌ Response not successful:', response.data);
         toast.error(response.data?.message || 'Failed to update profile');
@@ -158,12 +159,10 @@ export default function SettingsPage() {
       console.error('❌ Error caught:', err);
       console.error('Response status:', err.response?.status);
       console.error('Response data:', err.response?.data);
+      console.error('Error message:', err.message);
       const errorMsg = err.response?.data?.message || err.message || 'Failed to update profile';
       toast.error(errorMsg);
-    }
-    finally { 
-      console.log('⏹️ Saving complete');
-      setSavingProfile(false); 
+      setSavingProfile(false);
     }
   };
 
