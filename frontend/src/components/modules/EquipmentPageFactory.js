@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { PageHeader, StatusBadge, Spinner, Pagination, EmptyState, Modal, ConfirmDialog } from '../common';
+import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { PageHeader, StatusBadge, Spinner, Pagination, EmptyState, Modal, ConfirmDialog, ActionMenu } from '../common';
 import CSVImport from '../common/CSVImport';
 import api from '../../utils/api';
 import { useAuth } from '../../hooks/useAuth';
@@ -16,6 +16,8 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
     const [total, setTotal] = useState(0);
     const [modal, setModal] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
     const { user } = useAuth();
     const canCreate = user?.role === 'admin';
     const canEditOrDelete = user?.role === 'admin';
@@ -27,6 +29,7 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
         if (!search) delete params.search;
         const { data } = await api.get(endpoint, { params });
         setItems(data.data); setPages(data.pages); setTotal(data.total);
+        setSelectedIds([]);
       } catch { toast.error(`Failed to load ${title}`); }
       finally { setLoading(false); }
     }, [page, search]);
@@ -39,6 +42,28 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
         toast.success('Item archived');
         setDeleteTarget(null); fetchItems();
       } catch { toast.error('Delete failed'); }
+    };
+
+    const handleBulkDelete = async () => {
+      try {
+        await Promise.all(selectedIds.map(id => api.delete(`${endpoint}/${id}`)));
+        toast.success(`${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'} archived`);
+        setBulkDeleteOpen(false);
+        setSelectedIds([]);
+        fetchItems();
+      } catch { toast.error('Bulk archive failed'); }
+    };
+
+    const visibleIds = items.map(item => item._id);
+    const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.includes(id));
+    const toggleSelectAllVisible = () => {
+      setSelectedIds(allVisibleSelected
+        ? selectedIds.filter(id => !visibleIds.includes(id))
+        : Array.from(new Set([...selectedIds, ...visibleIds]))
+      );
+    };
+    const toggleSelected = (id) => {
+      setSelectedIds(prev => prev.includes(id) ? prev.filter(itemId => itemId !== id) : [...prev, id]);
     };
 
     return (
@@ -56,11 +81,18 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
 
         {/* Search */}
         <div className="card" style={{ padding: '14px 16px', marginBottom: '16px' }}>
-          <div style={{ position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
             <MagnifyingGlassIcon style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: 'var(--text-muted)' }} />
             <input className="input-field" style={{ paddingLeft: '34px' }}
               placeholder={`Search ${title.toLowerCase()}...`}
               value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+            </div>
+            {canEditOrDelete && selectedIds.length > 0 && (
+              <button type="button" onClick={() => setBulkDeleteOpen(true)} className="btn-danger" style={{ fontSize: '12px' }}>
+                <TrashIcon style={{ width: '13px', height: '13px' }} /> Archive Selected ({selectedIds.length})
+              </button>
+            )}
           </div>
         </div>
 
@@ -76,6 +108,11 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
+                      {canEditOrDelete && (
+                        <th className="table-header" style={{ width: '42px' }}>
+                          <input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectAllVisible} title="Select all visible" />
+                        </th>
+                      )}
                       {columns.map(c => <th key={c.key} className="table-header">{c.label}</th>)}
                       <th className="table-header"></th>
                     </tr>
@@ -85,6 +122,11 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
                       <tr key={item._id} style={{ transition: 'background 0.1s' }}
                         onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                        {canEditOrDelete && (
+                          <td className="table-cell">
+                            <input type="checkbox" checked={selectedIds.includes(item._id)} onChange={() => toggleSelected(item._id)} title="Select item" />
+                          </td>
+                        )}
                         {columns.map((c, ci) => (
                           <td key={c.key} className="table-cell">
                             {c.badge ? <StatusBadge status={item[c.key]} /> :
@@ -98,16 +140,24 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
                         ))}
                         <td className="table-cell">
                           {canEditOrDelete ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <button onClick={() => setModal(item)} title="Edit"
-                                style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                                <PencilIcon style={{ width: '13px', height: '13px' }} />
-                              </button>
-                              <button onClick={() => setDeleteTarget(item)} title="Archive"
-                                style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--danger-bg)', background: 'var(--danger-bg)', display: 'flex', color: 'var(--danger)', cursor: 'pointer' }}>
-                                <TrashIcon style={{ width: '13px', height: '13px' }} />
-                              </button>
-                            </div>
+                            <ActionMenu actions={[
+                              {
+                                label: 'View',
+                                icon: EyeIcon,
+                                onClick: () => setModal(item)
+                              },
+                              {
+                                label: 'Edit',
+                                icon: PencilIcon,
+                                onClick: () => setModal(item)
+                              },
+                              {
+                                label: 'Archive',
+                                icon: TrashIcon,
+                                danger: true,
+                                onClick: () => setDeleteTarget(item)
+                              }
+                            ]} />
                           ) : <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>—</span>}
                         </td>
                       </tr>

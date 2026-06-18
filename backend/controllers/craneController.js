@@ -8,7 +8,8 @@ const sharedAttachmentQuery = (equipmentNo) => ({
   isArchived: false,
   $or: [
     { assignedCrane: equipmentNo },
-    { assignedCrane: '' },
+    { assignedCrane: { $regex: /^\s*$/ } },
+    { assignedCrane: { $regex: /^(all|none|n\/a|na|not assigned|unassigned)$/i } },
     { assignedCrane: null },
     { assignedCrane: { $exists: false } },
   ],

@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { Link } from 'react-router-dom';
+import { EllipsisVerticalIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 // ── Status Badge ──────────────────────────────────────────────────────────────
 export const StatusBadge = ({ status }) => {
@@ -75,6 +76,107 @@ export const PageHeader = ({ title, subtitle, actions }) => (
     {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
   </div>
 );
+
+export const ActionMenu = ({ actions }) => {
+  const [open, setOpen] = React.useState(false);
+  const menuRef = React.useRef(null);
+  const visibleActions = actions.filter(Boolean);
+
+  React.useEffect(() => {
+    if (!open) return undefined;
+    const closeOnOutsideClick = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    return () => document.removeEventListener('mousedown', closeOnOutsideClick);
+  }, [open]);
+
+  if (visibleActions.length === 0) {
+    return <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>-</span>;
+  }
+
+  const menuItemStyle = (danger) => ({
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 10px',
+    border: 'none',
+    background: 'transparent',
+    color: danger ? 'var(--danger)' : 'var(--text-secondary)',
+    fontSize: '12px',
+    fontWeight: 600,
+    textAlign: 'left',
+    textDecoration: 'none',
+    cursor: 'pointer',
+  });
+
+  const renderAction = (action) => {
+    const Icon = action.icon;
+    const content = (
+      <>
+        {Icon && <Icon style={{ width: '13px', height: '13px' }} />}
+        {action.label}
+      </>
+    );
+
+    if (action.to) {
+      return (
+        <Link key={action.label} to={action.to} style={menuItemStyle(action.danger)} onClick={() => setOpen(false)}>
+          {content}
+        </Link>
+      );
+    }
+
+    return (
+      <button key={action.label} type="button" style={menuItemStyle(action.danger)} onClick={() => { setOpen(false); action.onClick(); }}>
+        {content}
+      </button>
+    );
+  };
+
+  return (
+    <div ref={menuRef} style={{ position: 'relative', display: 'inline-flex' }}>
+      <button
+        type="button"
+        title="Actions"
+        onClick={() => setOpen(prev => !prev)}
+        style={{
+          width: '28px',
+          height: '28px',
+          borderRadius: '6px',
+          border: '1px solid var(--border)',
+          background: open ? 'var(--surface-3)' : 'var(--surface-2)',
+          color: 'var(--text-secondary)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+        }}
+      >
+        <EllipsisVerticalIcon style={{ width: '15px', height: '15px' }} />
+      </button>
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            right: 0,
+            top: 'calc(100% + 4px)',
+            minWidth: '128px',
+            padding: '4px',
+            border: '1px solid var(--border)',
+            borderRadius: '8px',
+            background: 'var(--surface)',
+            boxShadow: 'var(--shadow-lg)',
+            zIndex: 30,
+          }}
+        >
+          {visibleActions.map(renderAction)}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ── Stat Card ─────────────────────────────────────────────────────────────────
 export const StatCard = ({ title, value, icon: Icon, color = 'blue', subtitle }) => {
