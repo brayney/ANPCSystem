@@ -101,7 +101,7 @@ export default function SettingsPage() {
     
     setSavingProfile(true);
     try {
-      const { data } = await api.put('/auth/update-profile', { 
+      await api.put('/auth/update-profile', { 
         name: editProfileForm.name.trim(), 
         email: editProfileForm.email.trim() 
       });
