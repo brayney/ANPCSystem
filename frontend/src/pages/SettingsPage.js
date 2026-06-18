@@ -145,11 +145,11 @@ export default function SettingsPage() {
         toast.success('Profile updated successfully');
         setEditProfileMode(false);
         
-        // Refresh the page to get latest data without clearing console
+        // Refresh the page to get latest data
         console.log('🔄 Page will refresh in 2 seconds...');
         setTimeout(() => {
           console.log('🔄 Reloading now...');
-          window.location.href = window.location.href;
+          window.location.reload();
         }, 2000);
       } else {
         console.log('❌ Response not successful:', response.data);
