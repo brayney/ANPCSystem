@@ -18,6 +18,7 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [selectedIds, setSelectedIds] = useState([]);
     const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+    const [selectionMode, setSelectionMode] = useState(false);
     const { user } = useAuth();
     const canCreate = user?.role === 'admin';
     const canEditOrDelete = user?.role === 'admin';
@@ -88,7 +89,13 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
               placeholder={`Search ${title.toLowerCase()}...`}
               value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
             </div>
-            {canEditOrDelete && selectedIds.length > 0 && (
+            {canEditOrDelete && (
+              <button type="button" onClick={() => { setSelectionMode(!selectionMode); setSelectedIds([]); }} 
+                className={selectionMode ? 'btn-secondary' : 'btn-primary'} style={{ fontSize: '12px' }}>
+                {selectionMode ? 'Cancel' : 'Select'}
+              </button>
+            )}
+            {canEditOrDelete && selectionMode && selectedIds.length > 0 && (
               <button type="button" onClick={() => setBulkDeleteOpen(true)} className="btn-danger" style={{ fontSize: '12px' }}>
                 <TrashIcon style={{ width: '13px', height: '13px' }} /> Delete Selected ({selectedIds.length})
               </button>
@@ -108,7 +115,7 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      {canEditOrDelete && (
+                      {selectionMode && canEditOrDelete && (
                         <th className="table-header" style={{ width: '42px' }}>
                           <input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectAllVisible} title="Select all visible" />
                         </th>
@@ -122,7 +129,7 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
                       <tr key={item._id} style={{ transition: 'background 0.1s' }}
                         onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                        {canEditOrDelete && (
+                        {selectionMode && canEditOrDelete && (
                           <td className="table-cell">
                             <input type="checkbox" checked={selectedIds.includes(item._id)} onChange={() => toggleSelected(item._id)} title="Select item" />
                           </td>

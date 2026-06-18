@@ -128,13 +128,10 @@ export default function CreateTransactionPage() {
     setCraneResults([]);
     try {
       const craneData = await loadCraneWithAttachments(crane);
-      const nextCranes = selectedCranes.some(item => item._id === craneData._id)
-        ? selectedCranes
-        : [...selectedCranes, craneData];
-
-      setSelectedCranes(nextCranes);
+      // Only allow one crane per transaction
+      setSelectedCranes([craneData]);
       setCraneSearch('');
-      await reloadAttachmentsForCranes(nextCranes);
+      await reloadAttachmentsForCranes([craneData]);
     } catch { toast.error('Failed to load crane attachments'); }
     finally { setLoadingCrane(false); }
   };
@@ -210,7 +207,9 @@ export default function CreateTransactionPage() {
             <MagnifyingGlassIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             <input className="input-field pl-9" placeholder="Search by equipment number..."
               value={craneSearch}
-              onChange={e => { setCraneSearch(e.target.value); searchCranes(e.target.value); }} />
+              onChange={e => { setCraneSearch(e.target.value); searchCranes(e.target.value); }}
+              disabled={selectedCranes.length > 0}
+              style={selectedCranes.length > 0 ? { backgroundColor: 'var(--bg-muted)', cursor: 'not-allowed', opacity: 0.6 } : {}} />
           </div>
           {craneResults.length > 0 && (
             <div className="mt-2 border dark:border-gray-600 overflow-hidden shadow-lg z-10">
@@ -241,9 +240,6 @@ export default function CreateTransactionPage() {
                   </button>
                 </div>
               ))}
-              <div className="text-xs text-gray-500 flex items-center gap-1">
-                <PlusIcon style={{ width: '13px', height: '13px' }} /> Search above to add another crane to this transaction.
-              </div>
             </div>
           )}
         </div>

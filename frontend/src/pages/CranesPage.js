@@ -126,6 +126,12 @@ export default function CranesPage() {
   const [total, setTotal] = useState(0);
   const [modal, setModal] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
 
   const fetchCranes = useCallback(async () => {
     setLoading(true);
@@ -144,9 +150,31 @@ export default function CranesPage() {
   const handleDelete = async () => {
     try {
       await api.delete(`/cranes/${deleteTarget._id}`);
-      toast.success('Crane archived');
+      toast.success('Crane deleted');
       setDeleteTarget(null); fetchCranes();
     } catch { toast.error('Delete failed'); }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      await Promise.all(selectedIds.map(id => api.delete(`/cranes/${id}`)));
+      toast.success(`${selectedIds.length} crane${selectedIds.length === 1 ? '' : 's'} deleted`);
+      setBulkDeleteOpen(false);
+      setSelectedIds([]);
+      fetchCranes();
+    } catch { toast.error('Bulk delete failed'); }
+  };
+
+  const visibleIds = cranes.map(c => c._id);
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.includes(id));
+  const toggleSelectAllVisible = () => {
+    setSelectedIds(allVisibleSelected
+      ? selectedIds.filter(id => !visibleIds.includes(id))
+      : Array.from(new Set([...selectedIds, ...visibleIds]))
+    );
+  };
+  const toggleSelected = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(itemId => itemId !== id) : [...prev, id]);
   };
 
   return (
@@ -164,7 +192,7 @@ export default function CranesPage() {
 
       {/* Filters */}
       <div className="card" style={{ padding: '14px 16px', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
           <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
             <MagnifyingGlassIcon style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: 'var(--text-muted)' }} />
             <input className="input-field" style={{ paddingLeft: '34px' }} placeholder="Search equipment no, model, client..."
@@ -174,6 +202,15 @@ export default function CranesPage() {
             <option value="">All Status</option>
             {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
           </select>
+          <button type="button" onClick={() => { setSelectionMode(!selectionMode); setSelectedIds([]); }} 
+            className={selectionMode ? 'btn-secondary' : 'btn-primary'} style={{ fontSize: '12px' }}>
+            {selectionMode ? 'Cancel' : 'Select'}
+          </button>
+          {selectionMode && selectedIds.length > 0 && (
+            <button type="button" onClick={() => setBulkDeleteOpen(true)} className="btn-danger" style={{ fontSize: '12px' }}>
+              <TrashIcon style={{ width: '13px', height: '13px' }} /> Delete Selected ({selectedIds.length})
+            </button>
+          )}
         </div>
       </div>
 
@@ -189,6 +226,11 @@ export default function CranesPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
+                    {selectionMode && (
+                      <th className="table-header" style={{ width: '42px' }}>
+                        <input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectAllVisible} title="Select all visible" />
+                      </th>
+                    )}
                     {['Equipment No.', 'Model', 'Capacity', 'Weight (KG)', 'Location', 'Client', 'Status', ''].map(h => (
                       <th key={h} className="table-header">{h}</th>
                     ))}
@@ -199,6 +241,11 @@ export default function CranesPage() {
                     <tr key={c._id} style={{ transition: 'background 0.1s' }}
                       onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      {selectionMode && (
+                        <td className="table-cell">
+                          <input type="checkbox" checked={selectedIds.includes(c._id)} onChange={() => toggleSelected(c._id)} title="Select item" />
+                        </td>
+                      )}
                       <td className="table-cell">
                         <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', fontWeight: 600, color: 'var(--accent)' }}>{c.equipmentNo}</span>
                       </td>
@@ -218,7 +265,7 @@ export default function CranesPage() {
                             style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--text-secondary)', cursor: 'pointer', transition: 'background 0.15s' }}>
                             <PencilIcon style={{ width: '13px', height: '13px' }} />
                           </button>
-                          <button onClick={() => setDeleteTarget(c)} title="Archive"
+                          <button onClick={() => setDeleteTarget(c)} title="Delete"
                             style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--danger-bg)', background: 'var(--danger-bg)', display: 'flex', color: 'var(--danger)', cursor: 'pointer', transition: 'opacity 0.15s' }}>
                             <TrashIcon style={{ width: '13px', height: '13px' }} />
                           </button>
@@ -241,7 +288,10 @@ export default function CranesPage() {
       </Modal>
 
       <ConfirmDialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} danger
-        title="Archive Crane" message={`Are you sure you want to archive ${deleteTarget?.equipmentNo}? This action is difficult to undo.`} />
+        title="Delete Crane" message={`Are you sure you want to delete ${deleteTarget?.equipmentNo}? This action is difficult to undo.`} />
+
+      <ConfirmDialog open={bulkDeleteOpen} onClose={() => setBulkDeleteOpen(false)} onConfirm={handleBulkDelete} danger
+        title="Delete Selected Cranes" message={`Are you sure you want to delete ${selectedIds.length} crane${selectedIds.length === 1 ? '' : 's'}? This action is difficult to undo.`} />
     </div>
   );
 }
