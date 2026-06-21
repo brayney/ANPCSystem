@@ -72,8 +72,8 @@ function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 stagger">
         <StatCard title="Total Cranes" value={s.totalCranes} icon={TruckIcon} color="blue" subtitle="All active equipment" />
         <StatCard title="Available Cranes" value={s.availableCranes} icon={CheckCircleIcon} color="green" subtitle="Ready to deploy" />
-        <StatCard title="Active Rentals" value={s.activeRentals} icon={DocumentTextIcon} color="orange" subtitle={${((s.activeRentals || 0) / (s.totalCranes || 1) * 100).toFixed(1)}% utilization} />
-        <StatCard title="Under Maintenance" value={s.maintenanceCranes} icon={ExclamationCircleIcon} color="red" subtitle={${((s.maintenanceCranes || 0) / (s.totalCranes || 1) * 100).toFixed(1)}% of fleet} />
+        <StatCard title="Active Rentals" value={s.activeRentals} icon={DocumentTextIcon} color="orange" subtitle={`${((s.activeRentals || 0) / (s.totalCranes || 1) * 100).toFixed(1)}% utilization`} />
+        <StatCard title="Under Maintenance" value={s.maintenanceCranes} icon={ExclamationCircleIcon} color="red" subtitle={`${((s.maintenanceCranes || 0) / (s.totalCranes || 1) * 100).toFixed(1)}% of fleet`} />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 stagger">
