@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { TruckIcon, Square3Stack3DIcon, DocumentTextIcon, ChartBarIcon, BoltIcon, LinkIcon, CheckCircleIcon, ExclamationCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { StatCard, Spinner, StatusBadge } from '../components/common';
 import { useAuth } from '../hooks/useAuth';
 import api from '../utils/api';
@@ -141,12 +141,12 @@ function DashboardPage() {
           <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 16px 0' }}>6-Month Transaction Trends</h3>
           {txnChart.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={txnChart} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
+              <LineChart data={txnChart} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} axisLine={false} tickLine={false} width={32} />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="count" name="Transactions" fill="var(--accent)" radius={[6, 6, 0, 0]} />
-              </BarChart>
+                <Line type="monotone" dataKey="count" name="Transactions" stroke="var(--accent)" strokeWidth={2} dot={{ fill: 'var(--accent)', r: 4 }} />
+              </LineChart>
             </ResponsiveContainer>
           ) : <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '32px' }}>No data yet</p>}
         </div>
