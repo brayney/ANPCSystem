@@ -105,7 +105,7 @@ function DashboardPage() {
         <PerformanceIndicator label="Pending Returns" value={s.pendingReturns || 0} />
         <PerformanceIndicator label="Overdue Rentals" value={s.overdueRentals || 0} trend={s.overdueRentals > 0 ? 10 : 0} />
         <PerformanceIndicator label="Monthly Transactions" value={s.monthlyTransactions || 0} trend={parseFloat(s.monthlyGrowth) || 0} />
-        <PerformanceIndicator label="Monthly Revenue" value={`$${(s.monthRevenue || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`} />
+        <PerformanceIndicator label="Monthly Revenue" value={`﷼${(s.monthRevenue || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`} />
       </div>
 
       {/* Charts Section */}
@@ -145,7 +145,7 @@ function DashboardPage() {
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} axisLine={false} tickLine={false} width={32} />
                 <Tooltip content={<CustomTooltip />} />
-                <Line type="monotone" dataKey="count" name="Transactions" stroke="var(--accent)" strokeWidth={2} dot={{ fill: 'var(--accent)', r: 4 }} />
+                <Line type="monotone" dataKey="count" name="Transactions" stroke="var(--accent)" strokeWidth={3} isAnimationActive={true} dot={{ fill: 'var(--accent)', r: 5 }} activeDot={{ r: 7 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '32px' }}>No data yet</p>}
