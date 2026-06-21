@@ -7,11 +7,20 @@ const AuditLog = require('../models/AuditLog');
 
 exports.getDashboard = async (req, res, next) => {
   try {
+    const now = new Date();
+    const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
     const [
       totalCranes, totalCounterweights, totalBoomSections, totalHooks,
-      activeRentals, availableCranes, maintenanceCranes,
+      activeRentals, availableCranes, maintenanceCranes, retiredCranes,
       recentTransactions, recentLogs,
-      craneStatusDist, transactionsByMonth
+      craneStatusDist, transactionsByMonth,
+      thisMonthTransactions, lastMonthTransactions,
+      pendingReturnsTxns, overdueTxns,
+      totalRevenue, monthRevenue
     ] = await Promise.all([
       Crane.countDocuments({ isArchived: false }),
       Counterweight.countDocuments({ isArchived: false }),
@@ -20,24 +29,52 @@ exports.getDashboard = async (req, res, next) => {
       Transaction.countDocuments({ status: 'Active', isArchived: false }),
       Crane.countDocuments({ status: 'Available', isArchived: false }),
       Crane.countDocuments({ status: 'Under Maintenance', isArchived: false }),
-      Transaction.find({ isArchived: false }).sort({ createdAt: -1 }).limit(5)
-        .populate('createdBy', 'name'),
-      AuditLog.find().sort({ createdAt: -1 }).limit(10),
+      Crane.countDocuments({ status: 'Retired', isArchived: false }),
+      Transaction.find({ isArchived: false }).sort({ createdAt: -1 }).limit(8)
+        .populate('createdBy', 'name')
+        .lean(),
+      AuditLog.find().sort({ createdAt: -1 }).limit(10).lean(),
       Crane.aggregate([
         { $match: { isArchived: false } },
         { $group: { _id: '$status', count: { $sum: 1 } } }
       ]),
       Transaction.aggregate([
-        { $match: { isArchived: false, createdAt: { $gte: new Date(Date.now() - 180 * 24 * 3600 * 1000) } } },
+        { $match: { isArchived: false, createdAt: { $gte: sixMonthsAgo } } },
         { $group: { _id: { $month: '$createdAt' }, count: { $sum: 1 } } },
         { $sort: { '_id': 1 } }
+      ]),
+      Transaction.countDocuments({ createdAt: { $gte: thisMonthStart }, isArchived: false }),
+      Transaction.countDocuments({ createdAt: { $gte: lastMonthStart, $lt: thisMonthStart }, isArchived: false }),
+      Transaction.countDocuments({ status: 'Active', returnDate: { $exists: false, $eq: null }, isArchived: false }),
+      Transaction.countDocuments({ status: 'Active', returnDate: { $lt: now }, isArchived: false }),
+      Transaction.aggregate([
+        { $match: { isArchived: false } },
+        { $group: { _id: null, total: { $sum: { $multiply: ['$rentalDays', '$dailyRate'] } } } }
+      ]),
+      Transaction.aggregate([
+        { $match: { createdAt: { $gte: thisMonthStart }, isArchived: false } },
+        { $group: { _id: null, total: { $sum: { $multiply: ['$rentalDays', '$dailyRate'] } } } }
       ])
     ]);
+
+    const utilizationRate = totalCranes > 0 ? ((activeRentals / totalCranes) * 100).toFixed(1) : 0;
+    const prevMonthTxns = lastMonthTransactions || 1;
+    const txnGrowth = ((thisMonthTransactions - prevMonthTxns) / prevMonthTxns * 100).toFixed(1);
 
     res.json({
       success: true,
       data: {
-        summary: { totalCranes, totalCounterweights, totalBoomSections, totalHooks, activeRentals, availableCranes, maintenanceCranes },
+        summary: {
+          totalCranes, totalCounterweights, totalBoomSections, totalHooks,
+          activeRentals, availableCranes, maintenanceCranes, retiredCranes,
+          utilizationRate: parseFloat(utilizationRate),
+          pendingReturns: pendingReturnsTxns,
+          overdueRentals: overdueTxns,
+          monthlyTransactions: thisMonthTransactions,
+          monthlyGrowth: parseFloat(txnGrowth),
+          totalRevenue: totalRevenue?.[0]?.total || 0,
+          monthRevenue: monthRevenue?.[0]?.total || 0
+        },
         recentTransactions,
         recentLogs,
         charts: { craneStatusDist, transactionsByMonth }

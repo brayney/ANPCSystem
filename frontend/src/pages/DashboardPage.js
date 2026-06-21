@@ -23,6 +23,20 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
+const PerformanceIndicator = ({ value, label, trend, unit = '' }) => (
+  <div style={{ padding: '12px 16px', borderRadius: '6px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, margin: '0 0 6px 0' }}>{label}</p>
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+      <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{value}{unit}</span>
+      {trend !== undefined && (
+        <span style={{ fontSize: '11px', fontWeight: 600, color: trend > 0 ? '#1a7f37' : trend < 0 ? '#cf222e' : 'var(--text-secondary)' }}>
+          {trend > 0 ? '↑' : trend < 0 ? '↓' : '→'} {Math.abs(trend)}%
+        </span>
+      )}
+    </div>
+  </div>
+);
+
 function DashboardPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,6 +49,7 @@ function DashboardPage() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
+    await api.get('/dashboard').then(r => setData(r.data.data));
     await new Promise(r => setTimeout(r, 300));
     setRefreshing(false);
   };
@@ -60,7 +75,7 @@ function DashboardPage() {
             {getGreeting()}, {user?.name?.split(' ')[0] || 'Admin'} 👋
           </h1>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            Fleet Overview • Updated {format(new Date(), 'h:mm a')}
+            Complete Fleet Overview • Updated {format(new Date(), 'h:mm a')}
           </p>
         </div>
         <button onClick={handleRefresh} disabled={refreshing} style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600, cursor: refreshing ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: refreshing ? 0.6 : 1 }}>
@@ -69,13 +84,15 @@ function DashboardPage() {
         </button>
       </div>
 
+      {/* Core KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 stagger">
         <StatCard title="Total Cranes" value={s.totalCranes} icon={TruckIcon} color="blue" subtitle="All active equipment" />
-        <StatCard title="Available Cranes" value={s.availableCranes} icon={CheckCircleIcon} color="green" subtitle="Ready to deploy" />
-        <StatCard title="Active Rentals" value={s.activeRentals} icon={DocumentTextIcon} color="orange" subtitle={`${((s.activeRentals || 0) / (s.totalCranes || 1) * 100).toFixed(1)}% utilization`} />
+        <StatCard title="Available Cranes" value={s.availableCranes} icon={CheckCircleIcon} color="green" subtitle="Ready for rental" />
+        <StatCard title="Active Rentals" value={s.activeRentals} icon={DocumentTextIcon} color="orange" subtitle={`${s.utilizationRate}% utilization`} />
         <StatCard title="Under Maintenance" value={s.maintenanceCranes} icon={ExclamationCircleIcon} color="red" subtitle={`${((s.maintenanceCranes || 0) / (s.totalCranes || 1) * 100).toFixed(1)}% of fleet`} />
       </div>
 
+      {/* Secondary Equipment Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 stagger">
         <StatCard title="Counterweights" value={s.totalCounterweights} icon={Square3Stack3DIcon} color="indigo" subtitle="Attachments" />
         <StatCard title="Boom Sections" value={s.totalBoomSections} icon={BoltIcon} color="purple" subtitle="Components" />
@@ -83,9 +100,18 @@ function DashboardPage() {
         <StatCard title="Total Assets" value={totalEquipment} icon={ChartBarIcon} color="red" subtitle="Full inventory" />
       </div>
 
+      {/* Performance & Health Indicators */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
+        <PerformanceIndicator label="Pending Returns" value={s.pendingReturns || 0} />
+        <PerformanceIndicator label="Overdue Rentals" value={s.overdueRentals || 0} trend={s.overdueRentals > 0 ? 10 : 0} />
+        <PerformanceIndicator label="Monthly Transactions" value={s.monthlyTransactions || 0} trend={parseFloat(s.monthlyGrowth) || 0} />
+        <PerformanceIndicator label="Monthly Revenue" value={`$${(s.monthRevenue || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`} />
+      </div>
+
+      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <div className="card">
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 16px 0' }}>Crane Status Distribution</h3>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 16px 0' }}>Equipment Status Distribution</h3>
           {statusChart.length > 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
               <ResponsiveContainer width="45%" height={180}>
@@ -103,7 +129,7 @@ function DashboardPage() {
                       <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length] }} />
                       <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{d.name}</span>
                     </div>
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{d.value}</span>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{d.value} ({((d.value / (statusChart.reduce((sum, x) => sum + x.value, 0))) * 100).toFixed(1)}%)</span>
                   </div>
                 ))}
               </div>
@@ -112,7 +138,7 @@ function DashboardPage() {
         </div>
 
         <div className="card">
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 16px 0' }}>Monthly Transactions</h3>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 16px 0' }}>6-Month Transaction Trends</h3>
           {txnChart.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={txnChart} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
@@ -126,6 +152,7 @@ function DashboardPage() {
         </div>
       </div>
 
+      {/* Recent Transactions Table */}
       <div className="card">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>
           <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Recent Transactions</h3>
@@ -136,7 +163,7 @@ function DashboardPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  {['ID', 'Company', 'Equipment', 'Status', 'Date', 'Duration'].map(h => (
+                  {['ID', 'Company', 'Equipment', 'Status', 'Date', 'Duration', 'Value'].map(h => (
                     <th key={h} style={{ padding: '12px 14px', fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>{h}</th>
                   ))}
                 </tr>
@@ -144,6 +171,7 @@ function DashboardPage() {
               <tbody>
                 {data.recentTransactions.slice(0, 8).map(t => {
                   const daysRented = t.returnDate ? differenceInDays(new Date(t.returnDate), new Date(t.transactionDate)) : differenceInDays(new Date(), new Date(t.transactionDate));
+                  const rentalValue = (daysRented * (t.dailyRate || 0)).toFixed(2);
                   return (
                     <tr key={t._id} style={{ borderBottom: '1px solid var(--border-muted)' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                       <td style={{ padding: '14px', fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', fontWeight: 700, color: 'var(--accent)' }}><Link to={`/transactions/${t._id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{t.transactionNo}</Link></td>
@@ -152,6 +180,7 @@ function DashboardPage() {
                       <td style={{ padding: '14px' }}><StatusBadge status={t.status} /></td>
                       <td style={{ padding: '14px', color: 'var(--text-secondary)', fontSize: '12px' }}>{t.transactionDate ? format(new Date(t.transactionDate), 'MMM d, yyyy') : '—'}</td>
                       <td style={{ padding: '14px', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{daysRented} day{daysRented !== 1 ? 's' : ''}</td>
+                      <td style={{ padding: '14px', fontSize: '12px', fontWeight: 600, color: 'var(--accent)', fontFamily: "'JetBrains Mono', monospace" }}>${rentalValue}</td>
                     </tr>
                   );
                 })}
