@@ -341,3 +341,21 @@ export default function DashboardPage() {
     </div>
   );
 }
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>No transactions yet.</p>
+            <Link to="/transactions/create" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-block' }}>
+              Create First Transaction
+            </Link>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
