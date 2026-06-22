@@ -9,19 +9,19 @@ import {
   ArrowRightOnRectangleIcon, MoonIcon, SunIcon, BoltIcon, CalendarIcon, BookOpenIcon
 } from '@heroicons/react/24/outline';
 
+const navItems = [
+  { to: '/dashboard', icon: HomeIcon, labelKey: 'sidebar.dashboard' },
+  { to: '/cranes', icon: TruckIcon, labelKey: 'sidebar.cranes' },
+  { to: '/counterweights', icon: Square3Stack3DIcon, labelKey: 'sidebar.counterweights' },
+  { to: '/boom-sections', icon: BoltIcon, labelKey: 'sidebar.boom_sections' },
+  { to: '/hooks', icon: LinkIcon, labelKey: 'sidebar.hooks' },
+  { to: '/transactions', icon: DocumentTextIcon, labelKey: 'sidebar.transactions' },
+  { to: '/transactions/calendar', icon: CalendarIcon, labelKey: 'sidebar.calendar' },
+];
+
 const SidebarContent = ({ setSidebarOpen, onLogoutClick }) => {
   const { user } = useAuth();
   const { t } = useTranslation();
-  
-  const navItems = [
-    { to: '/dashboard', icon: HomeIcon, labelKey: 'sidebar.dashboard' },
-    { to: '/cranes', icon: TruckIcon, labelKey: 'sidebar.cranes' },
-    { to: '/counterweights', icon: Square3Stack3DIcon, labelKey: 'sidebar.counterweights' },
-    { to: '/boom-sections', icon: BoltIcon, labelKey: 'sidebar.boom_sections' },
-    { to: '/hooks', icon: LinkIcon, labelKey: 'sidebar.hooks' },
-    { to: '/transactions', icon: DocumentTextIcon, labelKey: 'sidebar.transactions' },
-    { to: '/transactions/calendar', icon: CalendarIcon, labelKey: 'sidebar.calendar' },
-  ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--sidebar-bg)' }}>
