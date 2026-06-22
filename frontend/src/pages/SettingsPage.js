@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { PageHeader, Spinner, ConfirmDialog } from '../components/common';
 import { useAuth } from '../hooks/useAuth';
 import api from '../utils/api';
-import { UserCircleIcon, UsersIcon, UserPlusIcon, KeyIcon, InformationCircleIcon, ChevronDownIcon, ChevronUpIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import { UserCircleIcon, UsersIcon, UserPlusIcon, KeyIcon, InformationCircleIcon, ChevronDownIcon, ChevronUpIcon, PhotoIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
 
 const PRIMARY_ADMIN_EMAIL = 'admin@anpc.com';
 
@@ -31,7 +31,7 @@ export default function SettingsPage() {
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [userForm, setUserForm] = useState({ name: '', email: '', password: '' });
   const [editProfileMode, setEditProfileMode] = useState(false);
-  const [editProfileForm, setEditProfileForm] = useState({ name: user?.name || '', email: user?.email || '', language: user?.language || 'en' });
+  const [editProfileForm, setEditProfileForm] = useState({ name: user?.name || '', email: user?.email || '' });
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingLanguage, setSavingLanguage] = useState(false);
   const [accounts, setAccounts] = useState([]);
@@ -84,7 +84,7 @@ export default function SettingsPage() {
   useEffect(() => {
     // Sync editProfileForm with user data when entering edit mode
     if (editProfileMode && user) {
-      setEditProfileForm({ name: user.name || '', email: user.email || '', language: user.language || 'en' });
+      setEditProfileForm({ name: user.name || '', email: user.email || '' });
     }
   }, [editProfileMode, user]);
 
@@ -123,7 +123,7 @@ export default function SettingsPage() {
     }
     
     setSavingProfile(true);
-    const payload = { name: editProfileForm.name.trim(), email: editProfileForm.email.trim(), language: editProfileForm.language || 'en' };
+    const payload = { name: editProfileForm.name.trim(), email: editProfileForm.email.trim() };
     console.log('📤 Sending payload:', payload);
     
     try {
@@ -169,7 +169,7 @@ export default function SettingsPage() {
 
   const handleCancelProfileEdit = () => {
     setEditProfileMode(false);
-    setEditProfileForm({ name: user?.name || '', email: user?.email || '', language: user?.language || 'en' });
+    setEditProfileForm({ name: user?.name || '', email: user?.email || '' });
   };
 
   const handleLanguageChange = async (newLanguage) => {
@@ -177,15 +177,17 @@ export default function SettingsPage() {
     try {
       const { data } = await api.put('/settings/language', { language: newLanguage });
       if (data.success) {
-        toast.success('Language preference updated successfully');
-        setEditProfileForm(prev => ({ ...prev, language: newLanguage }));
+        toast.success('Language updated successfully!');
         // Update user in localStorage
         const updatedUser = { ...user, language: newLanguage };
         localStorage.setItem('user', JSON.stringify(updatedUser));
+        // Reload page to apply language changes
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update language preference');
-    } finally {
       setSavingLanguage(false);
     }
   };
@@ -304,6 +306,7 @@ export default function SettingsPage() {
 
   const tabs = [
     { key: 'profile', label: 'Profile', icon: UserCircleIcon },
+    { key: 'language', label: 'Language', icon: GlobeAltIcon },
     ...(user?.role === 'admin' ? [{ key: 'accounts', label: 'Accounts', icon: UsersIcon }] : []),
     ...(user?.role === 'admin' ? [{ key: 'create', label: 'Create Account', icon: UserPlusIcon }] : []),
     ...(user?.role === 'admin' ? [{ key: 'login-background', label: 'Login Background', icon: PhotoIcon }] : []),
@@ -371,24 +374,6 @@ export default function SettingsPage() {
                         onChange={e => setEditProfileForm({ ...editProfileForm, email: e.target.value })} 
                       />
                     </div>
-                    <div>
-                      <label className="label">Language</label>
-                      <select 
-                        className="input-field" 
-                        value={editProfileForm.language || 'en'}
-                        onChange={e => setEditProfileForm({ ...editProfileForm, language: e.target.value })} 
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <option value="en">English (en)</option>
-                        <option value="es">Español (es)</option>
-                        <option value="fr">Français (fr)</option>
-                        <option value="de">Deutsch (de)</option>
-                        <option value="pt">Português (pt)</option>
-                        <option value="ar">العربية (ar)</option>
-                        <option value="zh">中文 (zh)</option>
-                        <option value="ja">日本語 (ja)</option>
-                      </select>
-                    </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <button type="submit" disabled={savingProfile} className="btn-primary" style={{ flex: 1 }}>
                         {savingProfile ? <><Spinner size="sm" /> Saving...</> : 'Save Changes'}
@@ -425,37 +410,6 @@ export default function SettingsPage() {
                     ))}
                   </div>
 
-                  <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--border-muted)' }}>
-                    <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px' }}>Language Preference</h3>
-                    <select 
-                      value={editProfileForm.language || 'en'} 
-                      onChange={(e) => handleLanguageChange(e.target.value)}
-                      disabled={savingLanguage}
-                      style={{ 
-                        width: '100%', 
-                        padding: '10px 12px', 
-                        borderRadius: '8px', 
-                        border: '1px solid var(--border)', 
-                        background: 'var(--surface)', 
-                        color: 'var(--text-primary)',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        cursor: savingLanguage ? 'not-allowed' : 'pointer',
-                        opacity: savingLanguage ? 0.6 : 1
-                      }}
-                    >
-                      <option value="en">English (en)</option>
-                      <option value="es">Español (es)</option>
-                      <option value="fr">Français (fr)</option>
-                      <option value="de">Deutsch (de)</option>
-                      <option value="pt">Português (pt)</option>
-                      <option value="ar">العربية (ar)</option>
-                      <option value="zh">中文 (zh)</option>
-                      <option value="ja">日本語 (ja)</option>
-                    </select>
-                    {savingLanguage && <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>Updating language...</p>}
-                  </div>
-
                   <div style={{ marginTop: '20px' }}>
                     <button 
                       type="button"
@@ -467,6 +421,63 @@ export default function SettingsPage() {
                   </div>
                 </>
               )}
+            </div>
+          )}
+
+          {activeTab === 'language' && (
+            <div className="card animate-fade-in">
+              <div style={{ marginBottom: '24px' }}>
+                <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>Select Language</h2>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: 0 }}>Choose your preferred system language</p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px' }}>
+                {[
+                  { code: 'en', name: 'English', flag: '🇬🇧' },
+                  { code: 'es', name: 'Español', flag: '🇪🇸' },
+                  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+                  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+                  { code: 'pt', name: 'Português', flag: '🇵🇹' },
+                  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+                  { code: 'zh', name: '中文', flag: '🇨🇳' },
+                  { code: 'ja', name: '日本語', flag: '🇯🇵' },
+                ].map(({ code, name, flag }) => (
+                  <button
+                    key={code}
+                    onClick={() => handleLanguageChange(code)}
+                    disabled={savingLanguage}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      padding: '16px',
+                      borderRadius: '12px',
+                      border: (user?.language || 'en') === code ? '2px solid var(--accent)' : '1px solid var(--border)',
+                      background: (user?.language || 'en') === code ? 'var(--accent-subtle)' : 'var(--surface)',
+                      color: 'var(--text-primary)',
+                      cursor: savingLanguage ? 'not-allowed' : 'pointer',
+                      opacity: savingLanguage && (user?.language || 'en') !== code ? 0.6 : 1,
+                      fontWeight: (user?.language || 'en') === code ? 600 : 500,
+                      fontSize: '13px',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <span style={{ fontSize: '24px' }}>{flag}</span>
+                    <span>{name}</span>
+                    {(user?.language || 'en') === code && savingLanguage && (
+                      <Spinner size=\"sm\" style={{ marginTop: '4px' }} />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ marginTop: '24px', padding: '14px', borderRadius: '8px', background: 'var(--surface-2)', border: '1px solid var(--border-muted)' }}>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
+                  <strong>Current Language:</strong> {user?.language ? (user.language.toUpperCase()) : 'English (en)'}
+                </p>
+              </div>
             </div>
           )}
 
