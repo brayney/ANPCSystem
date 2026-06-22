@@ -467,7 +467,7 @@ export default function SettingsPage() {
                     <span style={{ fontSize: '24px' }}>{flag}</span>
                     <span>{name}</span>
                     {(user?.language || 'en') === code && savingLanguage && (
-                      <Spinner size=\"sm\" style={{ marginTop: '4px' }} />
+                      <Spinner size="sm" style={{ marginTop: '4px' }} />
                     )}
                   </button>
                 ))}
