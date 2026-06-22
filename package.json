@@ -1,5 +1,18 @@
 {
   "name": "anpc-yard",
   "version": "1.0.0",
-  "description": "ANPC Yard Internal Tracking System"
+  "description": "ANPC Yard Internal Tracking System",
+  "scripts": {
+    "install-all": "npm install && npm --prefix frontend install",
+    "build": "npm --prefix frontend run build",
+    "dev": "concurrently \"npm --prefix backend dev\" \"npm --prefix frontend start\"",
+    "heroku-postbuild": "npm run build"
+  },
+  "engines": {
+    "node": "18.x",
+    "npm": "9.x"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
 }
