@@ -4,6 +4,7 @@ import { TruckIcon, Square3Stack3DIcon, DocumentTextIcon, ChartBarIcon, BoltIcon
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { StatCard, Spinner, StatusBadge } from '../components/common';
 import { useAuth } from '../hooks/useAuth';
+import { useTranslation } from '../i18n/useTranslation';
 import api from '../utils/api';
 import { format, differenceInDays } from 'date-fns';
 
@@ -42,6 +43,7 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   useEffect(() => {
     api.get('/dashboard').then(r => setData(r.data.data)).finally(() => setLoading(false));
@@ -56,7 +58,7 @@ function DashboardPage() {
 
   const getGreeting = () => {
     const h = new Date().getHours();
-    return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    return h < 12 ? t('dashboard.greeting') : h < 18 ? t('dashboard.good_afternoon') : t('dashboard.good_evening');
   };
 
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}><Spinner size="lg" /></div>;
@@ -75,29 +77,29 @@ function DashboardPage() {
             {getGreeting()}, {user?.name?.split(' ')[0] || 'Admin'} 👋
           </h1>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            Complete Fleet Overview • Updated {format(new Date(), 'h:mm a')}
+            {t('dashboard.complete_fleet_overview')} • {t('dashboard.updated')} {format(new Date(), 'h:mm a')}
           </p>
         </div>
         <button onClick={handleRefresh} disabled={refreshing} style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600, cursor: refreshing ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: refreshing ? 0.6 : 1 }}>
           <ArrowPathIcon style={{ width: '14px', height: '14px', animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />
-          {refreshing ? 'Refreshing...' : 'Refresh'}
+          {refreshing ? t('dashboard.refreshing') : t('dashboard.refresh')}
         </button>
       </div>
 
       {/* Core KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 stagger">
-        <StatCard title="Total Cranes" value={s.totalCranes} icon={TruckIcon} color="blue" subtitle="All active equipment" />
-        <StatCard title="Available Cranes" value={s.availableCranes} icon={CheckCircleIcon} color="green" subtitle="Ready for rental" />
-        <StatCard title="Active Rentals" value={s.activeRentals} icon={DocumentTextIcon} color="orange" subtitle={`${s.utilizationRate}% utilization`} />
-        <StatCard title="Under Maintenance" value={s.maintenanceCranes} icon={ExclamationCircleIcon} color="red" subtitle={`${((s.maintenanceCranes || 0) / (s.totalCranes || 1) * 100).toFixed(1)}% of fleet`} />
+        <StatCard title={t('dashboard.total_cranes')} value={s.totalCranes} icon={TruckIcon} color="blue" subtitle={t('dashboard.all_active_equipment')} />
+        <StatCard title={t('dashboard.available_cranes')} value={s.availableCranes} icon={CheckCircleIcon} color="green" subtitle={t('dashboard.ready_for_rental')} />
+        <StatCard title={t('dashboard.active_rentals')} value={s.activeRentals} icon={DocumentTextIcon} color="orange" subtitle={`${s.utilizationRate}% ${t('dashboard.utilization')}`} />
+        <StatCard title={t('dashboard.under_maintenance')} value={s.maintenanceCranes} icon={ExclamationCircleIcon} color="red" subtitle={`${((s.maintenanceCranes || 0) / (s.totalCranes || 1) * 100).toFixed(1)}% ${t('dashboard.of_fleet')}`} />
       </div>
 
       {/* Secondary Equipment Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 stagger">
-        <StatCard title="Counterweights" value={s.totalCounterweights} icon={Square3Stack3DIcon} color="indigo" subtitle="Attachments" />
-        <StatCard title="Boom Sections" value={s.totalBoomSections} icon={BoltIcon} color="purple" subtitle="Components" />
-        <StatCard title="Hooks" value={s.totalHooks} icon={LinkIcon} color="teal" subtitle="Rigging" />
-        <StatCard title="Total Assets" value={totalEquipment} icon={ChartBarIcon} color="red" subtitle="Full inventory" />
+        <StatCard title={t('dashboard.counterweights')} value={s.totalCounterweights} icon={Square3Stack3DIcon} color="indigo" subtitle={t('dashboard.attachments')} />
+        <StatCard title={t('dashboard.boom_sections')} value={s.totalBoomSections} icon={BoltIcon} color="purple" subtitle={t('dashboard.components')} />
+        <StatCard title={t('dashboard.hooks')} value={s.totalHooks} icon={LinkIcon} color="teal" subtitle={t('dashboard.rigging')} />
+        <StatCard title={t('dashboard.total_assets')} value={totalEquipment} icon={ChartBarIcon} color="red" subtitle={t('dashboard.full_inventory')} />
       </div>
 
       {/* Performance & Health Indicators */}
@@ -109,7 +111,7 @@ function DashboardPage() {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <div className="card">
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 16px 0' }}>Equipment Status Distribution</h3>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 16px 0' }}>{t('dashboard.equipment_status_distribution')}</h3>
           {statusChart.length > 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
               <ResponsiveContainer width="45%" height={180}>
@@ -132,11 +134,11 @@ function DashboardPage() {
                 ))}
               </div>
             </div>
-          ) : <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '32px' }}>No data yet</p>}
+          ) : <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '32px' }}>{t('dashboard.no_data_yet')}</p>}
         </div>
 
         <div className="card">
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 16px 0' }}>6-Month Transaction Trends</h3>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 16px 0' }}>{t('dashboard.6_month_transaction_trends')}</h3>
           {txnChart.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={txnChart} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
@@ -146,22 +148,22 @@ function DashboardPage() {
                 <Line type="monotone" dataKey="count" name="Transactions" stroke="var(--accent)" strokeWidth={3} isAnimationActive={true} dot={{ fill: 'var(--accent)', r: 5 }} activeDot={{ r: 7 }} />
               </LineChart>
             </ResponsiveContainer>
-          ) : <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '32px' }}>No data yet</p>}
+          ) : <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '32px' }}>{t('dashboard.no_data_yet')}</p>}
         </div>
       </div>
 
       {/* Recent Transactions Table */}
       <div className="card">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Recent Transactions</h3>
-          <Link to="/transactions" style={{ fontSize: '12px', color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>View All →</Link>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{t('dashboard.recent_transactions')}</h3>
+          <Link to="/transactions" style={{ fontSize: '12px', color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>{t('dashboard.view_all')} →</Link>
         </div>
         {data?.recentTransactions?.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  {['ID', 'Company', 'Equipment', 'Status', 'Date', 'Duration', 'Value'].map(h => (
+                  {[t('common.id'), t('common.company'), t('common.equipment'), t('common.status'), t('common.date'), t('common.duration'), t('common.value')].map(h => (
                     <th key={h} style={{ padding: '12px 14px', fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>{h}</th>
                   ))}
                 </tr>
@@ -177,7 +179,7 @@ function DashboardPage() {
                       <td style={{ padding: '14px', fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', color: 'var(--text-secondary)' }}>{t.crane}</td>
                       <td style={{ padding: '14px' }}><StatusBadge status={t.status} /></td>
                       <td style={{ padding: '14px', color: 'var(--text-secondary)', fontSize: '12px' }}>{t.transactionDate ? format(new Date(t.transactionDate), 'MMM d, yyyy') : '—'}</td>
-                      <td style={{ padding: '14px', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{daysRented} day{daysRented !== 1 ? 's' : ''}</td>
+                      <td style={{ padding: '14px', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{daysRented} {daysRented !== 1 ? t('common.days') : t('common.day')}</td>
                       <td style={{ padding: '14px', fontSize: '12px', fontWeight: 600, color: 'var(--accent)', fontFamily: "'JetBrains Mono', monospace" }}>${rentalValue}</td>
                     </tr>
                   );
@@ -187,8 +189,8 @@ function DashboardPage() {
           </div>
         ) : (
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>No transactions yet.</p>
-            <Link to="/transactions/create" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-block' }}>Create First Transaction</Link>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>{t('dashboard.no_transactions_yet')}</p>
+            <Link to="/transactions/create" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-block' }}>{t('dashboard.create_first_transaction')}</Link>
           </div>
         )}
       </div>
