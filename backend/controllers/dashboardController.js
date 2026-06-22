@@ -19,8 +19,7 @@ exports.getDashboard = async (req, res, next) => {
       recentTransactions, recentLogs,
       craneStatusDist, transactionsByMonth,
       thisMonthTransactions, lastMonthTransactions,
-      pendingReturnsTxns, overdueTxns,
-      totalRevenue, monthRevenue
+      pendingReturnsTxns
     ] = await Promise.all([
       Crane.countDocuments({ isArchived: false }),
       Counterweight.countDocuments({ isArchived: false }),
@@ -46,15 +45,7 @@ exports.getDashboard = async (req, res, next) => {
       Transaction.countDocuments({ createdAt: { $gte: thisMonthStart }, isArchived: false }),
       Transaction.countDocuments({ createdAt: { $gte: lastMonthStart, $lt: thisMonthStart }, isArchived: false }),
       Transaction.countDocuments({ status: 'Active', returnDate: { $exists: false, $eq: null }, isArchived: false }),
-      Transaction.countDocuments({ status: 'Active', returnDate: { $lt: now }, isArchived: false }),
-      Transaction.aggregate([
-        { $match: { isArchived: false } },
-        { $group: { _id: null, total: { $sum: { $multiply: ['$rentalDays', '$dailyRate'] } } } }
-      ]),
-      Transaction.aggregate([
-        { $match: { createdAt: { $gte: thisMonthStart }, isArchived: false } },
-        { $group: { _id: null, total: { $sum: { $multiply: ['$rentalDays', '$dailyRate'] } } } }
-      ])
+      Transaction.countDocuments({ status: 'Active', returnDate: { $lt: now }, isArchived: false })
     ]);
 
     const utilizationRate = totalCranes > 0 ? ((activeRentals / totalCranes) * 100).toFixed(1) : 0;
@@ -69,11 +60,8 @@ exports.getDashboard = async (req, res, next) => {
           activeRentals, availableCranes, maintenanceCranes, retiredCranes,
           utilizationRate: parseFloat(utilizationRate),
           pendingReturns: pendingReturnsTxns,
-          overdueRentals: overdueTxns,
           monthlyTransactions: thisMonthTransactions,
-          monthlyGrowth: parseFloat(txnGrowth),
-          totalRevenue: totalRevenue?.[0]?.total || 0,
-          monthRevenue: monthRevenue?.[0]?.total || 0
+          monthlyGrowth: parseFloat(txnGrowth)
         },
         recentTransactions,
         recentLogs,

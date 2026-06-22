@@ -101,11 +101,9 @@ function DashboardPage() {
       </div>
 
       {/* Performance & Health Indicators */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <PerformanceIndicator label="Pending Returns" value={s.pendingReturns || 0} />
-        <PerformanceIndicator label="Overdue Rentals" value={s.overdueRentals || 0} trend={s.overdueRentals > 0 ? 10 : 0} />
         <PerformanceIndicator label="Monthly Transactions" value={s.monthlyTransactions || 0} trend={parseFloat(s.monthlyGrowth) || 0} />
-        <PerformanceIndicator label="Monthly Revenue" value={`﷼${(s.monthRevenue || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`} />
       </div>
 
       {/* Charts Section */}
