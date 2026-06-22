@@ -12,7 +12,7 @@
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.4.1",
     "react-router-dom": "^6.21.0",
-    "react-scripts": "5.0.1",
+    "react-scripts": "^0.0.0",
     "react-to-print": "^2.15.1",
     "recharts": "^2.10.1"
   },
