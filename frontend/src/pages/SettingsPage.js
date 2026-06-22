@@ -177,18 +177,38 @@ export default function SettingsPage() {
   const handleLanguageChange = async (newLanguage) => {
     setSavingLanguage(true);
     try {
+      console.log(`📝 Sending language update request for: ${newLanguage}`);
+      
+      // First, change the language in i18next immediately for UI response
+      await changeLanguage(newLanguage);
+      console.log(`✅ i18next language changed to: ${newLanguage}`);
+      
+      // Then update on the backend
       const { data } = await api.put('/settings/language', { language: newLanguage });
+      console.log(`📊 Backend response:`, data);
+      
       if (data.success) {
-        toast.success(`Language changed to ${newLanguage.toUpperCase()}`);
-        // Update user in localStorage without reloading
+        // Update user in localStorage with new language
         const updatedUser = { ...user, language: newLanguage };
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        // Update i18next language
-        changeLanguage(newLanguage);
+        console.log(`💾 Updated user in localStorage:`, updatedUser);
+        
+        toast.success(`Language changed to ${newLanguage.toUpperCase()}`);
+        setSavingLanguage(false);
+      } else {
+        console.error('❌ Backend response not successful:', data);
+        toast.error(data?.message || 'Failed to update language preference');
         setSavingLanguage(false);
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update language preference');
+      console.error('❌ Error caught in handleLanguageChange:');
+      console.error('  Status:', err.response?.status);
+      console.error('  Data:', err.response?.data);
+      console.error('  Message:', err.message);
+      console.error('  Full error:', err);
+      
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to update language preference';
+      toast.error(errorMsg);
       setSavingLanguage(false);
     }
   };

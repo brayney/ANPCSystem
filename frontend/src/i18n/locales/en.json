@@ -17,7 +17,6 @@
   "common.error": "Error",
   "dashboard.title": "Dashboard",
   "dashboard.greeting": "Good morning",
-  "dashboard.complete_fleet_overview": "Complete Fleet Overview",
   "dashboard.total_cranes": "Total Cranes",
   "dashboard.available_cranes": "Available Cranes",
   "dashboard.active_rentals": "Active Rentals",

@@ -17,7 +17,7 @@
   "common.error": "エラー",
   "dashboard.title": "ダッシュボード",
   "dashboard.greeting": "おはよう",
-  "dashboard.complete_fleet_overview": "完全な車隊の概要",
+
   "dashboard.total_cranes": "合計クレーン数",
   "dashboard.available_cranes": "利用可能なクレーン",
   "dashboard.active_rentals": "アクティブなレンタル",

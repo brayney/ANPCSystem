@@ -1,15 +1,19 @@
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useCallback } from 'react';
-import i18next from './config';
 
 export const useTranslation = () => {
-  const { t } = useI18nTranslation();
+  const { t, i18n } = useI18nTranslation();
   
   const changeLanguage = useCallback((lang) => {
-    i18next.changeLanguage(lang);
-  }, []);
+    if (lang && i18n) {
+      console.log(`🌐 Changing language to: ${lang}`);
+      return i18n.changeLanguage(lang).catch(err => {
+        console.error('❌ Error changing language:', err);
+      });
+    }
+  }, [i18n]);
   
-  return { t, changeLanguage, currentLanguage: i18next.language };
+  return { t, changeLanguage, currentLanguage: i18n?.language || 'en' };
 };
 
 export default useTranslation;

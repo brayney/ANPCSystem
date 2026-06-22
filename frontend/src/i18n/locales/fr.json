@@ -17,7 +17,6 @@
   "common.error": "Erreur",
   "dashboard.title": "Tableau de bord",
   "dashboard.greeting": "Bonjour",
-  "dashboard.complete_fleet_overview": "Aperçu complet de la flotte",
   "dashboard.total_cranes": "Grues totales",
   "dashboard.available_cranes": "Grues disponibles",
   "dashboard.active_rentals": "Locations actives",
