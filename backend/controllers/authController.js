@@ -233,8 +233,8 @@ exports.toggleUserStatus = async (req, res, next) => {
 // PUT /api/auth/update-profile (update own profile)
 exports.updateProfile = async (req, res, next) => {
   try {
-    const { name, email } = req.body;
-    console.log('🔵 updateProfile called:', { userId: req.user._id, name, email });
+    const { name, email, language } = req.body;
+    console.log('🔵 updateProfile called:', { userId: req.user._id, name, email, language });
     
     const user = await User.findById(req.user._id);
 
@@ -243,7 +243,7 @@ exports.updateProfile = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    console.log('📝 Current user:', { name: user.name, email: user.email });
+    console.log('📝 Current user:', { name: user.name, email: user.email, language: user.language });
 
     // Validate inputs
     if (name) {
@@ -270,10 +270,19 @@ exports.updateProfile = async (req, res, next) => {
       }
     }
 
+    if (language) {
+      const validLanguages = ['en', 'es', 'fr', 'de', 'pt', 'ar', 'zh', 'ja'];
+      if (!validLanguages.includes(language)) {
+        return res.status(400).json({ success: false, message: 'Invalid language code' });
+      }
+      user.language = language;
+      console.log('✏️ Language updated to:', language);
+    }
+
     console.log('💾 Saving user...');
     await user.save({ validateBeforeSave: false });
     console.log('✅ User saved successfully');
-    console.log('📦 Returning user:', { name: user.name, email: user.email, _id: user._id });
+    console.log('📦 Returning user:', { name: user.name, email: user.email, language: user.language, _id: user._id });
     
     res.json({ success: true, message: 'Profile updated successfully', user: user.toJSON() });
   } catch (error) { 

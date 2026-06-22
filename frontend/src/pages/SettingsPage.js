@@ -31,8 +31,9 @@ export default function SettingsPage() {
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [userForm, setUserForm] = useState({ name: '', email: '', password: '' });
   const [editProfileMode, setEditProfileMode] = useState(false);
-  const [editProfileForm, setEditProfileForm] = useState({ name: user?.name || '', email: user?.email || '' });
+  const [editProfileForm, setEditProfileForm] = useState({ name: user?.name || '', email: user?.email || '', language: user?.language || 'en' });
   const [savingProfile, setSavingProfile] = useState(false);
+  const [savingLanguage, setSavingLanguage] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [deletingAccountId, setDeletingAccountId] = useState(null);
@@ -83,7 +84,7 @@ export default function SettingsPage() {
   useEffect(() => {
     // Sync editProfileForm with user data when entering edit mode
     if (editProfileMode && user) {
-      setEditProfileForm({ name: user.name || '', email: user.email || '' });
+      setEditProfileForm({ name: user.name || '', email: user.email || '', language: user.language || 'en' });
     }
   }, [editProfileMode, user]);
 
@@ -122,7 +123,7 @@ export default function SettingsPage() {
     }
     
     setSavingProfile(true);
-    const payload = { name: editProfileForm.name.trim(), email: editProfileForm.email.trim() };
+    const payload = { name: editProfileForm.name.trim(), email: editProfileForm.email.trim(), language: editProfileForm.language || 'en' };
     console.log('📤 Sending payload:', payload);
     
     try {
@@ -168,7 +169,25 @@ export default function SettingsPage() {
 
   const handleCancelProfileEdit = () => {
     setEditProfileMode(false);
-    setEditProfileForm({ name: user?.name || '', email: user?.email || '' });
+    setEditProfileForm({ name: user?.name || '', email: user?.email || '', language: user?.language || 'en' });
+  };
+
+  const handleLanguageChange = async (newLanguage) => {
+    setSavingLanguage(true);
+    try {
+      const { data } = await api.put('/settings/language', { language: newLanguage });
+      if (data.success) {
+        toast.success('Language preference updated successfully');
+        setEditProfileForm(prev => ({ ...prev, language: newLanguage }));
+        // Update user in localStorage
+        const updatedUser = { ...user, language: newLanguage };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update language preference');
+    } finally {
+      setSavingLanguage(false);
+    }
   };
 
   const handleCreateUser = async (e) => {
@@ -352,6 +371,24 @@ export default function SettingsPage() {
                         onChange={e => setEditProfileForm({ ...editProfileForm, email: e.target.value })} 
                       />
                     </div>
+                    <div>
+                      <label className="label">Language</label>
+                      <select 
+                        className="input-field" 
+                        value={editProfileForm.language || 'en'}
+                        onChange={e => setEditProfileForm({ ...editProfileForm, language: e.target.value })} 
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <option value="en">English (en)</option>
+                        <option value="es">Español (es)</option>
+                        <option value="fr">Français (fr)</option>
+                        <option value="de">Deutsch (de)</option>
+                        <option value="pt">Português (pt)</option>
+                        <option value="ar">العربية (ar)</option>
+                        <option value="zh">中文 (zh)</option>
+                        <option value="ja">日本語 (ja)</option>
+                      </select>
+                    </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <button type="submit" disabled={savingProfile} className="btn-primary" style={{ flex: 1 }}>
                         {savingProfile ? <><Spinner size="sm" /> Saving...</> : 'Save Changes'}
@@ -386,6 +423,37 @@ export default function SettingsPage() {
                         <span style={{ fontSize: '13px', fontWeight: 500, color: label === 'Account Status' && value === 'Active' ? 'var(--success)' : 'var(--text-primary)', textAlign: 'right', maxWidth: '60%', wordBreak: 'break-word' }}>{value}</span>
                       </div>
                     ))}
+                  </div>
+
+                  <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--border-muted)' }}>
+                    <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px' }}>Language Preference</h3>
+                    <select 
+                      value={editProfileForm.language || 'en'} 
+                      onChange={(e) => handleLanguageChange(e.target.value)}
+                      disabled={savingLanguage}
+                      style={{ 
+                        width: '100%', 
+                        padding: '10px 12px', 
+                        borderRadius: '8px', 
+                        border: '1px solid var(--border)', 
+                        background: 'var(--surface)', 
+                        color: 'var(--text-primary)',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        cursor: savingLanguage ? 'not-allowed' : 'pointer',
+                        opacity: savingLanguage ? 0.6 : 1
+                      }}
+                    >
+                      <option value="en">English (en)</option>
+                      <option value="es">Español (es)</option>
+                      <option value="fr">Français (fr)</option>
+                      <option value="de">Deutsch (de)</option>
+                      <option value="pt">Português (pt)</option>
+                      <option value="ar">العربية (ar)</option>
+                      <option value="zh">中文 (zh)</option>
+                      <option value="ja">日本語 (ja)</option>
+                    </select>
+                    {savingLanguage && <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>Updating language...</p>}
                   </div>
 
                   <div style={{ marginTop: '20px' }}>

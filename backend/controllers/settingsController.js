@@ -147,8 +147,48 @@ const deleteLoginBackground = async (req, res) => {
   }
 };
 
+// Update user language preference
+const updateLanguage = async (req, res, next) => {
+  try {
+    const { language } = req.body;
+    const validLanguages = ['en', 'es', 'fr', 'de', 'pt', 'ar', 'zh', 'ja'];
+
+    if (!language || !validLanguages.includes(language)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid language. Supported languages: ' + validLanguages.join(', '),
+      });
+    }
+
+    const User = require('../models/User');
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { language },
+      { new: true, runValidators: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Language preference updated successfully',
+      data: { language: user.language },
+    });
+  } catch (error) {
+    console.error('Error updating language:', error.message || error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update language preference',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
 module.exports = {
   uploadLoginBackground,
   getLoginBackground,
   deleteLoginBackground,
+  updateLanguage,
 };

@@ -5,6 +5,7 @@ const {
   uploadLoginBackground,
   getLoginBackground,
   deleteLoginBackground,
+  updateLanguage,
 } = require('../controllers/settingsController');
 
 const router = express.Router();
@@ -42,5 +43,8 @@ router.get('/login-background', getLoginBackground);
 
 // Delete login background (admin only)
 router.delete('/login-background', protect, adminOnly, deleteLoginBackground);
+
+// Update user language preference (protected)
+router.put('/language', protect, updateLanguage);
 
 module.exports = router;
