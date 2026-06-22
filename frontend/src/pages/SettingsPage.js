@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { PageHeader, Spinner, ConfirmDialog } from '../components/common';
 import { useAuth } from '../hooks/useAuth';
+import { useTranslation } from '../i18n/useTranslation';
 import api from '../utils/api';
 import { UserCircleIcon, UsersIcon, UserPlusIcon, KeyIcon, InformationCircleIcon, ChevronDownIcon, ChevronUpIcon, PhotoIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
 
@@ -28,6 +29,7 @@ const formatRole = (role) => {
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const { t, changeLanguage } = useTranslation();
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [userForm, setUserForm] = useState({ name: '', email: '', password: '' });
   const [editProfileMode, setEditProfileMode] = useState(false);
@@ -177,14 +179,13 @@ export default function SettingsPage() {
     try {
       const { data } = await api.put('/settings/language', { language: newLanguage });
       if (data.success) {
-        toast.success('Language updated successfully!');
-        // Update user in localStorage
+        toast.success(`Language changed to ${newLanguage.toUpperCase()}`);
+        // Update user in localStorage without reloading
         const updatedUser = { ...user, language: newLanguage };
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        // Reload page to apply language changes
-        setTimeout(() => {
-          window.location.reload();
-        }, 500);
+        // Update i18next language
+        changeLanguage(newLanguage);
+        setSavingLanguage(false);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update language preference');
@@ -427,8 +428,8 @@ export default function SettingsPage() {
           {activeTab === 'language' && (
             <div className="card animate-fade-in">
               <div style={{ marginBottom: '24px' }}>
-                <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>Select Language</h2>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: 0 }}>Choose your preferred system language</p>
+                <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>{t('settings.select_language')}</h2>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: 0 }}>{t('settings.choose_system_language')}</p>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px' }}>
@@ -475,7 +476,7 @@ export default function SettingsPage() {
 
               <div style={{ marginTop: '24px', padding: '14px', borderRadius: '8px', background: 'var(--surface-2)', border: '1px solid var(--border-muted)' }}>
                 <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
-                  <strong>Current Language:</strong> {user?.language ? (user.language.toUpperCase()) : 'English (en)'}
+                  <strong>{t('settings.current_language')}:</strong> {user?.language ? (user.language.toUpperCase()) : 'EN'}
                 </p>
               </div>
             </div>
