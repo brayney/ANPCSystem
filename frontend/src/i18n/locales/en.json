@@ -92,5 +92,18 @@
   "common.duration": "Duration",
   "common.value": "Value",
   "common.days": "days",
-  "common.day": "day"
+  "common.day": "day",
+  "sidebar.navigation": "Navigation",
+  "sidebar.dashboard": "Dashboard",
+  "sidebar.cranes": "Cranes",
+  "sidebar.counterweights": "Counterweights",
+  "sidebar.boom_sections": "Boom Sections",
+  "sidebar.hooks": "Hooks",
+  "sidebar.transactions": "Transactions",
+  "sidebar.calendar": "Calendar",
+  "sidebar.instructions": "Instructions",
+  "sidebar.reports": "Reports",
+  "sidebar.settings": "Settings",
+  "sidebar.profile": "Profile",
+  "sidebar.logout": "Logout"
 }

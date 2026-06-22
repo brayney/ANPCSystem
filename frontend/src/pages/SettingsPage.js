@@ -188,10 +188,9 @@ export default function SettingsPage() {
       console.log(`📊 Backend response:`, data);
       
       if (data.success) {
-        // Update user in localStorage with new language
-        const updatedUser = { ...user, language: newLanguage };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        console.log(`💾 Updated user in localStorage:`, updatedUser);
+        // Update user in both React state and localStorage
+        updateUser({ language: newLanguage });
+        console.log(`✅ User state and localStorage updated with language: ${newLanguage}`);
         
         toast.success(`Language changed to ${newLanguage.toUpperCase()}`);
         setSavingLanguage(false);

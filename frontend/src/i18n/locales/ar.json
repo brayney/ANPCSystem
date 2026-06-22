@@ -94,5 +94,18 @@
   "common.duration": "المدة",
   "common.value": "القيمة",
   "common.days": "أيام",
-  "common.day": "يوم"
+  "common.day": "يوم",
+  "sidebar.navigation": "ملاحة",
+  "sidebar.dashboard": "لوحة القيادة",
+  "sidebar.cranes": "رافعات",
+  "sidebar.counterweights": "أوزان موازنة",
+  "sidebar.boom_sections": "أقسام الذراع",
+  "sidebar.hooks": "خطاطيف",
+  "sidebar.transactions": "معاملات",
+  "sidebar.calendar": "تقويم",
+  "sidebar.instructions": "تعليمات",
+  "sidebar.reports": "تقارير",
+  "sidebar.settings": "إعدادات",
+  "sidebar.profile": "ملف التعريف",
+  "sidebar.logout": "تسجيل الخروج"
 }

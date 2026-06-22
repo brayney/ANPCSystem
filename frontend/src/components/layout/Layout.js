@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useTranslation } from '../../i18n/useTranslation';
 import FloatingChat from '../common/FloatingChat';
 import {
   HomeIcon, TruckIcon, Square3Stack3DIcon, LinkIcon,
@@ -8,18 +9,19 @@ import {
   ArrowRightOnRectangleIcon, MoonIcon, SunIcon, BoltIcon, CalendarIcon, BookOpenIcon
 } from '@heroicons/react/24/outline';
 
-const nav = [
-  { to: '/dashboard', icon: HomeIcon, label: 'Dashboard' },
-  { to: '/cranes', icon: TruckIcon, label: 'Cranes' },
-  { to: '/counterweights', icon: Square3Stack3DIcon, label: 'Counterweights' },
-  { to: '/boom-sections', icon: BoltIcon, label: 'Boom Sections' },
-  { to: '/hooks', icon: LinkIcon, label: 'Hooks' },
-  { to: '/transactions', icon: DocumentTextIcon, label: 'Transactions' },
-  { to: '/transactions/calendar', icon: CalendarIcon, label: 'Calendar' },
-];
-
 const SidebarContent = ({ setSidebarOpen, onLogoutClick }) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
+  
+  const navItems = [
+    { to: '/dashboard', icon: HomeIcon, labelKey: 'sidebar.dashboard' },
+    { to: '/cranes', icon: TruckIcon, labelKey: 'sidebar.cranes' },
+    { to: '/counterweights', icon: Square3Stack3DIcon, labelKey: 'sidebar.counterweights' },
+    { to: '/boom-sections', icon: BoltIcon, labelKey: 'sidebar.boom_sections' },
+    { to: '/hooks', icon: LinkIcon, labelKey: 'sidebar.hooks' },
+    { to: '/transactions', icon: DocumentTextIcon, labelKey: 'sidebar.transactions' },
+    { to: '/transactions/calendar', icon: CalendarIcon, labelKey: 'sidebar.calendar' },
+  ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--sidebar-bg)' }}>
@@ -36,12 +38,12 @@ const SidebarContent = ({ setSidebarOpen, onLogoutClick }) => {
 
       {/* Nav Section Label */}
       <div style={{ padding: '16px 20px 8px', transition: 'all 0.3s ease' }}>
-        <p style={{ fontSize: '10px', fontWeight: 600, color: '#3d444d', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Navigation</p>
+        <p style={{ fontSize: '10px', fontWeight: 600, color: '#3d444d', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{t('sidebar.navigation')}</p>
       </div>
 
       {/* Nav Items */}
       <nav style={{ flex: 1, overflowY: 'auto', padding: '0 10px', transition: 'all 0.3s ease' }}>
-        {nav.map(({ to, icon: Icon, label }) => (
+        {navItems.map(({ to, icon: Icon, labelKey }) => (
           <NavLink key={to} to={to} end
             onClick={() => setSidebarOpen && setSidebarOpen(false)}
             style={({ isActive }) => ({
@@ -63,7 +65,7 @@ const SidebarContent = ({ setSidebarOpen, onLogoutClick }) => {
             {({ isActive }) => (
               <>
                 <Icon style={{ width: '16px', height: '16px', flexShrink: 0, opacity: isActive ? 1 : 0.7 }} />
-                <span>{label}</span>
+                <span>{t(labelKey)}</span>
               </>
             )}
           </NavLink>
@@ -83,7 +85,7 @@ const SidebarContent = ({ setSidebarOpen, onLogoutClick }) => {
           })}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; }}
           onMouseLeave={e => { if (!window.location.pathname.startsWith('/tutorials')) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--sidebar-text)'; } }}>
-          {({ isActive }) => (<><BookOpenIcon style={{ width: '16px', height: '16px', opacity: isActive ? 1 : 0.7 }} /><span>Instructions</span></>)}
+          {({ isActive }) => (<><BookOpenIcon style={{ width: '16px', height: '16px', opacity: isActive ? 1 : 0.7 }} /><span>{t('sidebar.instructions')}</span></>)}
         </NavLink>
         <NavLink to="/reports"
           style={({ isActive }) => ({
@@ -96,7 +98,7 @@ const SidebarContent = ({ setSidebarOpen, onLogoutClick }) => {
           })}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; }}
           onMouseLeave={e => { if (!window.location.pathname.startsWith('/reports')) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--sidebar-text)'; } }}>
-          {({ isActive }) => (<><ChartBarIcon style={{ width: '16px', height: '16px', opacity: isActive ? 1 : 0.7 }} /><span>Reports</span></>)}
+          {({ isActive }) => (<><ChartBarIcon style={{ width: '16px', height: '16px', opacity: isActive ? 1 : 0.7 }} /><span>{t('sidebar.reports')}</span></>)}
         </NavLink>
         <NavLink to="/settings"
           style={({ isActive }) => ({
@@ -109,7 +111,7 @@ const SidebarContent = ({ setSidebarOpen, onLogoutClick }) => {
           })}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; }}
           onMouseLeave={e => { if (!window.location.pathname.startsWith('/settings')) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--sidebar-text)'; } }}>
-          {({ isActive }) => (<><Cog6ToothIcon style={{ width: '16px', height: '16px', opacity: isActive ? 1 : 0.7 }} /><span>Settings</span></>)}
+          {({ isActive }) => (<><Cog6ToothIcon style={{ width: '16px', height: '16px', opacity: isActive ? 1 : 0.7 }} /><span>{t('sidebar.settings')}</span></>)}
         </NavLink>
       </div>
 
@@ -141,6 +143,7 @@ export default function Layout() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const toggleDark = () => {
@@ -183,10 +186,10 @@ export default function Layout() {
             
             {/* Collapsed Nav Items */}
             <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', transition: 'all 0.3s ease' }}>
-              {nav.map(({ to, icon: Icon, label }) => (
+              {navItems.map(({ to, icon: Icon, labelKey }) => (
                 <NavLink key={to} to={to}
                   end
-                  title={label}
+                  title={t(labelKey)}
                   style={({ isActive }) => ({
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     padding: '10px', borderRadius: '7px',
@@ -211,7 +214,7 @@ export default function Layout() {
             
             {/* Collapsed Footer Icons & User */}
             <div style={{ padding: '10px', borderTop: '1px solid var(--sidebar-border)', display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', alignItems: 'center', transition: 'all 0.3s ease' }}>
-              <NavLink to="/tutorials" title="Instructions"
+              <NavLink to="/tutorials" title={t('sidebar.instructions')}
                 style={({ isActive }) => ({
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   padding: '10px', borderRadius: '7px',
@@ -223,7 +226,7 @@ export default function Layout() {
                 onMouseLeave={e => { if (!window.location.pathname.startsWith('/tutorials')) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--sidebar-text)'; } }}>
                 {({ isActive }) => (<BookOpenIcon style={{ width: '18px', height: '18px', opacity: isActive ? 1 : 0.7 }} />)}
               </NavLink>
-              <NavLink to="/reports" title="Reports"
+              <NavLink to="/reports" title={t('sidebar.reports')}
                 style={({ isActive }) => ({
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   padding: '10px', borderRadius: '7px',
@@ -235,7 +238,7 @@ export default function Layout() {
                 onMouseLeave={e => { if (!window.location.pathname.startsWith('/reports')) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--sidebar-text)'; } }}>
                 {({ isActive }) => (<ChartBarIcon style={{ width: '18px', height: '18px', opacity: isActive ? 1 : 0.7 }} />)}
               </NavLink>
-              <NavLink to="/settings" title="Settings"
+              <NavLink to="/settings" title={t('sidebar.settings')}
                 style={({ isActive }) => ({
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   padding: '10px', borderRadius: '7px',

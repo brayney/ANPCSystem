@@ -94,5 +94,18 @@
   "common.duration": "持续时间",
   "common.value": "值",
   "common.days": "天",
-  "common.day": "天"
+  "common.day": "天",
+  "sidebar.navigation": "导航",
+  "sidebar.dashboard": "仪表盘",
+  "sidebar.cranes": "起重机",
+  "sidebar.counterweights": "配重",
+  "sidebar.boom_sections": "臂部分",
+  "sidebar.hooks": "钩子",
+  "sidebar.transactions": "交易",
+  "sidebar.calendar": "日历",
+  "sidebar.instructions": "说明",
+  "sidebar.reports": "报告",
+  "sidebar.settings": "设置",
+  "sidebar.profile": "桥司",
+  "sidebar.logout": "退出"
 }

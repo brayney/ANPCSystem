@@ -93,5 +93,18 @@
   "common.duration": "Dauer",
   "common.value": "Wert",
   "common.days": "Tage",
-  "common.day": "Tag"
+  "common.day": "Tag",
+  "sidebar.navigation": "Navigation",
+  "sidebar.dashboard": "Instrumententafel",
+  "sidebar.cranes": "Kräne",
+  "sidebar.counterweights": "Gegengewichte",
+  "sidebar.boom_sections": "Auslegerabschnitte",
+  "sidebar.hooks": "Haken",
+  "sidebar.transactions": "Transaktionen",
+  "sidebar.calendar": "Kalender",
+  "sidebar.instructions": "Anweisungen",
+  "sidebar.reports": "Berichte",
+  "sidebar.settings": "Einstellungen",
+  "sidebar.profile": "Profil",
+  "sidebar.logout": "Abmelden"
 }

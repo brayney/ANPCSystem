@@ -93,5 +93,18 @@
   "common.duration": "Durée",
   "common.value": "Valeur",
   "common.days": "jours",
-  "common.day": "jour"
+  "common.day": "jour",
+  "sidebar.navigation": "Navigation",
+  "sidebar.dashboard": "Tableau de Bord",
+  "sidebar.cranes": "Grues",
+  "sidebar.counterweights": "Contrepoids",
+  "sidebar.boom_sections": "Sections de Flèche",
+  "sidebar.hooks": "Crochets",
+  "sidebar.transactions": "Transactions",
+  "sidebar.calendar": "Calendrier",
+  "sidebar.instructions": "Instructions",
+  "sidebar.reports": "Rapports",
+  "sidebar.settings": "Paramétres",
+  "sidebar.profile": "Profil",
+  "sidebar.logout": "Se Deconnecter"
 }

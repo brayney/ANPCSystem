@@ -94,5 +94,18 @@
   "common.duration": "期間",
   "common.value": "値",
   "common.days": "日",
-  "common.day": "日"
+  "common.day": "日",
+  "sidebar.navigation": "ナビゲーション",
+  "sidebar.dashboard": "ダッシュボード",
+  "sidebar.cranes": "クレーン",
+  "sidebar.counterweights": "カウンターウェイト",
+  "sidebar.boom_sections": "ブームセクション",
+  "sidebar.hooks": "フック",
+  "sidebar.transactions": "トランザクション",
+  "sidebar.calendar": "カレンダー",
+  "sidebar.instructions": "提供书",
+  "sidebar.reports": "レポート",
+  "sidebar.settings": "設定",
+  "sidebar.profile": "プロフィール",
+  "sidebar.logout": "ログアウト"
 }

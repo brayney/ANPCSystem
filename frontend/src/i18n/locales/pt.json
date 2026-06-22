@@ -93,5 +93,18 @@
   "common.duration": "Duração",
   "common.value": "Valor",
   "common.days": "dias",
-  "common.day": "dia"
+  "common.day": "dia",
+  "sidebar.navigation": "Navegação",
+  "sidebar.dashboard": "Painel de Controle",
+  "sidebar.cranes": "Guindastes",
+  "sidebar.counterweights": "Contrapesos",
+  "sidebar.boom_sections": "Seções de Lança",
+  "sidebar.hooks": "Ganchos",
+  "sidebar.transactions": "Transações",
+  "sidebar.calendar": "Calendário",
+  "sidebar.instructions": "Instruções",
+  "sidebar.reports": "Relatórios",
+  "sidebar.settings": "Configurações",
+  "sidebar.profile": "Perfil",
+  "sidebar.logout": "Sair"
 }
