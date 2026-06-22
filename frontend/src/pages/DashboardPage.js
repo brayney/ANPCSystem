@@ -169,16 +169,16 @@ function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.recentTransactions.slice(0, 8).map(t => {
-                  const daysRented = t.returnDate ? differenceInDays(new Date(t.returnDate), new Date(t.transactionDate)) : differenceInDays(new Date(), new Date(t.transactionDate));
-                  const rentalValue = (daysRented * (t.dailyRate || 0)).toFixed(2);
+                {data.recentTransactions.slice(0, 8).map(txn => {
+                  const daysRented = txn.returnDate ? differenceInDays(new Date(txn.returnDate), new Date(txn.transactionDate)) : differenceInDays(new Date(), new Date(txn.transactionDate));
+                  const rentalValue = (daysRented * (txn.dailyRate || 0)).toFixed(2);
                   return (
-                    <tr key={t._id} style={{ borderBottom: '1px solid var(--border-muted)' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                      <td style={{ padding: '14px', fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', fontWeight: 700, color: 'var(--accent)' }}><Link to={`/transactions/${t._id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{t.transactionNo}</Link></td>
-                      <td style={{ padding: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>{t.companyName}</td>
-                      <td style={{ padding: '14px', fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', color: 'var(--text-secondary)' }}>{t.crane}</td>
-                      <td style={{ padding: '14px' }}><StatusBadge status={t.status} /></td>
-                      <td style={{ padding: '14px', color: 'var(--text-secondary)', fontSize: '12px' }}>{t.transactionDate ? format(new Date(t.transactionDate), 'MMM d, yyyy') : '—'}</td>
+                    <tr key={txn._id} style={{ borderBottom: '1px solid var(--border-muted)' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      <td style={{ padding: '14px', fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', fontWeight: 700, color: 'var(--accent)' }}><Link to={`/transactions/${txn._id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{txn.transactionNo}</Link></td>
+                      <td style={{ padding: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>{txn.companyName}</td>
+                      <td style={{ padding: '14px', fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', color: 'var(--text-secondary)' }}>{txn.crane}</td>
+                      <td style={{ padding: '14px' }}><StatusBadge status={txn.status} /></td>
+                      <td style={{ padding: '14px', color: 'var(--text-secondary)', fontSize: '12px' }}>{txn.transactionDate ? format(new Date(txn.transactionDate), 'MMM d, yyyy') : '—'}</td>
                       <td style={{ padding: '14px', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{daysRented} {daysRented !== 1 ? t('common.days') : t('common.day')}</td>
                       <td style={{ padding: '14px', fontSize: '12px', fontWeight: 600, color: 'var(--accent)', fontFamily: "'JetBrains Mono', monospace" }}>${rentalValue}</td>
                     </tr>
