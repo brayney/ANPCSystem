@@ -6,11 +6,12 @@ import CSVImport from '../common/CSVImport';
 import api from '../../utils/api';
 import { useAuth } from '../../hooks/useAuth';
 
-export function createEquipmentPage({ title, endpoint, columns, FormComponent, buildQuery, templateUrl }) {
+export function createEquipmentPage({ title, endpoint, columns, FormComponent, buildQuery, templateUrl, filters = [] }) {
   return function EquipmentPage() {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [filterValues, setFilterValues] = useState({});
     const [page, setPage] = useState(1);
     const [pages, setPages] = useState(1);
     const [total, setTotal] = useState(0);
@@ -26,13 +27,16 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
     const fetchItems = useCallback(async () => {
       setLoading(true);
       try {
-        const params = buildQuery ? buildQuery({ page, search }) : { page, limit: 15, search: search || undefined };
+        const params = buildQuery ? buildQuery({ page, search, filters: filterValues }) : { page, limit: 15, search: search || undefined };
         if (!search) delete params.search;
+        Object.entries(filterValues).forEach(([key, value]) => {
+          if (value) params[key] = value;
+        });
         const { data } = await api.get(endpoint, { params });
         setItems(data.data); setPages(data.pages); setTotal(data.total);
       } catch { toast.error(`Failed to load ${title}`); }
       finally { setLoading(false); }
-    }, [page, search]);
+    }, [page, search, filterValues]);
 
     useEffect(() => { fetchItems(); }, [fetchItems]);
 
@@ -89,6 +93,25 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
               placeholder={`Search ${title.toLowerCase()}...`}
               value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
             </div>
+            {filters.map(filter => (
+              <select
+                key={filter.key}
+                className="input-field"
+                style={{ width: filter.width || '160px' }}
+                value={filterValues[filter.key] || ''}
+                onChange={e => {
+                  setFilterValues(prev => ({ ...prev, [filter.key]: e.target.value }));
+                  setPage(1);
+                }}
+              >
+                <option value="">{filter.allLabel || `All ${filter.label}`}</option>
+                {filter.options.map(option => (
+                  <option key={option.value || option} value={option.value || option}>
+                    {option.label || option}
+                  </option>
+                ))}
+              </select>
+            ))}
             {canEditOrDelete && (
               <button type="button" onClick={() => { setSelectionMode(!selectionMode); setSelectedIds([]); }} 
                 className={selectionMode ? 'btn-secondary' : 'btn-primary'} style={{ fontSize: '12px' }}>

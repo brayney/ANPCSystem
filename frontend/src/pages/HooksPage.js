@@ -3,6 +3,9 @@ import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { createEquipmentPage } from '../components/modules/EquipmentPageFactory';
 
+const STATUS_OPTIONS = ['Available', 'Allocated', 'In Use', 'Under Maintenance', 'Out of Yard'];
+const CONDITION_OPTIONS = ['OK', 'NOT OK', 'For Repair', 'Unknown'];
+
 const HookForm = ({ initial, onSave, onClose, endpoint }) => {
   const [form, setForm] = useState({
     itemName: '', hookSerialNo: '', capacity: '', assignedCrane: '', location: '',
@@ -151,13 +154,13 @@ const HookForm = ({ initial, onSave, onClose, endpoint }) => {
         <div>
           <label className="label">Condition</label>
           <select className="input-field" value={form.condition} onChange={e => handleChange('condition', e.target.value)}>
-            {['OK', 'NOT OK', 'For Repair', 'Unknown'].map(o => <option key={o}>{o}</option>)}
+            {CONDITION_OPTIONS.map(o => <option key={o}>{o}</option>)}
           </select>
         </div>
         <div>
           <label className="label">Status</label>
           <select className="input-field" value={form.status} onChange={e => handleChange('status', e.target.value)}>
-            {['Available', 'Allocated', 'In Use', 'Under Maintenance', 'Out of Yard'].map(o => <option key={o}>{o}</option>)}
+            {STATUS_OPTIONS.map(o => <option key={o}>{o}</option>)}
           </select>
         </div>
       </div>
@@ -180,6 +183,10 @@ export default createEquipmentPage({
   title: 'Hooks',
   endpoint: '/hooks',
   templateUrl: '/templates/hooks-import-template.xlsx',
+  filters: [
+    { key: 'status', label: 'Status', allLabel: 'All Status', options: STATUS_OPTIONS },
+    { key: 'condition', label: 'Condition', allLabel: 'All Condition', options: CONDITION_OPTIONS },
+  ],
   columns: [
     { key: 'itemName', label: 'Item Name' },
     { key: 'hookSerialNo', label: 'Serial No.' },

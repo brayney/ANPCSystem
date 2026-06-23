@@ -3,6 +3,9 @@ import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { createEquipmentPage } from '../components/modules/EquipmentPageFactory';
 
+const STATUS_OPTIONS = ['Available', 'In Use', 'Under Maintenance', 'Out of Yard'];
+const CONDITION_OPTIONS = ['Ok', 'NOT OK', 'For Repair', 'Unknown'];
+
 const BoomSectionForm = ({ initial, onSave, onClose, endpoint }) => {
   const [form, setForm] = useState({
     assignedCrane: '', boomCode: '', itemName: '', length: '',
@@ -151,13 +154,13 @@ const BoomSectionForm = ({ initial, onSave, onClose, endpoint }) => {
         <div>
           <label className="label">Condition</label>
           <select className="input-field" value={form.condition} onChange={e => handleChange('condition', e.target.value)}>
-            {['Ok', 'NOT OK', 'For Repair', 'Unknown'].map(o => <option key={o}>{o}</option>)}
+            {CONDITION_OPTIONS.map(o => <option key={o}>{o}</option>)}
           </select>
         </div>
         <div>
           <label className="label">Status</label>
           <select className="input-field" value={form.status} onChange={e => handleChange('status', e.target.value)}>
-            {['Available', 'In Use', 'Under Maintenance', 'Out of Yard'].map(o => <option key={o}>{o}</option>)}
+            {STATUS_OPTIONS.map(o => <option key={o}>{o}</option>)}
           </select>
         </div>
       </div>
@@ -180,6 +183,10 @@ export default createEquipmentPage({
   title: 'Boom Sections',
   endpoint: '/boom-sections',
   templateUrl: '/templates/boom-sections-import-template.xlsx',
+  filters: [
+    { key: 'status', label: 'Status', allLabel: 'All Status', options: STATUS_OPTIONS },
+    { key: 'condition', label: 'Condition', allLabel: 'All Condition', options: CONDITION_OPTIONS },
+  ],
   columns: [
     { key: 'itemName', label: 'Item Name' },
     { key: 'boomCode', label: 'Boom Code' },
