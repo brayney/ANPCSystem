@@ -64,6 +64,42 @@ const findChildTransactions = (sourceId, publicOnly = false) => {
     .sort({ createdAt: 1 });
 };
 
+const defaultEquipmentState = { status: 'Available', location: 'RAG YARD', client: '-' };
+
+const restoreEquipmentToDefaults = async (transactions, includeCranes = true) => {
+  const txns = Array.isArray(transactions) ? transactions : [transactions];
+  const craneIds = new Set();
+  const craneNos = new Set();
+  const counterweightIds = new Set();
+  const boomSectionIds = new Set();
+  const hookIds = new Set();
+
+  txns.forEach(txn => {
+    if (!txn) return;
+    craneIdsFromTransaction(txn).forEach(id => craneIds.add(id));
+    craneEquipmentNosFromTransaction(txn).forEach(no => craneNos.add(no));
+    (txn.counterweights || []).forEach(id => counterweightIds.add(String(id)));
+    (txn.boomSections || []).forEach(id => boomSectionIds.add(String(id)));
+    (txn.hooks || []).forEach(id => hookIds.add(String(id)));
+  });
+
+  if (includeCranes && (craneIds.size > 0 || craneNos.size > 0)) {
+    const craneQuery = { $or: [] };
+    if (craneIds.size > 0) craneQuery.$or.push({ _id: { $in: Array.from(craneIds) } });
+    if (craneNos.size > 0) craneQuery.$or.push({ equipmentNo: { $in: Array.from(craneNos) } });
+    await Crane.updateMany(craneQuery, { $set: defaultEquipmentState });
+  }
+  if (counterweightIds.size > 0) {
+    await Counterweight.updateMany({ _id: { $in: Array.from(counterweightIds) } }, { $set: defaultEquipmentState });
+  }
+  if (boomSectionIds.size > 0) {
+    await BoomSection.updateMany({ _id: { $in: Array.from(boomSectionIds) } }, { $set: defaultEquipmentState });
+  }
+  if (hookIds.size > 0) {
+    await Hook.updateMany({ _id: { $in: Array.from(hookIds) } }, { $set: defaultEquipmentState });
+  }
+};
+
 exports.getTransactions = async (req, res, next) => {
   try {
     const { search, status, type, page = 1, limit = 20 } = req.query;
@@ -512,8 +548,40 @@ exports.returnTransaction = async (req, res, next) => {
 
 exports.deleteTransaction = async (req, res, next) => {
   try {
-    const txn = await Transaction.findByIdAndUpdate(req.params.id, { isArchived: true }, { new: true });
+    const txn = await Transaction.findById(req.params.id);
     if (!txn) return res.status(404).json({ success: false, message: 'Not found' });
-    res.json({ success: true, message: 'Archived' });
+
+    const isAddedTransaction = !!txn.sourceTransactionId;
+    if (isAddedTransaction) {
+      txn.isArchived = true;
+      await txn.save();
+
+      await restoreEquipmentToDefaults(txn, false);
+
+      const sourceTxn = await Transaction.findOne({ _id: txn.sourceTransactionId, isArchived: false });
+      if (sourceTxn && sourceTxn.status === 'Active') {
+        await Crane.updateMany(
+          craneUpdateQuery(sourceTxn),
+          { $set: { status: 'Out of Yard', location: sourceTxn.deliveryLocation || sourceTxn.companyAddress || 'In Transit', client: sourceTxn.companyName } }
+        );
+      } else {
+        await restoreEquipmentToDefaults(txn, true);
+      }
+
+      await AuditLog.create({ user: req.user._id, userName: req.user.name, action: 'DELETE_TRANSACTION', module: 'Transaction', targetId: txn.transactionNo, details: `Deleted added transaction ${txn.transactionNo}` });
+      return res.json({ success: true, message: 'Archived and equipment restored' });
+    }
+
+    const childTransactions = await Transaction.find({ sourceTransactionId: txn._id, isArchived: false });
+    const relatedTransactions = [txn, ...childTransactions];
+
+    await Transaction.updateMany(
+      { _id: { $in: relatedTransactions.map(item => item._id) } },
+      { $set: { isArchived: true } }
+    );
+    await restoreEquipmentToDefaults(relatedTransactions, true);
+
+    await AuditLog.create({ user: req.user._id, userName: req.user.name, action: 'DELETE_TRANSACTION', module: 'Transaction', targetId: txn.transactionNo, details: `Deleted transaction ${txn.transactionNo} and ${childTransactions.length} added transaction(s)` });
+    res.json({ success: true, message: 'Archived and equipment restored' });
   } catch (error) { next(error); }
 };
