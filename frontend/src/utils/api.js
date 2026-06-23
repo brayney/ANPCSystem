@@ -1,8 +1,11 @@
-import axios from 'axios';
+                    import axios from 'axios';
 
 const getBaseURL = () => {
   const configuredUrl = process.env.REACT_APP_API_URL?.trim();
-  if (configuredUrl) return configuredUrl;
+  if (configuredUrl) {
+    const normalizedUrl = configuredUrl.replace(/\/+$/, '');
+    return normalizedUrl.endsWith('/api') ? normalizedUrl : `${normalizedUrl}/api`;
+  }
 
   if (process.env.NODE_ENV === 'production' && typeof window !== 'undefined') {
     return `${window.location.origin}/api`;

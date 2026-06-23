@@ -19,6 +19,44 @@ const getTransactionCranes = (txn) => (
       }]
 );
 
+const RelatedTransactionsTable = ({ transactions = [], compact = false }) => {
+  if (!transactions.length) return null;
+
+  const fmt = (d) => d ? format(new Date(d), compact ? 'MMM d, yyyy' : 'MMMM d, yyyy') : '—';
+
+  return (
+    <div className={compact ? 'mb-2' : 'mt-6'}>
+      <h3 className={`${compact ? 'font-bold text-gray-800 text-xs uppercase tracking-wide mb-1 border-b pb-0.5' : 'text-sm font-bold text-gray-900 mb-3'}`}>Added Transactions</h3>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs border border-gray-300">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="px-2 py-1 text-left">TXN No.</th>
+              <th className="px-2 py-1 text-left">Date</th>
+              <th className="px-2 py-1 text-left">Driver / Vehicle</th>
+              <th className="px-2 py-1 text-left">Location</th>
+              <th className="px-2 py-1 text-left">Attachments</th>
+              <th className="px-2 py-1 text-left">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {transactions.map(child => (
+              <tr key={child._id} className="border-t border-gray-200">
+                <td className="px-2 py-1 font-mono font-bold text-blue-700">{child.transactionNo}</td>
+                <td className="px-2 py-1">{fmt(child.transactionDate)}</td>
+                <td className="px-2 py-1">{[child.driverName, child.vehicleType, child.vehiclePlateNo].filter(Boolean).join(' / ') || '—'}</td>
+                <td className="px-2 py-1">{child.pullOutLocation || child.deliveryLocation || '—'}</td>
+                <td className="px-2 py-1">{child.counterweights?.length || 0} CW / {child.boomSections?.length || 0} Boom / {child.hooks?.length || 0} Hooks</td>
+                <td className="px-2 py-1">{child.status}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 const PrintView = React.forwardRef(({ txn }, ref) => {
   if (!txn) return null;
   const cranes = getTransactionCranes(txn);
@@ -178,6 +216,8 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
           </div>
         )}
 
+        <RelatedTransactionsTable transactions={txn.childTransactions || []} compact />
+
         {/* Signatures - hide on mobile */}
         <div className="mt-4 grid grid-cols-3 gap-3 hidden md:grid">
           {['Released By', 'Received By', 'Authorized By'].map(label => (
@@ -278,9 +318,10 @@ export default function PublicTransactionPage() {
               <p className="font-medium">{fmt(txn.expectedReturnDate)}</p>
             </div>
           </div>
+          <RelatedTransactionsTable transactions={txn.childTransactions || []} />
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
             <p className="text-xs text-blue-900">
-              ✓ <strong>Secure Transaction Review:</strong> Each transaction is uniquely identified by QR code. Only this transaction can be viewed via this link.
+              ✓ <strong>Secure Transaction Review:</strong> This QR review includes the main transaction and added transactions connected to it.
             </p>
           </div>
         </div>

@@ -20,6 +20,7 @@ const transactionSchema = new mongoose.Schema({
   counterweights: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Counterweight' }],
   boomSections: [{ type: mongoose.Schema.Types.ObjectId, ref: 'BoomSection' }],
   hooks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Hook' }],
+  sourceTransactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' },
 
   // Company Information
   companyName: { type: String, required: true, trim: true },

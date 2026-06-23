@@ -24,25 +24,70 @@ const craneIdsFromTransaction = (txn) => {
   return [...new Set(ids.map(id => String(id)))];
 };
 
+const craneEquipmentNosFromTransaction = (txn) => {
+  const equipmentNos = [];
+  if (txn.crane) equipmentNos.push(txn.crane);
+  if (Array.isArray(txn.cranes)) {
+    txn.cranes.forEach(item => {
+      if (item.equipmentNo) equipmentNos.push(item.equipmentNo);
+    });
+  }
+  return [...new Set(equipmentNos.map(equipmentNo => String(equipmentNo)))];
+};
+
+const attachmentBelongsToCrane = (item, equipmentNos) => {
+  const assignedCrane = String(item.assignedCrane || '').trim();
+  if (!assignedCrane || /^(all|none|n\/a|na|not assigned|unassigned)$/i.test(assignedCrane)) return true;
+  return equipmentNos.includes(assignedCrane);
+};
+
 const craneUpdateQuery = (txn) => {
   const ids = craneIdsFromTransaction(txn);
   if (ids.length > 0) return { _id: { $in: ids } };
   return craneLookup(txn);
 };
 
+const findChildTransactions = (sourceId, publicOnly = false) => {
+  const query = Transaction.find({ isArchived: false, sourceTransactionId: sourceId });
+  if (publicOnly) {
+    return query
+      .populate('counterweights', 'itemName serialNo weightKg')
+      .populate('boomSections', 'itemName boomCode length weightKg')
+      .populate('hooks', 'itemName hookSerialNo weightKg')
+      .sort({ createdAt: 1 });
+  }
+  return query
+    .populate('counterweights')
+    .populate('boomSections')
+    .populate('hooks')
+    .populate('createdBy', 'name email')
+    .sort({ createdAt: 1 });
+};
+
 exports.getTransactions = async (req, res, next) => {
   try {
     const { search, status, type, page = 1, limit = 20 } = req.query;
-    const query = { isArchived: false };
+    const mainTransactionFilter = {
+      $or: [
+        { sourceTransactionId: { $exists: false } },
+        { sourceTransactionId: null },
+      ],
+    };
+    const query = {
+      isArchived: false,
+      $and: [mainTransactionFilter],
+    };
     if (status) query.status = status;
     if (type) query.type = type;
     if (search) {
-      query.$or = [
-        { transactionNo: { $regex: search, $options: 'i' } },
-        { companyName: { $regex: search, $options: 'i' } },
-        { crane: { $regex: search, $options: 'i' } },
-        { 'cranes.equipmentNo': { $regex: search, $options: 'i' } },
-      ];
+      query.$and.push({
+        $or: [
+          { transactionNo: { $regex: search, $options: 'i' } },
+          { companyName: { $regex: search, $options: 'i' } },
+          { crane: { $regex: search, $options: 'i' } },
+          { 'cranes.equipmentNo': { $regex: search, $options: 'i' } },
+        ],
+      });
     }
     const total = await Transaction.countDocuments(query);
     const items = await Transaction.find(query)
@@ -76,8 +121,27 @@ exports.getTransactions = async (req, res, next) => {
         }
       });
     }
+
+    const itemObjects = items.map(item => item.toObject ? item.toObject() : item);
+    const itemIds = itemObjects.map(item => item._id);
+    if (itemIds.length > 0) {
+      const childTransactions = await Transaction.find({ isArchived: false, sourceTransactionId: { $in: itemIds } })
+        .populate('counterweights', 'itemName serialNo weightKg capacity')
+        .populate('boomSections', 'itemName boomCode length')
+        .populate('hooks', 'itemName hookSerialNo capacity')
+        .sort({ createdAt: 1 });
+      const childMap = {};
+      childTransactions.forEach(child => {
+        const sourceId = String(child.sourceTransactionId);
+        if (!childMap[sourceId]) childMap[sourceId] = [];
+        childMap[sourceId].push(child.toObject ? child.toObject() : child);
+      });
+      itemObjects.forEach(item => {
+        item.childTransactions = childMap[String(item._id)] || [];
+      });
+    }
     
-    res.json({ success: true, data: items, total, page: Number(page), pages: Math.ceil(total / limit) });
+    res.json({ success: true, data: itemObjects, total, page: Number(page), pages: Math.ceil(total / limit) });
   } catch (error) { next(error); }
 };
 
@@ -100,8 +164,13 @@ exports.getTransaction = async (req, res, next) => {
         item.craneModel = item.craneModel || craneData.craneModel;
       }
     }
+
+    const itemObject = item.toObject ? item.toObject() : item;
+    const rootId = itemObject.sourceTransactionId || itemObject._id;
+    const childTransactions = await findChildTransactions(rootId);
+    itemObject.childTransactions = childTransactions.map(child => child.toObject ? child.toObject() : child);
     
-    res.json({ success: true, data: item });
+    res.json({ success: true, data: itemObject });
   } catch (error) { next(error); }
 };
 
@@ -113,6 +182,14 @@ exports.getPublicTransaction = async (req, res, next) => {
       .populate('boomSections', 'itemName boomCode length weightKg')
       .populate('hooks', 'itemName hookSerialNo weightKg');
     if (!item) return res.status(404).json({ success: false, message: 'Transaction not found' });
+
+    if (item.sourceTransactionId) {
+      item = await Transaction.findById(item.sourceTransactionId)
+        .populate('counterweights', 'itemName serialNo weightKg')
+        .populate('boomSections', 'itemName boomCode length weightKg')
+        .populate('hooks', 'itemName hookSerialNo weightKg');
+      if (!item) return res.status(404).json({ success: false, message: 'Main transaction not found' });
+    }
     
     // Fetch crane details if capacity/weight are missing
     if (!item.capacity || !item.weightKg) {
@@ -127,6 +204,14 @@ exports.getPublicTransaction = async (req, res, next) => {
     
     // Remove sensitive fields for public access
     const sanitized = item.toObject ? item.toObject() : item;
+    const rootId = sanitized.sourceTransactionId || sanitized._id;
+    const childTransactions = await findChildTransactions(rootId, true);
+    sanitized.childTransactions = childTransactions.map(child => {
+      const childObject = child.toObject ? child.toObject() : child;
+      delete childObject.createdBy;
+      delete childObject.__v;
+      return childObject;
+    });
     delete sanitized.createdBy;
     delete sanitized.__v;
     
@@ -136,8 +221,28 @@ exports.getPublicTransaction = async (req, res, next) => {
 
 exports.createTransaction = async (req, res, next) => {
   try {
-    const { crane, craneId, cranes = [], counterweights, boomSections, hooks } = req.body;
+    const { crane, craneId, cranes = [], counterweights, boomSections, hooks, sourceTransactionId } = req.body;
     const restrictedStatuses = ['Out of Yard', 'Under Maintenance', 'On Hire'];
+    let sourceTransaction = null;
+
+    if (sourceTransactionId) {
+      if (!mongoose.Types.ObjectId.isValid(sourceTransactionId)) {
+        return res.status(400).json({ success: false, message: 'Invalid source transaction' });
+      }
+
+      sourceTransaction = await Transaction.findOne({
+        _id: sourceTransactionId,
+        status: 'Active',
+        isArchived: false,
+      });
+
+      if (!sourceTransaction) {
+        return res.status(404).json({ success: false, message: 'Active source transaction not found' });
+      }
+      if (sourceTransaction.sourceTransactionId) {
+        return res.status(400).json({ success: false, message: 'Added transactions can only be created from a main transaction' });
+      }
+    }
 
     const requestedCranes = Array.isArray(cranes) && cranes.length
       ? cranes
@@ -151,7 +256,11 @@ exports.createTransaction = async (req, res, next) => {
 
       const craneLabel = requestedCrane.equipmentNo || requestedCrane.crane || crane;
       if (!craneData) return res.status(404).json({ success: false, message: `Crane ${craneLabel} not found` });
-      if (restrictedStatuses.includes(craneData.status)) {
+      const isSourceCrane = sourceTransaction && (
+        craneIdsFromTransaction(sourceTransaction).includes(String(craneData._id)) ||
+        craneEquipmentNosFromTransaction(sourceTransaction).includes(String(craneData.equipmentNo))
+      );
+      if (restrictedStatuses.includes(craneData.status) && !isSourceCrane) {
         return res.status(400).json({ success: false, message: `Crane ${craneData.equipmentNo} cannot be added to transaction (Status: ${craneData.status})` });
       }
       if (!craneDocs.some(item => String(item._id) === String(craneData._id))) craneDocs.push(craneData);
@@ -170,9 +279,35 @@ exports.createTransaction = async (req, res, next) => {
       weightKg: item.weightKg,
     }));
 
+    if (sourceTransaction) {
+      const allowedCraneIds = craneIdsFromTransaction(sourceTransaction);
+      const allowedEquipmentNos = craneEquipmentNosFromTransaction(sourceTransaction);
+      const invalidCrane = craneDocs.find(item => (
+        !allowedCraneIds.includes(String(item._id)) &&
+        !allowedEquipmentNos.includes(String(item.equipmentNo))
+      ));
+      if (invalidCrane) {
+        return res.status(400).json({ success: false, message: `Only crane ${sourceTransaction.crane} can be used from this active transaction` });
+      }
+
+    }
+
     // Validate counterweights status
     if (counterweights?.length) {
       const cwData = await Counterweight.find({ _id: { $in: counterweights } });
+      const sourceIds = new Set((sourceTransaction?.counterweights || []).map(id => String(id)));
+      const allowedEquipmentNos = craneEquipmentNosFromTransaction(sourceTransaction || {});
+      const invalid = sourceTransaction && cwData.find(cw => (
+        !sourceIds.has(String(cw._id)) &&
+        !attachmentBelongsToCrane(cw, allowedEquipmentNos)
+      ));
+      if (invalid) {
+        return res.status(400).json({ success: false, message: `Counterweight ${invalid.itemName} must belong to crane ${sourceTransaction.crane}` });
+      }
+      const alreadyUsed = sourceTransaction && cwData.find(cw => sourceIds.has(String(cw._id)));
+      if (alreadyUsed) {
+        return res.status(400).json({ success: false, message: `Counterweight ${alreadyUsed.itemName} is already in the source transaction` });
+      }
       const unavailable = cwData.filter(cw => restrictedStatuses.includes(cw.status));
       if (unavailable.length > 0) {
         return res.status(400).json({ success: false, message: `Counterweight ${unavailable[0].itemName} cannot be added to transaction (Status: ${unavailable[0].status})` });
@@ -182,6 +317,19 @@ exports.createTransaction = async (req, res, next) => {
     // Validate boom sections status
     if (boomSections?.length) {
       const bsData = await BoomSection.find({ _id: { $in: boomSections } });
+      const sourceIds = new Set((sourceTransaction?.boomSections || []).map(id => String(id)));
+      const allowedEquipmentNos = craneEquipmentNosFromTransaction(sourceTransaction || {});
+      const invalid = sourceTransaction && bsData.find(bs => (
+        !sourceIds.has(String(bs._id)) &&
+        !attachmentBelongsToCrane(bs, allowedEquipmentNos)
+      ));
+      if (invalid) {
+        return res.status(400).json({ success: false, message: `Boom Section ${invalid.itemName} must belong to crane ${sourceTransaction.crane}` });
+      }
+      const alreadyUsed = sourceTransaction && bsData.find(bs => sourceIds.has(String(bs._id)));
+      if (alreadyUsed) {
+        return res.status(400).json({ success: false, message: `Boom Section ${alreadyUsed.itemName} is already in the source transaction` });
+      }
       const unavailable = bsData.filter(bs => restrictedStatuses.includes(bs.status));
       if (unavailable.length > 0) {
         return res.status(400).json({ success: false, message: `Boom Section ${unavailable[0].itemName} cannot be added to transaction (Status: ${unavailable[0].status})` });
@@ -191,6 +339,19 @@ exports.createTransaction = async (req, res, next) => {
     // Validate hooks status
     if (hooks?.length) {
       const hData = await Hook.find({ _id: { $in: hooks } });
+      const sourceIds = new Set((sourceTransaction?.hooks || []).map(id => String(id)));
+      const allowedEquipmentNos = craneEquipmentNosFromTransaction(sourceTransaction || {});
+      const invalid = sourceTransaction && hData.find(h => (
+        !sourceIds.has(String(h._id)) &&
+        !attachmentBelongsToCrane(h, allowedEquipmentNos)
+      ));
+      if (invalid) {
+        return res.status(400).json({ success: false, message: `Hook ${invalid.itemName} must belong to crane ${sourceTransaction.crane}` });
+      }
+      const alreadyUsed = sourceTransaction && hData.find(h => sourceIds.has(String(h._id)));
+      if (alreadyUsed) {
+        return res.status(400).json({ success: false, message: `Hook ${alreadyUsed.itemName} is already in the source transaction` });
+      }
       const unavailable = hData.filter(h => restrictedStatuses.includes(h.status));
       if (unavailable.length > 0) {
         return res.status(400).json({ success: false, message: `Hook ${unavailable[0].itemName} cannot be added to transaction (Status: ${unavailable[0].status})` });

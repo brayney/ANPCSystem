@@ -22,15 +22,16 @@ const renderDetailRow = (detail) => {
   return <p className="text-xs text-gray-500 truncate mt-1">{detail}</p>;
 };
 
-const CheckboxList = ({ items, selected, onToggle, labelFn, subFn }) => {
-  const allSelected = items.length > 0 && items.every(item => selected.includes(item._id));
+const CheckboxList = ({ items, selected, onToggle, labelFn, subFn, isDisabled }) => {
+  const selectableItems = items.filter(item => !isDisabled?.(item));
+  const allSelected = selectableItems.length > 0 && selectableItems.every(item => selected.includes(item._id));
   const toggleSelectAll = () => {
     if (allSelected) {
-      items.forEach(item => {
+      selectableItems.forEach(item => {
         if (selected.includes(item._id)) onToggle(item._id);
       });
     } else {
-      items.forEach(item => {
+      selectableItems.forEach(item => {
         if (!selected.includes(item._id)) onToggle(item._id);
       });
     }
@@ -49,19 +50,23 @@ const CheckboxList = ({ items, selected, onToggle, labelFn, subFn }) => {
       <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
         {items.length === 0 ? (
           <p className="text-sm text-gray-400 italic py-2">No items available for this crane</p>
-        ) : items.map(item => (
+        ) : items.map(item => {
+          const disabled = isDisabled?.(item);
+          return (
           <label key={item._id}
-            className="flex items-start gap-3 p-2.5 border dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            className={`flex items-start gap-3 p-2.5 border dark:border-gray-600 transition-colors ${disabled ? 'cursor-not-allowed bg-gray-50 dark:bg-gray-800/60 opacity-70' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}>
             <input type="checkbox" className="mt-0.5 accent-blue-600"
               checked={selected.includes(item._id)}
+              disabled={disabled}
               onChange={() => onToggle(item._id)} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-800 dark:text-gray-200 break-words">{labelFn(item)}</p>
               {subFn && renderDetailRow(subFn(item))}
+              {disabled && <p className="text-xs text-gray-400 mt-1">Already in source transaction</p>}
             </div>
             <StatusBadge status={item.status || item.condition} />
           </label>
-        ))}
+        );})}
       </div>
     </div>
   );
@@ -80,11 +85,13 @@ export default function CreateTransactionPage() {
   const location = useLocation();
   const prefillCrane = location.state?.crane || '';
   const prefillCraneId = location.state?.craneId || '';
+  const sourceTransactionId = location.state?.sourceTransactionId || '';
 
   const [craneSearch, setCraneSearch] = useState(prefillCrane);
   const [craneResults, setCraneResults] = useState([]);
   const [selectedCranes, setSelectedCranes] = useState([]);
   const [attachments, setAttachments] = useState({ counterweights: [], boomSections: [], hooks: [] });
+  const [sourceTransaction, setSourceTransaction] = useState(null);
   const [loadingCrane, setLoadingCrane] = useState(false);
   const [selectedCW, setSelectedCW] = useState([]);
   const [selectedBS, setSelectedBS] = useState([]);
@@ -100,9 +107,84 @@ export default function CreateTransactionPage() {
     expectedReturnDate: '', purpose: '', remarks: '', type: 'Rental'
   });
 
-  // Auto-search when prefill crane exists
+  const getId = (value) => value?._id || value;
+
+  const restrictedStatuses = ['Out of Yard', 'Under Maintenance', 'On Hire'];
+  const filterAvailable = (items) => items.filter(item => !restrictedStatuses.includes(item.status));
+  const sourceCounterweightIds = new Set((sourceTransaction?.counterweights || []).map(getId));
+  const sourceBoomSectionIds = new Set((sourceTransaction?.boomSections || []).map(getId));
+  const sourceHookIds = new Set((sourceTransaction?.hooks || []).map(getId));
+
+  const mergeSourceWithAvailable = (sourceItems = [], craneItems = []) => {
+    const sourceIds = new Set(sourceItems.map(item => getId(item)));
+    const availableCraneItems = filterAvailable(craneItems);
+    return mergeById(sourceItems, availableCraneItems).sort((a, b) => {
+      const aSelected = sourceIds.has(getId(a)) ? 0 : 1;
+      const bSelected = sourceIds.has(getId(b)) ? 0 : 1;
+      if (aSelected !== bSelected) return aSelected - bSelected;
+      return String(a.itemName || a.boomCode || a.hookSerialNo || '').localeCompare(String(b.itemName || b.boomCode || b.hookSerialNo || ''));
+    });
+  };
+
+  const hydrateFromSourceTransaction = async (txn) => {
+    const firstCrane = txn.cranes?.[0] || {};
+    const craneData = {
+      _id: getId(firstCrane.craneId || txn.craneId),
+      equipmentNo: firstCrane.equipmentNo || txn.crane,
+      craneModel: firstCrane.craneModel || txn.craneModel,
+      capacity: firstCrane.capacity || txn.capacity,
+      weightKg: firstCrane.weightKg || txn.weightKg,
+      status: txn.status,
+      location: txn.deliveryLocation || txn.pullOutLocation,
+      client: txn.companyName,
+    };
+    const loadedCrane = await loadCraneWithAttachments(craneData);
+    const hydratedCrane = { ...loadedCrane, status: craneData.status, location: craneData.location, client: craneData.client };
+
+    setSourceTransaction(txn);
+    setSelectedCranes([hydratedCrane]);
+    setCraneSearch('');
+    setCraneResults([]);
+    setAttachments({
+      counterweights: mergeSourceWithAvailable(txn.counterweights || [], loadedCrane.counterweights || []),
+      boomSections: mergeSourceWithAvailable(txn.boomSections || [], loadedCrane.boomSections || []),
+      hooks: mergeSourceWithAvailable(txn.hooks || [], loadedCrane.hooks || []),
+    });
+    setSelectedCW([]);
+    setSelectedBS([]);
+    setSelectedHooks([]);
+    setForm(current => ({
+      ...current,
+      companyName: txn.companyName || '',
+      companyAddress: txn.companyAddress || '',
+      contactPerson: txn.contactPerson || '',
+      contactNumber: txn.contactNumber || '',
+      driverName: '',
+      vehicleType: '',
+      vehiclePlateNo: '',
+      pullOutLocation: '',
+      deliveryLocation: '',
+      transactionDate: new Date().toISOString().split('T')[0],
+      transactionTime: new Date().toTimeString().slice(0, 5),
+      expectedReturnDate: '',
+      purpose: '',
+      remarks: `Related to ${txn.transactionNo}.`,
+      type: 'Rental',
+    }));
+  };
+
+  // Auto-load when creating from a crane or from an active transaction.
   useEffect(() => {
-    if (prefillCrane) {
+    if (sourceTransactionId) {
+      setLoadingCrane(true);
+      api.get(`/transactions/${sourceTransactionId}`)
+        .then(({ data }) => hydrateFromSourceTransaction(data.data))
+        .catch(() => {
+          toast.error('Failed to load source transaction');
+          navigate('/transactions');
+        })
+        .finally(() => setLoadingCrane(false));
+    } else if (prefillCrane) {
       handleCraneSelect({ _id: prefillCraneId, equipmentNo: prefillCrane });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -208,6 +290,7 @@ export default function CreateTransactionPage() {
         counterweights: selectedCW,
         boomSections: selectedBS,
         hooks: selectedHooks,
+        ...(sourceTransactionId ? { sourceTransactionId } : {}),
       };
       const { data } = await api.post('/transactions', payload);
       toast.success(`Transaction ${data.data.transactionNo} created!`);
@@ -224,8 +307,12 @@ export default function CreateTransactionPage() {
           <ArrowLeftIcon className="w-4 h-4" /> Back
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">New Transaction</h1>
-          <p className="text-sm text-gray-500">Create a pull-out / rental transaction</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {sourceTransaction ? `New Transaction from ${sourceTransaction.transactionNo}` : 'New Transaction'}
+          </h1>
+          <p className="text-sm text-gray-500">
+            {sourceTransaction ? 'Create a follow-up transaction using this active transaction crane and attachments' : 'Create a pull-out / rental transaction'}
+          </p>
         </div>
       </div>
 
@@ -242,9 +329,14 @@ export default function CreateTransactionPage() {
             <input className="input-field pl-9" placeholder="Search by equipment number..."
               value={craneSearch}
               onChange={e => { setCraneSearch(e.target.value); searchCranes(e.target.value); }}
-              disabled={selectedCranes.length > 0}
+              disabled={selectedCranes.length > 0 || !!sourceTransaction}
               style={selectedCranes.length > 0 ? { backgroundColor: 'var(--bg-muted)', cursor: 'not-allowed', opacity: 0.6 } : {}} />
           </div>
+          {sourceTransaction && (
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+              Source transaction: {sourceTransaction.transactionNo}. Already-used attachments are shown for reference only; choose from available attachments assigned to the same crane.
+            </p>
+          )}
           {craneResults.length > 0 && (
             <div className="mt-2 border dark:border-gray-600 overflow-hidden shadow-lg z-10">
               {craneResults.map(c => (
@@ -263,15 +355,17 @@ export default function CreateTransactionPage() {
           {selectedCranes.length > 0 && !loadingCrane && (
             <div className="mt-4 space-y-2">
               {selectedCranes.map(crane => (
-                <div key={crane._id} className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-start justify-between gap-3">
+                <div key={crane._id || crane.equipmentNo} className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-blue-800 dark:text-blue-300 font-mono">{crane.equipmentNo}</p>
                     <p className="text-sm text-blue-600 dark:text-blue-400">{crane.equipmentType} — {crane.craneModel} — {crane.capacity}</p>
                     <p className="text-xs text-blue-500 mt-1">Location: {crane.location || '—'}</p>
                   </div>
-                  <button type="button" onClick={() => removeSelectedCrane(crane._id)} className="btn-secondary" style={{ padding: '5px' }} title="Remove crane">
-                    <XMarkIcon style={{ width: '14px', height: '14px' }} />
-                  </button>
+                  {!sourceTransaction && (
+                    <button type="button" onClick={() => removeSelectedCrane(crane._id)} className="btn-secondary" style={{ padding: '5px' }} title="Remove crane">
+                      <XMarkIcon style={{ width: '14px', height: '14px' }} />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -292,6 +386,7 @@ export default function CreateTransactionPage() {
                 </h3>
                 <CheckboxList items={attachments.counterweights} selected={selectedCW}
                   onToggle={id => toggle(setSelectedCW, selectedCW, id)}
+                  isDisabled={item => sourceCounterweightIds.has(item._id)}
                   labelFn={i => i.itemName || 'Counterweight'}
                   subFn={i => [
                     ['Weight', i.weightKg ? `${i.weightKg} kg` : '—'],
@@ -304,6 +399,7 @@ export default function CreateTransactionPage() {
                 </h3>
                 <CheckboxList items={attachments.boomSections} selected={selectedBS}
                   onToggle={id => toggle(setSelectedBS, selectedBS, id)}
+                  isDisabled={item => sourceBoomSectionIds.has(item._id)}
                   labelFn={i => i.itemName || 'Boom Section'}
                   subFn={i => [
                     ['Boom Code', i.boomCode || '—'],
@@ -316,6 +412,7 @@ export default function CreateTransactionPage() {
                 </h3>
                 <CheckboxList items={attachments.hooks} selected={selectedHooks}
                   onToggle={id => toggle(setSelectedHooks, selectedHooks, id)}
+                  isDisabled={item => sourceHookIds.has(item._id)}
                   labelFn={i => i.itemName || 'Hook'}
                   subFn={i => [
                     ['Weight', i.weightKg ? `${i.weightKg} kg` : '—'],

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { PlusIcon, MagnifyingGlassIcon, EyeIcon, ArrowPathIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, MagnifyingGlassIcon, EyeIcon, ArrowPathIcon, PencilIcon, TrashIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { PageHeader, StatusBadge, Spinner, Pagination, EmptyState, ConfirmDialog, Modal } from '../components/common';
 import api from '../utils/api';
 import { format } from 'date-fns';
@@ -25,6 +25,7 @@ export default function TransactionsPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [editSaving, setEditSaving] = useState(false);
+  const [expandedRows, setExpandedRows] = useState({});
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -166,13 +167,23 @@ export default function TransactionsPage() {
                 </thead>
                 <tbody>
                   {items.map(t => (
+                    <React.Fragment key={t._id}>
                     <tr key={t._id} style={{ transition: 'background 0.1s' }}
                       onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                       <td className="table-cell">
-                        <Link to={`/transactions/${t._id}`} style={{ color: 'var(--accent)', fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>
-                          {t.transactionNo}
-                        </Link>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {t.childTransactions?.length > 0 && (
+                            <button type="button" title={expandedRows[t._id] ? 'Hide added transactions' : 'Show added transactions'}
+                              onClick={() => setExpandedRows(prev => ({ ...prev, [t._id]: !prev[t._id] }))}
+                              style={{ padding: '3px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-secondary)', borderRadius: '4px', cursor: 'pointer', display: 'flex' }}>
+                              <ChevronDownIcon style={{ width: '12px', height: '12px', transform: expandedRows[t._id] ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s' }} />
+                            </button>
+                          )}
+                          <Link to={`/transactions/${t._id}`} style={{ color: 'var(--accent)', fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>
+                            {t.transactionNo}
+                          </Link>
+                        </div>
                       </td>
                       <td className="table-cell" style={{ fontWeight: 500 }}>{t.companyName}</td>
                       <td className="table-cell"><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', color: 'var(--accent)' }}>{getTransactionCraneLabel(t)}</span></td>
@@ -193,6 +204,16 @@ export default function TransactionsPage() {
                             style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--accent)', textDecoration: 'none' }}>
                             <EyeIcon style={{ width: '13px', height: '13px' }} />
                           </Link>
+                          {!t.sourceTransactionId && t.status === 'Active' && (
+                            <Link
+                              to="/transactions/create"
+                              state={{ sourceTransactionId: t._id }}
+                              title="Add transaction from this active transaction"
+                              style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--success)', textDecoration: 'none' }}
+                            >
+                              <PlusIcon style={{ width: '13px', height: '13px' }} />
+                            </Link>
+                          )}
                           <button onClick={() => handleEditOpen(t)} title="Edit"
                             style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--text-secondary)', cursor: 'pointer', transition: 'background 0.15s' }}>
                             <PencilIcon style={{ width: '13px', height: '13px' }} />
@@ -210,6 +231,30 @@ export default function TransactionsPage() {
                         </div>
                       </td>
                     </tr>
+                    {expandedRows[t._id] && t.childTransactions?.map(child => (
+                      <tr key={child._id} style={{ background: 'var(--surface-2)' }}>
+                        <td className="table-cell" colSpan={8}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', paddingLeft: '28px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                              <span style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 600 }}>Added</span>
+                              <Link to={`/transactions/${child._id}`} style={{ color: 'var(--accent)', fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>
+                                {child.transactionNo}
+                              </Link>
+                              <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{child.companyName}</span>
+                              <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                                {(child.counterweights?.length || 0)} CW / {(child.boomSections?.length || 0)} Boom / {(child.hooks?.length || 0)} Hooks
+                              </span>
+                              <StatusBadge status={child.status} />
+                            </div>
+                            <Link to={`/transactions/${child._id}`} title="View added transaction"
+                              style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--accent)', textDecoration: 'none' }}>
+                              <EyeIcon style={{ width: '13px', height: '13px' }} />
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
