@@ -453,7 +453,7 @@ export default function SettingsPage() {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px' }}>
                 {[
-                  { code: 'en', name: 'English', flag: '🇬🇧' },
+                  { code: 'en', name: 'English', flag: '🇪🇳' },
                   { code: 'es', name: 'Español', flag: '🇪🇸' },
                   { code: 'fr', name: 'Français', flag: '🇫🇷' },
                   { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
