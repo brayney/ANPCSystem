@@ -42,7 +42,7 @@ const SidebarContent = ({ setSidebarOpen, onLogoutClick }) => {
       </div>
 
       {/* Nav Items */}
-      <nav style={{ flex: 1, overflowY: 'auto', padding: '0 10px', transition: 'all 0.3s ease' }}>
+      <nav className="no-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '0 10px', transition: 'all 0.3s ease' }}>
         {navItems.map(({ to, icon: Icon, labelKey }) => (
           <NavLink key={to} to={to} end
             onClick={() => setSidebarOpen && setSidebarOpen(false)}

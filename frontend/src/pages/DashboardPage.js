@@ -163,7 +163,7 @@ function DashboardPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  {[t('common.id'), t('common.company'), t('common.equipment'), t('common.status'), t('common.date'), t('common.duration'), t('common.value')].map(h => (
+                  {[t('common.id'), t('common.company'), t('common.equipment'), t('common.status'), t('common.date'), t('common.duration')].map(h => (
                     <th key={h} style={{ padding: '12px 14px', fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>{h}</th>
                   ))}
                 </tr>
@@ -171,7 +171,6 @@ function DashboardPage() {
               <tbody>
                 {data.recentTransactions.slice(0, 8).map(txn => {
                   const daysRented = txn.returnDate ? differenceInDays(new Date(txn.returnDate), new Date(txn.transactionDate)) : differenceInDays(new Date(), new Date(txn.transactionDate));
-                  const rentalValue = (daysRented * (txn.dailyRate || 0)).toFixed(2);
                   return (
                     <tr key={txn._id} style={{ borderBottom: '1px solid var(--border-muted)' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                       <td style={{ padding: '14px', fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', fontWeight: 700, color: 'var(--accent)' }}><Link to={`/transactions/${txn._id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{txn.transactionNo}</Link></td>
@@ -180,7 +179,6 @@ function DashboardPage() {
                       <td style={{ padding: '14px' }}><StatusBadge status={txn.status} /></td>
                       <td style={{ padding: '14px', color: 'var(--text-secondary)', fontSize: '12px' }}>{txn.transactionDate ? format(new Date(txn.transactionDate), 'MMM d, yyyy') : '—'}</td>
                       <td style={{ padding: '14px', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{daysRented} {daysRented !== 1 ? t('common.days') : t('common.day')}</td>
-                      <td style={{ padding: '14px', fontSize: '12px', fontWeight: 600, color: 'var(--accent)', fontFamily: "'JetBrains Mono', monospace" }}>${rentalValue}</td>
                     </tr>
                   );
                 })}

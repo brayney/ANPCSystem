@@ -20,9 +20,16 @@ const resources = {
   ja: { translation: jaTranslations },
 };
 
+const SUPPORTED_LANGUAGES = ['en', 'es', 'fr', 'de', 'pt', 'ar', 'zh', 'ja'];
+
 // Get user's language from localStorage or default to 'en'
 const getUserLanguage = () => {
   try {
+    const savedLanguage = localStorage.getItem('systemLanguage');
+    if (SUPPORTED_LANGUAGES.includes(savedLanguage)) {
+      return savedLanguage;
+    }
+
     const userStr = localStorage.getItem('user');
     console.log(`📖 Retrieved user from localStorage:`, userStr ? 'exists' : 'empty');
     
@@ -35,7 +42,7 @@ const getUserLanguage = () => {
     const language = user?.language || 'en';
     console.log(`🌐 Detected user language: ${language}`);
     
-    if (!['en', 'es', 'fr', 'de', 'pt', 'ar', 'zh', 'ja'].includes(language)) {
+    if (!SUPPORTED_LANGUAGES.includes(language)) {
       console.warn(`⚠️ Invalid language "${language}", using default: en`);
       return 'en';
     }
@@ -48,6 +55,9 @@ const getUserLanguage = () => {
 };
 
 const initialLanguage = getUserLanguage();
+
+document.documentElement.lang = initialLanguage;
+document.documentElement.dir = initialLanguage === 'ar' ? 'rtl' : 'ltr';
 
 i18next
   .use(initReactI18next)

@@ -26,6 +26,18 @@ export default function TransactionsPage() {
   const [editForm, setEditForm] = useState({});
   const [editSaving, setEditSaving] = useState(false);
   const [expandedRows, setExpandedRows] = useState({});
+  const [returnScope, setReturnScope] = useState('this');
+
+  const isActiveGroupingRow = (transaction) => transaction?.status === 'Returned' && tab === 'active' && (transaction.childTransactions || []).some(child => child.status === 'Active');
+  const isReturnedGroupingRow = (transaction) => transaction?.status === 'Active' && tab === 'returned' && (transaction.childTransactions || []).some(child => child.status !== 'Active');
+  const isGroupingRow = (transaction) => isActiveGroupingRow(transaction) || isReturnedGroupingRow(transaction);
+  const getDisplayedChildTransactions = (transaction) => (
+    tab === 'returned'
+      ? (transaction.childTransactions || []).filter(child => child.status !== 'Active')
+      : isActiveGroupingRow(transaction)
+        ? (transaction.childTransactions || []).filter(child => child.status === 'Active')
+        : (transaction.childTransactions || [])
+  );
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -43,9 +55,11 @@ export default function TransactionsPage() {
 
   const handleReturn = async () => {
     try {
-      await api.put(`/transactions/${returnTarget._id}/return`);
-      toast.success('Transaction marked as returned');
-      setReturnTarget(null); fetchItems();
+      await api.put(`/transactions/${returnTarget._id}/return`, { scope: returnScope });
+      toast.success(returnScope === 'linked' ? 'Linked transactions marked as returned' : 'Transaction marked as returned');
+      setReturnTarget(null);
+      setReturnScope('this');
+      fetchItems();
     } catch { toast.error('Failed to process return'); }
   };
 
@@ -117,14 +131,15 @@ export default function TransactionsPage() {
             onClick={() => { setTab('active'); setPage(1); }}
             style={{
               padding: '6px 12px',
+              minWidth: '74px',
               borderRadius: '4px',
               border: 'none',
               background: tab === 'active' ? 'var(--accent)' : 'transparent',
               color: tab === 'active' ? 'white' : 'var(--text-secondary)',
-              fontWeight: tab === 'active' ? 600 : 500,
+              fontWeight: 600,
               fontSize: '12px',
               cursor: 'pointer',
-              transition: 'all 0.2s'
+              transition: 'background 0.2s, color 0.2s, box-shadow 0.2s'
             }}
           >
             Active
@@ -133,14 +148,15 @@ export default function TransactionsPage() {
             onClick={() => { setTab('returned'); setPage(1); }}
             style={{
               padding: '6px 12px',
+              minWidth: '74px',
               borderRadius: '4px',
               border: 'none',
               background: tab === 'returned' ? 'var(--accent)' : 'transparent',
               color: tab === 'returned' ? 'white' : 'var(--text-secondary)',
-              fontWeight: tab === 'returned' ? 600 : 500,
+              fontWeight: 600,
               fontSize: '12px',
               cursor: 'pointer',
-              transition: 'all 0.2s'
+              transition: 'background 0.2s, color 0.2s, box-shadow 0.2s'
             }}
           >
             Returned
@@ -173,16 +189,22 @@ export default function TransactionsPage() {
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                       <td className="table-cell">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {t.childTransactions?.length > 0 && (
+                          {getDisplayedChildTransactions(t).length > 0 && (
                             <button type="button" title={expandedRows[t._id] ? 'Hide added transactions' : 'Show added transactions'}
                               onClick={() => setExpandedRows(prev => ({ ...prev, [t._id]: !prev[t._id] }))}
                               style={{ padding: '3px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-secondary)', borderRadius: '4px', cursor: 'pointer', display: 'flex' }}>
                               <ChevronDownIcon style={{ width: '12px', height: '12px', transform: expandedRows[t._id] ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s' }} />
                             </button>
                           )}
-                          <Link to={`/transactions/${t._id}`} style={{ color: 'var(--accent)', fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>
-                            {t.transactionNo}
-                          </Link>
+                          {isGroupingRow(t) ? (
+                            <span style={{ color: 'var(--text-secondary)', fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', fontWeight: 600 }}>
+                              {t.transactionNo}
+                            </span>
+                          ) : (
+                            <Link to={`/transactions/${t._id}`} style={{ color: 'var(--accent)', fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>
+                              {t.transactionNo}
+                            </Link>
+                          )}
                         </div>
                       </td>
                       <td className="table-cell" style={{ fontWeight: 500 }}>{t.companyName}</td>
@@ -197,41 +219,45 @@ export default function TransactionsPage() {
                           : (t.actualReturnDate ? format(new Date(t.actualReturnDate), 'MMM d, yyyy h:mm a') : '—')
                         }
                       </td>
-                      <td className="table-cell"><StatusBadge status={t.status} /></td>
+                      <td className="table-cell"><StatusBadge status={isGroupingRow(t) ? (tab === 'active' ? 'Active' : 'Returned') : t.status} /></td>
                       <td className="table-cell">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Link to={`/transactions/${t._id}`} title="View"
-                            style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--accent)', textDecoration: 'none' }}>
-                            <EyeIcon style={{ width: '13px', height: '13px' }} />
-                          </Link>
-                          {!t.sourceTransactionId && t.status === 'Active' && (
-                            <Link
-                              to="/transactions/create"
-                              state={{ sourceTransactionId: t._id }}
-                              title="Add transaction from this active transaction"
-                              style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--success)', textDecoration: 'none' }}
-                            >
-                              <PlusIcon style={{ width: '13px', height: '13px' }} />
+                        {isGroupingRow(t) ? (
+                          <div style={{ display: 'flex', justifyContent: 'flex-end' }} />
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Link to={`/transactions/${t._id}`} title="View"
+                              style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--accent)', textDecoration: 'none' }}>
+                              <EyeIcon style={{ width: '13px', height: '13px' }} />
                             </Link>
-                          )}
-                          <button onClick={() => handleEditOpen(t)} title="Edit"
-                            style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--text-secondary)', cursor: 'pointer', transition: 'background 0.15s' }}>
-                            <PencilIcon style={{ width: '13px', height: '13px' }} />
-                          </button>
-                          <button onClick={() => setDeleteTarget(t)} title="Delete"
-                            style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--danger-bg)', background: 'var(--danger-bg)', display: 'flex', color: 'var(--danger)', cursor: 'pointer', transition: 'opacity 0.15s' }}>
-                            <TrashIcon style={{ width: '13px', height: '13px' }} />
-                          </button>
-                          {t.status === 'Active' && (
-                            <button onClick={() => setReturnTarget(t)}
-                              style={{ padding: '4px 8px', borderRadius: '5px', border: '1px solid var(--success)', background: 'var(--success-bg)', color: 'var(--success)', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                              <ArrowPathIcon style={{ width: '11px', height: '11px' }} /> Return
+                            {!t.sourceTransactionId && t.status === 'Active' && (
+                              <Link
+                                to="/transactions/create"
+                                state={{ sourceTransactionId: t._id }}
+                                title="Add transaction from this active transaction"
+                                style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--success)', textDecoration: 'none' }}
+                              >
+                                <PlusIcon style={{ width: '13px', height: '13px' }} />
+                              </Link>
+                            )}
+                            <button onClick={() => handleEditOpen(t)} title="Edit"
+                              style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--text-secondary)', cursor: 'pointer', transition: 'background 0.15s' }}>
+                              <PencilIcon style={{ width: '13px', height: '13px' }} />
                             </button>
-                          )}
-                        </div>
+                            <button onClick={() => setDeleteTarget(t)} title="Delete"
+                              style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--danger-bg)', background: 'var(--danger-bg)', display: 'flex', color: 'var(--danger)', cursor: 'pointer', transition: 'opacity 0.15s' }}>
+                              <TrashIcon style={{ width: '13px', height: '13px' }} />
+                            </button>
+                            {t.status === 'Active' && (
+                              <button onClick={() => { setReturnTarget(t); setReturnScope('this'); }}
+                                style={{ padding: '4px 8px', borderRadius: '5px', border: '1px solid var(--success)', background: 'var(--success-bg)', color: 'var(--success)', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                <ArrowPathIcon style={{ width: '11px', height: '11px' }} /> Return
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </td>
                     </tr>
-                    {expandedRows[t._id] && t.childTransactions?.map(child => (
+                    {expandedRows[t._id] && getDisplayedChildTransactions(t).map(child => (
                       <tr key={child._id} style={{ background: 'var(--surface-2)' }}>
                         <td className="table-cell" colSpan={8}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', paddingLeft: '28px' }}>
@@ -246,10 +272,26 @@ export default function TransactionsPage() {
                               </span>
                               <StatusBadge status={child.status} />
                             </div>
-                            <Link to={`/transactions/${child._id}`} title="View added transaction"
-                              style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--accent)', textDecoration: 'none' }}>
-                              <EyeIcon style={{ width: '13px', height: '13px' }} />
-                            </Link>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Link to={`/transactions/${child._id}`} title="View added transaction"
+                                style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--accent)', textDecoration: 'none' }}>
+                                <EyeIcon style={{ width: '13px', height: '13px' }} />
+                              </Link>
+                              <button onClick={() => handleEditOpen(child)} title="Edit added transaction"
+                                style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--text-secondary)', cursor: 'pointer', transition: 'background 0.15s' }}>
+                                <PencilIcon style={{ width: '13px', height: '13px' }} />
+                              </button>
+                              <button onClick={() => setDeleteTarget(child)} title="Delete added transaction"
+                                style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--danger-bg)', background: 'var(--danger-bg)', display: 'flex', color: 'var(--danger)', cursor: 'pointer', transition: 'opacity 0.15s' }}>
+                                <TrashIcon style={{ width: '13px', height: '13px' }} />
+                              </button>
+                              {child.status === 'Active' && (
+                                <button onClick={() => { setReturnTarget(child); setReturnScope('this'); }}
+                                  style={{ padding: '4px 8px', borderRadius: '5px', border: '1px solid var(--success)', background: 'var(--success-bg)', color: 'var(--success)', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                  <ArrowPathIcon style={{ width: '11px', height: '11px' }} /> Return
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -264,9 +306,18 @@ export default function TransactionsPage() {
         )}
       </div>
 
-      <ConfirmDialog open={!!returnTarget} onClose={() => setReturnTarget(null)} onConfirm={handleReturn}
+      <ConfirmDialog open={!!returnTarget} onClose={() => { setReturnTarget(null); setReturnScope('this'); }} onConfirm={handleReturn}
         title="Confirm Return"
-        message={`Mark transaction ${returnTarget?.transactionNo} as returned? Equipment will be set back to Available.`} />
+        message={`Choose how to handle ${returnTarget?.transactionNo || 'this transaction'}.`}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '4px' }}>
+          <label className="label" style={{ marginBottom: 0 }}>Return scope</label>
+          <select className="input-field" value={returnScope} onChange={(e) => setReturnScope(e.target.value)}>
+            <option value="this">This transaction only</option>
+            <option value="linked">This transaction and linked transaction(s)</option>
+          </select>
+        </div>
+      </ConfirmDialog>
 
       <Modal open={!!modal && modal === 'edit'} onClose={() => { setModal(null); setEditForm({}); }}
         title={`Edit ${editForm.companyName || 'Transaction'}`} size="lg">

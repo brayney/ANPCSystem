@@ -44,8 +44,7 @@ exports.getDashboard = async (req, res, next) => {
       ]),
       Transaction.countDocuments({ createdAt: { $gte: thisMonthStart }, isArchived: false }),
       Transaction.countDocuments({ createdAt: { $gte: lastMonthStart, $lt: thisMonthStart }, isArchived: false }),
-      Transaction.countDocuments({ status: 'Active', returnDate: { $exists: false, $eq: null }, isArchived: false }),
-      Transaction.countDocuments({ status: 'Active', returnDate: { $lt: now }, isArchived: false })
+      Transaction.countDocuments({ status: 'Active', expectedReturnDate: { $lt: now }, isArchived: false })
     ]);
 
     const utilizationRate = totalCranes > 0 ? ((activeRentals / totalCranes) * 100).toFixed(1) : 0;

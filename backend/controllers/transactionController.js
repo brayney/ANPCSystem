@@ -65,6 +65,7 @@ const findChildTransactions = (sourceId, publicOnly = false) => {
 };
 
 const defaultEquipmentState = { status: 'Available', location: 'RAG YARD', client: '-' };
+const returnedEquipmentState = { status: 'Under Maintenance', location: 'RAG YARD', client: '-' };
 
 const restoreEquipmentToDefaults = async (transactions, includeCranes = true) => {
   const txns = Array.isArray(transactions) ? transactions : [transactions];
@@ -103,6 +104,7 @@ const restoreEquipmentToDefaults = async (transactions, includeCranes = true) =>
 exports.getTransactions = async (req, res, next) => {
   try {
     const { search, status, type, page = 1, limit = 20 } = req.query;
+    const tabStatus = ['Active', 'Returned'].includes(status) ? status : null;
     const mainTransactionFilter = {
       $or: [
         { sourceTransactionId: { $exists: false } },
@@ -113,7 +115,7 @@ exports.getTransactions = async (req, res, next) => {
       isArchived: false,
       $and: [mainTransactionFilter],
     };
-    if (status) query.status = status;
+    if (status && !tabStatus) query.status = status;
     if (type) query.type = type;
     if (search) {
       query.$and.push({
@@ -125,15 +127,18 @@ exports.getTransactions = async (req, res, next) => {
         ],
       });
     }
-    const total = await Transaction.countDocuments(query);
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
+    const shouldFilterAfterChildren = !!tabStatus;
+    const total = shouldFilterAfterChildren ? 0 : await Transaction.countDocuments(query);
     const items = await Transaction.find(query)
       .populate('counterweights', 'itemName serialNo weightKg capacity')
       .populate('boomSections', 'itemName boomCode length')
       .populate('hooks', 'itemName hookSerialNo capacity')
       .populate('createdBy', 'name email')
       .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
+      .skip(shouldFilterAfterChildren ? 0 : (pageNumber - 1) * limitNumber)
+      .limit(shouldFilterAfterChildren ? 0 : limitNumber);
     
     // Fetch crane details for items missing capacity/weight
     const craneEquipmentNos = items
@@ -160,6 +165,7 @@ exports.getTransactions = async (req, res, next) => {
 
     const itemObjects = items.map(item => item.toObject ? item.toObject() : item);
     const itemIds = itemObjects.map(item => item._id);
+    let filteredItemObjects = itemObjects;
     if (itemIds.length > 0) {
       const childTransactions = await Transaction.find({ isArchived: false, sourceTransactionId: { $in: itemIds } })
         .populate('counterweights', 'itemName serialNo weightKg capacity')
@@ -175,9 +181,26 @@ exports.getTransactions = async (req, res, next) => {
       itemObjects.forEach(item => {
         item.childTransactions = childMap[String(item._id)] || [];
       });
+
+      if (tabStatus === 'Active') {
+        filteredItemObjects = itemObjects.filter(item => {
+          const hasActiveChildren = (item.childTransactions || []).some(child => child.status === 'Active');
+          return item.status === 'Active' || (item.status === 'Returned' && hasActiveChildren);
+        });
+      } else if (tabStatus === 'Returned') {
+        filteredItemObjects = itemObjects.filter(item => {
+          const hasReturnedChildren = (item.childTransactions || []).some(child => child.status !== 'Active');
+          return item.status === 'Returned' || hasReturnedChildren;
+        });
+      }
     }
+
+    const filteredTotal = shouldFilterAfterChildren ? filteredItemObjects.length : total;
+    const pagedItems = shouldFilterAfterChildren
+      ? filteredItemObjects.slice((pageNumber - 1) * limitNumber, pageNumber * limitNumber)
+      : filteredItemObjects;
     
-    res.json({ success: true, data: itemObjects, total, page: Number(page), pages: Math.ceil(total / limit) });
+    res.json({ success: true, data: pagedItems, total: filteredTotal, page: pageNumber, pages: Math.ceil(filteredTotal / limitNumber) });
   } catch (error) { next(error); }
 };
 
@@ -458,6 +481,7 @@ exports.updateTransaction = async (req, res, next) => {
 
     const wasReturned = txn.status === 'Returned';
     const isNowActive = req.body.status === 'Active';
+    const isNowReturned = req.body.status === 'Returned';
 
     // If crane is being changed, fetch and validate the new crane's details
     if ((req.body.craneId && String(req.body.craneId) !== String(txn.craneId || '')) || (req.body.crane && req.body.crane !== txn.crane)) {
@@ -481,6 +505,11 @@ exports.updateTransaction = async (req, res, next) => {
 
     // Update transaction
     Object.assign(txn, req.body);
+    if (wasReturned && isNowActive) {
+      txn.actualReturnDate = undefined;
+    } else if (!wasReturned && isNowReturned) {
+      txn.actualReturnDate = txn.actualReturnDate || new Date();
+    }
     await txn.save();
 
     // If changing from Returned back to Active, update associated items
@@ -522,27 +551,53 @@ exports.updateTransaction = async (req, res, next) => {
 
 exports.returnTransaction = async (req, res, next) => {
   try {
+    const scope = req.body?.scope === 'linked' ? 'linked' : 'this';
     const txn = await Transaction.findById(req.params.id);
     if (!txn) return res.status(404).json({ success: false, message: 'Not found' });
 
-    txn.status = 'Returned';
-    txn.actualReturnDate = new Date();
-    await txn.save();
+    const transactionsToReturn = [txn];
+    if (scope === 'linked') {
+      if (txn.sourceTransactionId) {
+        const parentTxn = await Transaction.findOne({ _id: txn.sourceTransactionId, isArchived: false });
+        if (parentTxn) transactionsToReturn.push(parentTxn);
+      } else {
+        const childTransactions = await Transaction.find({ sourceTransactionId: txn._id, isArchived: false });
+        transactionsToReturn.push(...childTransactions);
+      }
+    }
 
-    // Return crane and attachments to RAG YARD and mark as Under Maintenance, reset client to "-"
-    await Crane.updateMany(
-      craneUpdateQuery(txn),
-      { $set: { status: 'Under Maintenance', location: 'RAG YARD', client: '-' } }
-    );
-    if (txn.counterweights?.length)
-      await Counterweight.updateMany({ _id: { $in: txn.counterweights } }, { $set: { status: 'Under Maintenance', location: 'RAG YARD', client: '-' } });
-    if (txn.boomSections?.length)
-      await BoomSection.updateMany({ _id: { $in: txn.boomSections } }, { $set: { status: 'Under Maintenance', location: 'RAG YARD', client: '-' } });
-    if (txn.hooks?.length)
-      await Hook.updateMany({ _id: { $in: txn.hooks } }, { $set: { status: 'Under Maintenance', location: 'RAG YARD', client: '-' } });
+    const uniqueTransactions = [];
+    const seenIds = new Set();
+    transactionsToReturn.forEach(item => {
+      const id = String(item._id);
+      if (!seenIds.has(id)) {
+        seenIds.add(id);
+        uniqueTransactions.push(item);
+      }
+    });
 
-    await AuditLog.create({ user: req.user._id, userName: req.user.name, action: 'RETURN', module: 'Transaction', targetId: txn.transactionNo, details: `Returned transaction ${txn.transactionNo}` });
-    res.json({ success: true, data: txn });
+    for (const item of uniqueTransactions) {
+      if (item.status === 'Returned') continue;
+
+      item.status = 'Returned';
+      item.actualReturnDate = item.actualReturnDate || new Date();
+      await item.save();
+
+      await Crane.updateMany(
+        craneUpdateQuery(item),
+        { $set: returnedEquipmentState }
+      );
+      if (item.counterweights?.length)
+        await Counterweight.updateMany({ _id: { $in: item.counterweights } }, { $set: returnedEquipmentState });
+      if (item.boomSections?.length)
+        await BoomSection.updateMany({ _id: { $in: item.boomSections } }, { $set: returnedEquipmentState });
+      if (item.hooks?.length)
+        await Hook.updateMany({ _id: { $in: item.hooks } }, { $set: returnedEquipmentState });
+
+      await AuditLog.create({ user: req.user._id, userName: req.user.name, action: 'RETURN', module: 'Transaction', targetId: item.transactionNo, details: `Returned transaction ${item.transactionNo}` });
+    }
+
+    res.json({ success: true, data: { target: txn, updatedCount: uniqueTransactions.length } });
   } catch (error) { next(error); }
 };
 

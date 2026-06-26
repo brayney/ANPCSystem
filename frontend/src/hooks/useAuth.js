@@ -1,7 +1,17 @@
 import React, { createContext, useContext, useState } from 'react';
 import api from '../utils/api';
+import i18n from '../i18n/config';
 
 const AuthContext = createContext(null);
+
+const applySystemLanguage = (language) => {
+  if (!language) return;
+
+  localStorage.setItem('systemLanguage', language);
+  document.documentElement.lang = language;
+  document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+  i18n.changeLanguage(language);
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
@@ -15,6 +25,7 @@ export const AuthProvider = ({ children }) => {
       const { data } = await api.post('/auth/login', { email, password });
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      applySystemLanguage(data.user?.language);
       setUser(data.user);
       return {
         success: true,
@@ -53,6 +64,7 @@ export const AuthProvider = ({ children }) => {
   const updateUser = (updatedUserData) => {
     console.log('🔄 Updating user state:', updatedUserData);
     const newUser = { ...user, ...updatedUserData };
+    applySystemLanguage(updatedUserData.language);
     setUser(newUser);
     localStorage.setItem('user', JSON.stringify(newUser));
   };

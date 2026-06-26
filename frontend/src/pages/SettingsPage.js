@@ -29,7 +29,7 @@ const formatRole = (role) => {
 
 export default function SettingsPage() {
   const { user, updateUser } = useAuth();
-  const { t, changeLanguage } = useTranslation();
+  const { t, changeLanguage, currentLanguage } = useTranslation();
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [userForm, setUserForm] = useState({ name: '', email: '', password: '' });
   const [editProfileMode, setEditProfileMode] = useState(false);
@@ -50,6 +50,7 @@ export default function SettingsPage() {
   const [deletingBackground, setDeletingBackground] = useState(false);
   const [loadingBackground, setLoadingBackground] = useState(false);
   const [pendingFile, setPendingFile] = useState(null);
+  const selectedLanguage = currentLanguage?.split('-')[0] || 'en';
 
   const fetchAccounts = useCallback(async () => {
     if (user?.role !== 'admin') return;
@@ -474,19 +475,19 @@ export default function SettingsPage() {
                       gap: '8px',
                       padding: '16px',
                       borderRadius: '12px',
-                      border: (user?.language || 'en') === code ? '2px solid var(--accent)' : '1px solid var(--border)',
-                      background: (user?.language || 'en') === code ? 'var(--accent-subtle)' : 'var(--surface)',
+                      border: selectedLanguage === code ? '2px solid var(--accent)' : '1px solid var(--border)',
+                      background: selectedLanguage === code ? 'var(--accent-subtle)' : 'var(--surface)',
                       color: 'var(--text-primary)',
                       cursor: savingLanguage ? 'not-allowed' : 'pointer',
-                      opacity: savingLanguage && (user?.language || 'en') !== code ? 0.6 : 1,
-                      fontWeight: (user?.language || 'en') === code ? 600 : 500,
+                      opacity: savingLanguage && selectedLanguage !== code ? 0.6 : 1,
+                      fontWeight: selectedLanguage === code ? 600 : 500,
                       fontSize: '13px',
                       transition: 'all 0.2s ease',
                     }}
                   >
                     <span style={{ fontSize: '24px' }}>{flag}</span>
                     <span>{name}</span>
-                    {(user?.language || 'en') === code && savingLanguage && (
+                    {selectedLanguage === code && savingLanguage && (
                       <Spinner size="sm" style={{ marginTop: '4px' }} />
                     )}
                   </button>
@@ -495,7 +496,7 @@ export default function SettingsPage() {
 
               <div style={{ marginTop: '24px', padding: '14px', borderRadius: '8px', background: 'var(--surface-2)', border: '1px solid var(--border-muted)' }}>
                 <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
-                  <strong>{t('settings.current_language')}:</strong> {user?.language ? (user.language.toUpperCase()) : 'EN'}
+                  <strong>{t('settings.current_language')}:</strong> {selectedLanguage.toUpperCase()}
                 </p>
               </div>
             </div>
