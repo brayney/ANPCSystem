@@ -303,5 +303,26 @@
 @media print {
   .no-print { display: none !important; }
   body { background: white !important; }
+
+  .public-transaction-print {
+    width: 210mm !important;
+    max-width: 210mm !important;
+    min-height: 297mm !important;
+    padding: 1.5rem !important;
+    margin: 0 auto !important;
+  }
+
+  .public-transaction-print-header {
+    flex-direction: row !important;
+    gap: 1.5rem !important;
+  }
+
+  .public-transaction-print-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .public-transaction-print-signatures {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
 }
 .print-only { display: none; }
