@@ -120,44 +120,22 @@ export default function TransactionsPage() {
       />
 
       {/* Filters & Tabs */}
-      <div className="card" style={{ padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div className="toolbar" style={{ padding: '12px 14px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
           <MagnifyingGlassIcon style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: 'var(--text-muted)' }} />
           <input className="input-field" style={{ paddingLeft: '34px' }} placeholder="Search transaction no, company, crane..."
             value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
         </div>
-        <div style={{ display: 'flex', gap: '4px', borderLeft: '1px solid var(--border-muted)', paddingLeft: '16px' }}>
+        <div className="segmented-control">
           <button
             onClick={() => { setTab('active'); setPage(1); }}
-            style={{
-              padding: '6px 12px',
-              minWidth: '74px',
-              borderRadius: '4px',
-              border: 'none',
-              background: tab === 'active' ? 'var(--accent)' : 'transparent',
-              color: tab === 'active' ? 'white' : 'var(--text-secondary)',
-              fontWeight: 600,
-              fontSize: '12px',
-              cursor: 'pointer',
-              transition: 'background 0.2s, color 0.2s, box-shadow 0.2s'
-            }}
+            aria-pressed={tab === 'active'}
           >
             Active
           </button>
           <button
             onClick={() => { setTab('returned'); setPage(1); }}
-            style={{
-              padding: '6px 12px',
-              minWidth: '74px',
-              borderRadius: '4px',
-              border: 'none',
-              background: tab === 'returned' ? 'var(--accent)' : 'transparent',
-              color: tab === 'returned' ? 'white' : 'var(--text-secondary)',
-              fontWeight: 600,
-              fontSize: '12px',
-              cursor: 'pointer',
-              transition: 'background 0.2s, color 0.2s, box-shadow 0.2s'
-            }}
+            aria-pressed={tab === 'returned'}
           >
             Returned
           </button>
@@ -169,7 +147,7 @@ export default function TransactionsPage() {
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}><Spinner size="lg" /></div>
         ) : items.length === 0 ? (
-          <EmptyState message="No transactions found" icon="📋" />
+          <EmptyState message="No transactions found" />
         ) : (
           <>
             <div style={{ overflowX: 'auto' }}>
@@ -209,14 +187,14 @@ export default function TransactionsPage() {
                       </td>
                       <td className="table-cell" style={{ fontWeight: 500 }}>{t.companyName}</td>
                       <td className="table-cell"><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', color: 'var(--accent)' }}>{getTransactionCraneLabel(t)}</span></td>
-                      <td className="table-cell" style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{t.pullOutLocation || '—'}</td>
+                      <td className="table-cell" style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{t.pullOutLocation || '-'}</td>
                       <td className="table-cell" style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
-                        {t.transactionDate ? format(new Date(t.transactionDate), 'MMM d, yyyy') : '—'}
+                        {t.transactionDate ? format(new Date(t.transactionDate), 'MMM d, yyyy') : '-'}
                       </td>
                       <td className="table-cell" style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
                         {tab === 'active'
-                          ? (t.expectedReturnDate ? format(new Date(t.expectedReturnDate), 'MMM d, yyyy') : '—')
-                          : (t.actualReturnDate ? format(new Date(t.actualReturnDate), 'MMM d, yyyy h:mm a') : '—')
+                          ? (t.expectedReturnDate ? format(new Date(t.expectedReturnDate), 'MMM d, yyyy') : '-')
+                          : (t.actualReturnDate ? format(new Date(t.actualReturnDate), 'MMM d, yyyy h:mm a') : '-')
                         }
                       </td>
                       <td className="table-cell"><StatusBadge status={isGroupingRow(t) ? (tab === 'active' ? 'Active' : 'Returned') : t.status} /></td>

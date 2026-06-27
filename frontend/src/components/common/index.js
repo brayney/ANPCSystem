@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Link } from 'react-router-dom';
-import { EllipsisVerticalIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { EllipsisVerticalIcon, XMarkIcon, InboxIcon } from '@heroicons/react/24/outline';
 
 // ── Status Badge ──────────────────────────────────────────────────────────────
 export const StatusBadge = ({ status }) => {
@@ -57,18 +57,19 @@ export const Spinner = ({ size = 'md' }) => {
 
 // ── Page Header ───────────────────────────────────────────────────────────────
 export const PageHeader = ({ title, subtitle, actions }) => (
-  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-    <div>
+  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+    <div style={{ minWidth: 0 }}>
       <h1 style={{
         fontFamily: "'Syne', sans-serif",
-        fontSize: '22px',
+        fontSize: 'clamp(22px, 3vw, 30px)',
         fontWeight: 800,
         color: 'var(--text-primary)',
-        lineHeight: 1.2,
+        lineHeight: 1.1,
         margin: 0,
+        letterSpacing: 0,
       }}>{title}</h1>
       {subtitle && (
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '3px' }}>
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '6px', maxWidth: '720px' }}>
           {subtitle}
         </p>
       )}
@@ -193,20 +194,20 @@ export const StatCard = ({ title, value, icon: Icon, color = 'blue', subtitle })
   const a = accents[color] || accents.blue;
 
   return (
-    <div className="card animate-fade-in" style={{ padding: '16px 20px' }}>
+    <div className="card animate-fade-in" style={{ padding: '16px 18px', minHeight: '132px' }}>
       <div className="flex items-start justify-between gap-3">
         <div style={{ flex: 1 }}>
-          <p style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+          <p style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
             {title}
           </p>
-          <p style={{ fontSize: '28px', fontFamily: "'Syne', sans-serif", fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
-            {value ?? '—'}
+          <p style={{ fontSize: '30px', fontFamily: "'Syne', sans-serif", fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, letterSpacing: 0 }}>
+            {value ?? '-'}
           </p>
-          {subtitle && <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '5px' }}>{subtitle}</p>}
+          {subtitle && <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '7px', lineHeight: 1.35 }}>{subtitle}</p>}
         </div>
         {Icon && (
           <div style={{
-            width: '40px', height: '40px', borderRadius: '10px',
+            width: '40px', height: '40px', borderRadius: '8px',
             background: a.bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0, boxShadow: `0 0 0 4px ${a.ring}`,
           }}>
@@ -214,7 +215,7 @@ export const StatCard = ({ title, value, icon: Icon, color = 'blue', subtitle })
           </div>
         )}
       </div>
-      <div style={{ height: '3px', marginTop: '14px', borderRadius: '2px', background: a.bg, overflow: 'hidden' }}>
+      <div style={{ height: '3px', marginTop: '16px', borderRadius: '2px', background: a.bg, overflow: 'hidden' }}>
         <div style={{ height: '100%', width: '60%', background: a.icon, borderRadius: '2px', opacity: 0.7 }} />
       </div>
     </div>
@@ -248,7 +249,7 @@ export const Modal = ({ open, onClose, title, children, size = 'md' }) => {
       <div className="animate-scale-in" style={{
         position: 'relative',
         background: 'var(--surface)',
-        border: '1px solid var(--border)', borderRadius: '14px',
+        border: '1px solid var(--border)', borderRadius: '8px',
         boxShadow: 'var(--shadow-lg)', width: '100%',
         maxWidth: maxWidths[size], maxHeight: '90vh', display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
@@ -274,9 +275,9 @@ export const Pagination = ({ page, pages, total, onPage }) => {
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid var(--border-muted)' }}>
       <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{total} records</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-        <button onClick={() => onPage(page - 1)} disabled={page === 1} className="btn-secondary" style={{ padding: '4px 10px', fontSize: '12px' }}>← Prev</button>
+        <button onClick={() => onPage(page - 1)} disabled={page === 1} className="btn-secondary" style={{ padding: '4px 10px', fontSize: '12px' }}>Prev</button>
         <span style={{ fontSize: '12px', color: 'var(--text-secondary)', padding: '0 8px', fontWeight: 600 }}>{page} / {pages}</span>
-        <button onClick={() => onPage(page + 1)} disabled={page === pages} className="btn-secondary" style={{ padding: '4px 10px', fontSize: '12px' }}>Next →</button>
+        <button onClick={() => onPage(page + 1)} disabled={page === pages} className="btn-secondary" style={{ padding: '4px 10px', fontSize: '12px' }}>Next</button>
       </div>
     </div>
   );
@@ -285,7 +286,9 @@ export const Pagination = ({ page, pages, total, onPage }) => {
 // ── Empty State ───────────────────────────────────────────────────────────────
 export const EmptyState = ({ message = 'No records found', icon }) => (
   <div style={{ textAlign: 'center', padding: '48px 24px' }}>
-    <div style={{ fontSize: '36px', marginBottom: '12px', opacity: 0.5 }}>{icon || '📭'}</div>
+    <div style={{ width: '48px', height: '48px', borderRadius: '8px', margin: '0 auto 14px', background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+      {icon || <InboxIcon style={{ width: '22px', height: '22px' }} />}
+    </div>
     <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{message}</p>
   </div>
 );

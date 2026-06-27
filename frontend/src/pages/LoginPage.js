@@ -108,11 +108,6 @@ export default function LoginPage() {
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(48,54,61,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(48,54,61,0.3) 1px, transparent 1px)', backgroundSize: '32px 32px', pointerEvents: 'none' }} />
       )}
 
-      {/* Glow (only if no custom image) */}
-      {!backgroundImage && (
-        <div style={{ position: 'absolute', top: '20%', left: '30%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(31,107,235,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
-      )}
-
       {/* Left panel */}
       <div style={{ position: 'absolute', inset: '0 auto 0 0', width: 'min(42vw, 560px)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 80px', zIndex: 1, pointerEvents: 'none' }} className="hidden xl:flex">
         {/* Brand */}
@@ -134,9 +129,9 @@ export default function LoginPage() {
       </div>
 
       {/* Right panel — login form */}
-      <div style={{ width: '100%', maxWidth: '420px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 2, transform: 'translateX(clamp(0px, 15vw, 180px))' }} className="w-full">
+      <div style={{ width: '100%', maxWidth: '420px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 2, transform: 'translateX(clamp(0px, 12vw, 160px))' }} className="w-full">
         <div className="animate-fade-in w-full" style={{ maxWidth: '360px' }}>
-          <div style={{ background: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '14px', padding: '32px', boxShadow: '0 16px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)' }}>
+          <div style={{ background: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '8px', padding: '32px', boxShadow: '0 16px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)' }}>
             <div style={{ marginBottom: '24px' }}>
               <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '20px', fontWeight: 800, color: '#f0f6fc', marginBottom: '4px' }}>Sign in</h2>
               <p style={{ fontSize: '13px', color: '#e6edf3' }}>Authorized personnel only</p>
@@ -198,7 +193,7 @@ export default function LoginPage() {
 
             <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 6px var(--success)', flexShrink: 0 }} />
-              <p style={{ fontSize: '11px', color: 'white' }}>Secured connection — All sessions are logged</p>
+              <p style={{ fontSize: '11px', color: 'white' }}>Secured connection - All sessions are logged</p>
             </div>
           </div>
         </div>

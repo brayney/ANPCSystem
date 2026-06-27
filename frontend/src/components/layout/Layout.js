@@ -51,7 +51,7 @@ const SidebarContent = ({ setSidebarOpen, onLogoutClick }) => {
               padding: '9px 10px', borderRadius: '7px', marginBottom: '2px',
               fontSize: '13px', fontWeight: isActive ? 600 : 400,
               color: isActive ? '#f0f6fc' : 'var(--sidebar-text)',
-              background: isActive ? 'var(--accent)' : 'transparent',
+              background: isActive ? 'var(--sidebar-active)' : 'transparent',
               textDecoration: 'none',
               transition: 'background 0.15s, color 0.15s',
               boxShadow: isActive ? '0 2px 8px rgba(31,107,235,0.3)' : 'none',
@@ -80,7 +80,7 @@ const SidebarContent = ({ setSidebarOpen, onLogoutClick }) => {
             padding: '9px 10px', borderRadius: '7px', marginBottom: '2px',
             fontSize: '13px', fontWeight: isActive ? 600 : 400,
             color: isActive ? '#f0f6fc' : 'var(--sidebar-text)',
-            background: isActive ? 'var(--accent)' : 'transparent',
+            background: isActive ? 'var(--sidebar-active)' : 'transparent',
             textDecoration: 'none', transition: 'background 0.15s, color 0.15s',
           })}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; }}
@@ -93,7 +93,7 @@ const SidebarContent = ({ setSidebarOpen, onLogoutClick }) => {
             padding: '9px 10px', borderRadius: '7px', marginBottom: '2px',
             fontSize: '13px', fontWeight: isActive ? 600 : 400,
             color: isActive ? '#f0f6fc' : 'var(--sidebar-text)',
-            background: isActive ? 'var(--accent)' : 'transparent',
+            background: isActive ? 'var(--sidebar-active)' : 'transparent',
             textDecoration: 'none', transition: 'background 0.15s, color 0.15s',
           })}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; }}
@@ -106,7 +106,7 @@ const SidebarContent = ({ setSidebarOpen, onLogoutClick }) => {
             padding: '9px 10px', borderRadius: '7px',
             fontSize: '13px', fontWeight: isActive ? 600 : 400,
             color: isActive ? '#f0f6fc' : 'var(--sidebar-text)',
-            background: isActive ? 'var(--accent)' : 'transparent',
+            background: isActive ? 'var(--sidebar-active)' : 'transparent',
             textDecoration: 'none', transition: 'background 0.15s, color 0.15s',
           })}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; }}
@@ -147,8 +147,9 @@ export default function Layout() {
   const navigate = useNavigate();
 
   const toggleDark = () => {
-    document.documentElement.classList.toggle('dark');
-    setDark(!dark);
+    const root = document.documentElement;
+    root.classList.toggle('dark');
+    setDark(prev => !prev);
   };
 
   const handleLogout = () => {
@@ -194,7 +195,7 @@ export default function Layout() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     padding: '10px', borderRadius: '7px',
                     color: isActive ? '#f0f6fc' : 'var(--sidebar-text)',
-                    background: isActive ? 'var(--accent)' : 'transparent',
+                    background: isActive ? 'var(--sidebar-active)' : 'transparent',
                     textDecoration: 'none',
                     transition: 'background 0.15s, color 0.15s',
                     boxShadow: isActive ? '0 2px 8px rgba(31,107,235,0.3)' : 'none',
@@ -219,7 +220,7 @@ export default function Layout() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   padding: '10px', borderRadius: '7px',
                   color: isActive ? '#f0f6fc' : 'var(--sidebar-text)',
-                  background: isActive ? 'var(--accent)' : 'transparent',
+                  background: isActive ? 'var(--sidebar-active)' : 'transparent',
                   textDecoration: 'none', transition: 'background 0.15s, color 0.15s',
                 })}
                 onMouseEnter={e => { if (!window.location.pathname.startsWith('/tutorials')) { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; } }}
@@ -231,7 +232,7 @@ export default function Layout() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   padding: '10px', borderRadius: '7px',
                   color: isActive ? '#f0f6fc' : 'var(--sidebar-text)',
-                  background: isActive ? 'var(--accent)' : 'transparent',
+                  background: isActive ? 'var(--sidebar-active)' : 'transparent',
                   textDecoration: 'none', transition: 'background 0.15s, color 0.15s',
                 })}
                 onMouseEnter={e => { if (!window.location.pathname.startsWith('/reports')) { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; } }}
@@ -243,7 +244,7 @@ export default function Layout() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   padding: '10px', borderRadius: '7px',
                   color: isActive ? '#f0f6fc' : 'var(--sidebar-text)',
-                  background: isActive ? 'var(--accent)' : 'transparent',
+                  background: isActive ? 'var(--sidebar-active)' : 'transparent',
                   textDecoration: 'none', transition: 'background 0.15s, color 0.15s',
                 })}
                 onMouseEnter={e => { if (!window.location.pathname.startsWith('/settings')) { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = '#f0f6fc'; } }}
@@ -291,7 +292,7 @@ export default function Layout() {
       {/* Main Area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
         {/* Top Bar */}
-        <header className="no-print" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '0 16px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, boxShadow: 'var(--shadow-sm)' }}>
+        <header className="no-print" style={{ background: 'var(--surface-raised)', borderBottom: '1px solid var(--border)', padding: '0 18px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, boxShadow: 'var(--shadow-sm)', backdropFilter: 'blur(14px)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden" style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text-secondary)' }}>
               <Bars3Icon style={{ width: '16px', height: '16px' }} />
@@ -302,7 +303,7 @@ export default function Layout() {
           </div>
           <div className="hidden lg:flex items-center gap-2">
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 6px var(--success)' }} />
-            <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>ANPC Yard — Internal Operations Dashboard</span>
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>ANPC Yard - Internal Operations Dashboard</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button onClick={toggleDark} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '7px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text-secondary)', transition: 'background 0.15s' }}
@@ -316,7 +317,7 @@ export default function Layout() {
         </header>
 
         {/* Page Content */}
-        <main style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+        <main className="app-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: 'clamp(16px, 2.4vw, 28px)' }}>
           <Outlet />
         </main>
       </div>

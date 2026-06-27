@@ -31,7 +31,7 @@ const PerformanceIndicator = ({ value, label, trend, unit = '' }) => (
       <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{value}{unit}</span>
       {trend !== undefined && (
         <span style={{ fontSize: '11px', fontWeight: 600, color: trend > 0 ? '#1a7f37' : trend < 0 ? '#cf222e' : 'var(--text-secondary)' }}>
-          {trend > 0 ? '↑' : trend < 0 ? '↓' : '→'} {Math.abs(trend)}%
+          {trend > 0 ? '+' : trend < 0 ? '-' : '='} {Math.abs(trend)}%
         </span>
       )}
     </div>
@@ -71,13 +71,13 @@ function DashboardPage() {
 
   return (
     <div className="animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div className="toolbar flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6" style={{ padding: '18px 20px' }}>
         <div>
-          <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2, margin: 0 }}>
-            {getGreeting()}, {user?.name?.split(' ')[0] || 'Admin'} 👋
+          <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 'clamp(24px, 3vw, 32px)', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1, margin: 0, letterSpacing: 0 }}>
+            {getGreeting()}, {user?.name?.split(' ')[0] || 'Admin'}
           </h1>
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            {t('dashboard.complete_fleet_overview')} • {t('dashboard.updated')} {format(new Date(), 'h:mm a')}
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+            {t('dashboard.complete_fleet_overview')} - {t('dashboard.updated')} {format(new Date(), 'h:mm a')}
           </p>
         </div>
         <button onClick={handleRefresh} disabled={refreshing} style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600, cursor: refreshing ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: refreshing ? 0.6 : 1 }}>
@@ -87,7 +87,7 @@ function DashboardPage() {
       </div>
 
       {/* Core KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 stagger">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-5 stagger">
         <StatCard title={t('dashboard.total_cranes')} value={s.totalCranes} icon={TruckIcon} color="blue" subtitle={t('dashboard.all_active_equipment')} />
         <StatCard title={t('dashboard.available_cranes')} value={s.availableCranes} icon={CheckCircleIcon} color="green" subtitle={t('dashboard.ready_for_rental')} />
         <StatCard title={t('dashboard.active_rentals')} value={s.activeRentals} icon={DocumentTextIcon} color="orange" subtitle={`${s.utilizationRate}% ${t('dashboard.utilization')}`} />
@@ -95,7 +95,7 @@ function DashboardPage() {
       </div>
 
       {/* Secondary Equipment Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 stagger">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-5 stagger">
         <StatCard title={t('dashboard.counterweights')} value={s.totalCounterweights} icon={Square3Stack3DIcon} color="indigo" subtitle={t('dashboard.attachments')} />
         <StatCard title={t('dashboard.boom_sections')} value={s.totalBoomSections} icon={BoltIcon} color="purple" subtitle={t('dashboard.components')} />
         <StatCard title={t('dashboard.hooks')} value={s.totalHooks} icon={LinkIcon} color="teal" subtitle={t('dashboard.rigging')} />
@@ -103,18 +103,19 @@ function DashboardPage() {
       </div>
 
       {/* Performance & Health Indicators */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
         <PerformanceIndicator label="Pending Returns" value={s.pendingReturns || 0} />
         <PerformanceIndicator label="Monthly Transactions" value={s.monthlyTransactions || 0} trend={parseFloat(s.monthlyGrowth) || 0} />
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-5">
         <div className="card">
           <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 16px 0' }}>{t('dashboard.equipment_status_distribution')}</h3>
           {statusChart.length > 0 ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-              <ResponsiveContainer width="45%" height={180}>
+            <div className="flex flex-col md:flex-row md:items-center gap-5">
+              <div style={{ width: '100%', minWidth: 220, flex: '0 0 45%' }}>
+              <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
                   <Pie data={statusChart} cx="50%" cy="50%" innerRadius={45} outerRadius={75} dataKey="value" paddingAngle={2}>
                     {statusChart.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
@@ -122,6 +123,7 @@ function DashboardPage() {
                   <Tooltip content={<CustomTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
+              </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {statusChart.map((d, i) => (
                   <div key={d.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -156,7 +158,7 @@ function DashboardPage() {
       <div className="card">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>
           <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{t('dashboard.recent_transactions')}</h3>
-          <Link to="/transactions" style={{ fontSize: '12px', color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>{t('dashboard.view_all')} →</Link>
+          <Link to="/transactions" style={{ fontSize: '12px', color: 'var(--accent)', fontWeight: 700, textDecoration: 'none' }}>{t('dashboard.view_all')}</Link>
         </div>
         {data?.recentTransactions?.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
@@ -177,7 +179,7 @@ function DashboardPage() {
                       <td style={{ padding: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>{txn.companyName}</td>
                       <td style={{ padding: '14px', fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', color: 'var(--text-secondary)' }}>{txn.crane}</td>
                       <td style={{ padding: '14px' }}><StatusBadge status={txn.status} /></td>
-                      <td style={{ padding: '14px', color: 'var(--text-secondary)', fontSize: '12px' }}>{txn.transactionDate ? format(new Date(txn.transactionDate), 'MMM d, yyyy') : '—'}</td>
+                      <td style={{ padding: '14px', color: 'var(--text-secondary)', fontSize: '12px' }}>{txn.transactionDate ? format(new Date(txn.transactionDate), 'MMM d, yyyy') : '-'}</td>
                       <td style={{ padding: '14px', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{daysRented} {daysRented !== 1 ? t('common.days') : t('common.day')}</td>
                     </tr>
                   );
