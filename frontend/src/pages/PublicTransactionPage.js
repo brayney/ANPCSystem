@@ -19,6 +19,63 @@ const getTransactionCranes = (txn) => (
       }]
 );
 
+const AttachmentRows = ({ txn }) => (
+  <>
+    {txn.counterweights?.map((cw, i) => (
+      <tr key={`cw-${cw._id || i}`} className="border-t border-gray-200">
+        <td className="px-2 py-0.5 text-gray-500 text-xs">Counterweight</td>
+        <td className="px-2 py-0.5 text-xs">{cw.itemName || '-'}</td>
+        <td className="px-2 py-0.5 font-mono text-xs">{cw.serialNo || '-'}</td>
+        <td className="px-2 py-0.5 text-xs">-</td>
+        <td className="px-2 py-0.5 text-xs">{cw.weightKg || '-'}</td>
+      </tr>
+    ))}
+    {txn.boomSections?.map((bs, i) => (
+      <tr key={`bs-${bs._id || i}`} className="border-t border-gray-200">
+        <td className="px-2 py-0.5 text-gray-500 text-xs">Boom Section</td>
+        <td className="px-2 py-0.5 text-xs">{bs.itemName || '-'}</td>
+        <td className="px-2 py-0.5 font-mono text-xs">{bs.boomCode || '-'}</td>
+        <td className="px-2 py-0.5 text-xs">{bs.length || '-'}</td>
+        <td className="px-2 py-0.5 text-xs">{bs.weightKg || '-'}</td>
+      </tr>
+    ))}
+    {txn.hooks?.map((h, i) => (
+      <tr key={`hook-${h._id || i}`} className="border-t border-gray-200">
+        <td className="px-2 py-0.5 text-gray-500 text-xs">Hook</td>
+        <td className="px-2 py-0.5 text-xs">{h.itemName || '-'}</td>
+        <td className="px-2 py-0.5 font-mono text-xs">{h.hookSerialNo || '-'}</td>
+        <td className="px-2 py-0.5 text-xs">-</td>
+        <td className="px-2 py-0.5 text-xs">{h.weightKg || '-'}</td>
+      </tr>
+    ))}
+  </>
+);
+
+const AttachmentsTable = ({ txn }) => {
+  const hasAttachments = txn.counterweights?.length > 0 || txn.boomSections?.length > 0 || txn.hooks?.length > 0;
+  if (!hasAttachments) return <p className="text-xs text-gray-500">No attachments</p>;
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs border border-gray-300">
+        <thead className="bg-gray-100">
+          <tr>
+            <th className="px-2 py-0.5 text-left text-xs">Type</th>
+            <th className="px-2 py-0.5 text-left text-xs">Item Name</th>
+            <th className="px-2 py-0.5 text-left text-xs">Code / Serial</th>
+            <th className="px-2 py-0.5 text-left text-xs">Length</th>
+            <th className="px-2 py-0.5 text-left text-xs">Weight (kg)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <AttachmentRows txn={txn} />
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+// eslint-disable-next-line no-unused-vars
 const RelatedTransactionsTable = ({ transactions = [], compact = false }) => {
   if (!transactions.length) return null;
 
@@ -57,6 +114,46 @@ const RelatedTransactionsTable = ({ transactions = [], compact = false }) => {
   );
 };
 
+const DetailedRelatedTransactionsTable = ({ transactions = [], compact = false }) => {
+  if (!transactions.length) return null;
+
+  const fmt = (d) => d ? format(new Date(d), compact ? 'MMM d, yyyy' : 'MMMM d, yyyy') : '-';
+
+  return (
+    <div className={compact ? 'mb-2' : 'mt-6'}>
+      <h3 className={`${compact ? 'font-bold text-gray-800 text-xs uppercase tracking-wide mb-1 border-b pb-0.5' : 'text-sm font-bold text-gray-900 mb-3'}`}>Added Transactions</h3>
+      <div className="space-y-3">
+        {transactions.map(child => (
+          <div key={child._id} className="border border-gray-300">
+            <table className="w-full text-xs">
+              <tbody>
+                <tr className="bg-gray-100">
+                  <td className="px-2 py-1 font-semibold text-gray-500">TXN No.</td>
+                  <td className="px-2 py-1 font-mono font-bold text-blue-700">{child.transactionNo}</td>
+                  <td className="px-2 py-1 font-semibold text-gray-500">Date</td>
+                  <td className="px-2 py-1">{fmt(child.transactionDate)}</td>
+                  <td className="px-2 py-1 font-semibold text-gray-500">Status</td>
+                  <td className="px-2 py-1">{child.status || '-'}</td>
+                </tr>
+                <tr className="border-t border-gray-200">
+                  <td className="px-2 py-1 font-semibold text-gray-500">Driver / Vehicle</td>
+                  <td className="px-2 py-1" colSpan={2}>{[child.driverName, child.vehicleType, child.vehiclePlateNo].filter(Boolean).join(' / ') || '-'}</td>
+                  <td className="px-2 py-1 font-semibold text-gray-500">Location</td>
+                  <td className="px-2 py-1" colSpan={2}>{child.pullOutLocation || child.deliveryLocation || '-'}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div className="p-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Included Attachments</p>
+              <AttachmentsTable txn={child} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const PrintView = React.forwardRef(({ txn }, ref) => {
   if (!txn) return null;
   const cranes = getTransactionCranes(txn);
@@ -64,15 +161,18 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
   const publicUrl = `${window.location.origin}/public/transactions/${txn._id}`;
 
   return (
-    <div ref={ref} className="bg-white text-gray-900 font-sans" style={{ width: '100%', maxWidth: '210mm', margin: '0 auto' }}>
-      <div className="p-4 md:p-6">
+    <div ref={ref} className="p-6 bg-white text-gray-900 font-sans max-w-4xl mx-auto" style={{ width: '210mm', minHeight: '297mm', margin: '0 auto' }}>
+      <div>
         {/* Header */}
-        <div className="flex flex-col md:flex-row items-start justify-between gap-4 md:gap-6 border-b-2 border-blue-900 pb-3 mb-4">
-          <div className="flex gap-2 md:gap-3 flex-shrink-0 items-center">
-            <QRCodeSVG value={publicUrl} size={60} className="md:w-auto" />
-            <img src="/logo.png" alt="NASS Logo" style={{ height: '50px', objectFit: 'contain' }} />
+        <div className="flex items-start justify-between gap-6 border-b-2 border-blue-900 pb-3 mb-4">
+          <div className="flex gap-3 flex-shrink-0 items-center">
+            <QRCodeSVG value={publicUrl} size={70} />
+            <div>
+              <img src="/logo.png" alt="NASS Logo" style={{ height: '60px', objectFit: 'contain', marginBottom: '4px' }} />
+              <p className="text-xs text-gray-500">EQUIPMENT PULL-OUT / RENTAL FORM</p>
+            </div>
           </div>
-          <div className="text-right text-xs md:text-xs whitespace-nowrap">
+          <div className="text-right text-xs whitespace-nowrap">
             <p className="font-bold text-blue-900">TXN No: {txn.transactionNo}</p>
             <p className="text-gray-600">{fmt(txn.transactionDate)}</p>
             {txn.transactionTime && <p className="text-gray-600">{txn.transactionTime}</p>}
@@ -80,7 +180,7 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-3">
+        <div className="grid grid-cols-2 gap-8 mb-6">
           <div>
             <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wide mb-1 border-b pb-0.5">Transaction Information</h3>
             <table className="w-full text-xs">
@@ -114,7 +214,7 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
         </div>
 
         {/* Vehicle & Driver */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-3">
+        <div className="grid grid-cols-2 gap-4 mb-3">
           <div>
             <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wide mb-1 border-b pb-0.5">Vehicle & Driver</h3>
             <table className="w-full text-xs">
@@ -136,14 +236,14 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
         {/* Crane */}
         <div className="mb-3">
           <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wide mb-1 border-b pb-0.5">Crane Details</h3>
-          <table className="w-full text-xs border border-gray-300 overflow-x-auto">
+          <table className="w-full text-xs border border-gray-300">
             <thead className="bg-blue-900 text-white">
               <tr>
                 <th className="px-2 py-1 text-left text-xs">Equipment No.</th>
                 <th className="px-2 py-1 text-left text-xs">Model</th>
                 <th className="px-2 py-1 text-left text-xs">Capacity</th>
                 <th className="px-2 py-1 text-left text-xs">Weight (KG)</th>
-                <th className="px-2 py-1 text-left text-xs hidden md:table-cell">Expected Return</th>
+                <th className="px-2 py-1 text-left text-xs">Expected Return</th>
               </tr>
             </thead>
             <tbody>
@@ -153,7 +253,7 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
                   <td className="px-2 py-1 text-xs">{crane.craneModel || '—'}</td>
                   <td className="px-2 py-1 text-xs">{crane.capacity || '—'}</td>
                   <td className="px-2 py-1 text-xs">{crane.weightKg || '—'}</td>
-                  <td className="px-2 py-1 text-xs hidden md:table-cell">{fmt(txn.expectedReturnDate)}</td>
+                  <td className="px-2 py-1 text-xs">{fmt(txn.expectedReturnDate)}</td>
                 </tr>
               ))}
             </tbody>
@@ -216,10 +316,10 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
           </div>
         )}
 
-        <RelatedTransactionsTable transactions={txn.childTransactions || []} compact />
+        <DetailedRelatedTransactionsTable transactions={txn.childTransactions || []} compact />
 
-        {/* Signatures - hide on mobile */}
-        <div className="mt-4 grid grid-cols-3 gap-3 hidden md:grid">
+        {/* Signatures */}
+        <div className="mt-4 grid grid-cols-3 gap-3">
           {['Released By', 'Received By', 'Authorized By'].map(label => (
             <div key={label} className="text-center">
               <div className="border-b border-gray-400 h-8 mb-1" />
@@ -318,7 +418,7 @@ export default function PublicTransactionPage() {
               <p className="font-medium">{fmt(txn.expectedReturnDate)}</p>
             </div>
           </div>
-          <RelatedTransactionsTable transactions={txn.childTransactions || []} />
+          <DetailedRelatedTransactionsTable transactions={txn.childTransactions || []} />
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
             <p className="text-xs text-blue-900">
               ✓ <strong>Secure Transaction Review:</strong> This QR review includes the main transaction and added transactions connected to it.
