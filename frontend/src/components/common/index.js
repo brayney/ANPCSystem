@@ -272,9 +272,9 @@ export const Modal = ({ open, onClose, title, children, size = 'md' }) => {
 export const Pagination = ({ page, pages, total, onPage }) => {
   if (pages <= 1) return null;
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid var(--border-muted)' }}>
-      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{total} records</span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 16px', borderTop: '1px solid var(--border-muted)', minHeight: '53px' }}>
+      <span style={{ position: 'absolute', left: '16px', fontSize: '12px', color: 'var(--text-secondary)' }}>{total} records</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
         <button onClick={() => onPage(page - 1)} disabled={page === 1} className="btn-secondary" style={{ padding: '4px 10px', fontSize: '12px' }}>Prev</button>
         <span style={{ fontSize: '12px', color: 'var(--text-secondary)', padding: '0 8px', fontWeight: 600 }}>{page} / {pages}</span>
         <button onClick={() => onPage(page + 1)} disabled={page === pages} className="btn-secondary" style={{ padding: '4px 10px', fontSize: '12px' }}>Next</button>
