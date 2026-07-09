@@ -9,7 +9,7 @@ const applySystemLanguage = (language) => {
 
   localStorage.setItem('systemLanguage', language);
   document.documentElement.lang = language;
-  document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+  document.documentElement.dir = 'ltr';
   i18n.changeLanguage(language);
 };
 

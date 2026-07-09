@@ -9,7 +9,7 @@ export const useTranslation = () => {
 
     localStorage.setItem('systemLanguage', lang);
     document.documentElement.lang = lang;
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.dir = 'ltr';
 
     return i18n.changeLanguage(lang).catch(err => {
       console.error('Error changing language:', err);

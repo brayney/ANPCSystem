@@ -1,5 +1,4 @@
-// counterweightRoutes.js
-const router1 = require('express').Router();
+const router = require('express').Router();
 const cw = require('../controllers/counterweightController');
 const { protect, adminOnly } = require('../middleware/auth');
 const multer = require('multer');
@@ -20,16 +19,16 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
-router1.use(protect);
-router1.get('/', cw.getCounterweights);
-router1.post('/import', adminOnly, upload.single('file'), cw.importCounterweights);
-router1.get('/:id', cw.getCounterweight);
-router1.post('/', adminOnly, cw.createCounterweight);
-router1.put('/:id', adminOnly, cw.updateCounterweight);
-router1.delete('/:id', adminOnly, cw.deleteCounterweight);
+router.use(protect);
+router.get('/', cw.getCounterweights);
+router.post('/import', adminOnly, upload.single('file'), cw.importCounterweights);
+router.get('/:id', cw.getCounterweight);
+router.post('/', adminOnly, cw.createCounterweight);
+router.put('/:id', adminOnly, cw.updateCounterweight);
+router.delete('/:id', adminOnly, cw.deleteCounterweight);
 
 // Multer error handler
-router1.use((err, req, res, next) => {
+router.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     return res.status(400).json({ success: false, message: `Upload error: ${err.message}` });
   }
@@ -39,4 +38,4 @@ router1.use((err, req, res, next) => {
   next(err);
 });
 
-module.exports = router1;
+module.exports = router;

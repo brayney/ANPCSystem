@@ -57,7 +57,7 @@ const getUserLanguage = () => {
 const initialLanguage = getUserLanguage();
 
 document.documentElement.lang = initialLanguage;
-document.documentElement.dir = initialLanguage === 'ar' ? 'rtl' : 'ltr';
+document.documentElement.dir = 'ltr';
 
 i18next
   .use(initReactI18next)
