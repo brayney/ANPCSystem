@@ -1,5 +1,6 @@
 const Counterweight = require('../models/Counterweight');
 const AuditLog = require('../models/AuditLog');
+const { equipmentStatusMap, firstFilled, normalizeImportRow, okUpperConditionMap } = require('../utils/importNormalizer');
 
 exports.getCounterweights = async (req, res, next) => {
   try {
@@ -76,18 +77,15 @@ exports.importCounterweights = async (req, res, next) => {
 
     for (let i = 0; i < rows.length; i++) {
       try {
-        const row = rows[i];
-        
-        // Check if itemName is required
-        if (!row.itemName || !String(row.itemName).trim()) {
-          throw new Error('itemName is required');
-        }
-        
-        await Counterweight.create({ 
-          ...row, 
-          location: row.location || 'RAG YARD', 
-          client: row.client || '-' 
+        const row = normalizeImportRow(rows[i], {
+          defaults: { location: 'RAG YARD', client: '-', condition: 'OK', status: 'Available' },
+          statusMap: equipmentStatusMap,
+          conditionMap: okUpperConditionMap,
         });
+        
+        row.itemName = firstFilled(row.itemName, row.serialNo, row.capacity, `Counterweight ${i + 1}`);
+        
+        await Counterweight.create(row);
         results.success++;
       } catch (err) {
         results.failed++;

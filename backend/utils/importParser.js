@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const XLSX = require('xlsx');
-const { parseCSV } = require('./csvParser');
+const { parseCSV, cleanRow } = require('./csvParser');
 
 const KNOWN_HEADERS = new Set([
   'equipmentNo',
@@ -72,7 +72,7 @@ const parseXLSX = (filePath) => {
     headers.forEach((header, index) => {
       if (header) record[header] = String(row[index] || '').trim();
     });
-    return record;
+    return cleanRow(record);
   });
 };
 
@@ -80,7 +80,7 @@ exports.parseImportFile = (filePath, originalName = '') => {
   const ext = path.extname(originalName || filePath).toLowerCase();
 
   if (ext === '.csv') {
-    return parseCSV(fs.readFileSync(filePath, 'utf-8'));
+    return parseCSV(fs.readFileSync(filePath, 'utf-8')).map(cleanRow);
   }
 
   if (ext === '.xlsx') {

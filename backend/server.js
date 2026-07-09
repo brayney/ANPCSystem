@@ -14,7 +14,7 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const chatRoutes = require('./routes/chatRoutes');
-const Crane = require('./models/Crane');
+const repairEquipmentIndexes = require('./utils/repairEquipmentIndexes');
 
 const errorHandler = require('./middleware/errorHandler');
 
@@ -85,16 +85,7 @@ mongoose
   .connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log(' MongoDB connected');
-    try {
-      const indexes = await Crane.collection.indexes();
-      const equipmentNoIndex = indexes.find(index => index.name === 'equipmentNo_1' && index.unique);
-      if (equipmentNoIndex) {
-        await Crane.collection.dropIndex('equipmentNo_1');
-        console.log(' Dropped unique crane equipmentNo index to allow duplicates');
-      }
-    } catch (err) {
-      console.warn(' Could not verify crane equipmentNo index:', err.message);
-    }
+    await repairEquipmentIndexes();
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
   .catch((err) => {

@@ -1,5 +1,6 @@
 const BoomSection = require('../models/BoomSection');
 const AuditLog = require('../models/AuditLog');
+const { equipmentStatusMap, firstFilled, normalizeImportRow, okTitleConditionMap } = require('../utils/importNormalizer');
 
 exports.getBoomSections = async (req, res, next) => {
   try {
@@ -76,10 +77,14 @@ exports.importBoomSections = async (req, res, next) => {
 
     for (let i = 0; i < rows.length; i++) {
       try {
-        const row = rows[i];
-        if (!row.itemName || !String(row.itemName).trim()) throw new Error('itemName is required');
+        const row = normalizeImportRow(rows[i], {
+          defaults: { location: 'RAG YARD', client: '-', condition: 'Ok', status: 'Available' },
+          statusMap: equipmentStatusMap,
+          conditionMap: okTitleConditionMap,
+        });
+        row.itemName = firstFilled(row.itemName, row.boomCode, row.length, `Boom Section ${i + 1}`);
         
-        await BoomSection.create({ ...row, location: row.location || 'RAG YARD' });
+        await BoomSection.create(row);
         results.success++;
       } catch (err) {
         results.failed++;

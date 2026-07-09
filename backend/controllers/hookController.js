@@ -1,5 +1,6 @@
 const Hook = require('../models/Hook');
 const AuditLog = require('../models/AuditLog');
+const { equipmentStatusMap, firstFilled, normalizeImportRow, okUpperConditionMap } = require('../utils/importNormalizer');
 
 exports.getHooks = async (req, res, next) => {
   try {
@@ -77,10 +78,14 @@ exports.importHooks = async (req, res, next) => {
 
     for (let i = 0; i < rows.length; i++) {
       try {
-        const row = rows[i];
-        if (!row.itemName || !String(row.itemName).trim()) throw new Error('itemName is required');
+        const row = normalizeImportRow(rows[i], {
+          defaults: { location: 'RAG YARD', client: '-', condition: 'OK', status: 'Available' },
+          statusMap: equipmentStatusMap,
+          conditionMap: okUpperConditionMap,
+        });
+        row.itemName = firstFilled(row.itemName, row.hookSerialNo, row.capacity, `Hook ${i + 1}`);
         
-        await Hook.create({ ...row, location: row.location || 'RAG YARD', client: row.client || '-' });
+        await Hook.create(row);
         results.success++;
       } catch (err) {
         results.failed++;

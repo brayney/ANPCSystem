@@ -3,6 +3,7 @@ const Counterweight = require('../models/Counterweight');
 const BoomSection = require('../models/BoomSection');
 const Hook = require('../models/Hook');
 const AuditLog = require('../models/AuditLog');
+const { equipmentStatusMap, normalizeImportRow } = require('../utils/importNormalizer');
 
 const sharedAttachmentQuery = (equipmentNo) => ({
   isArchived: false,
@@ -137,10 +138,13 @@ exports.importCranes = async (req, res, next) => {
 
     for (let i = 0; i < rows.length; i++) {
       try {
-        const row = rows[i];
+        const row = normalizeImportRow(rows[i], {
+          defaults: { location: 'RAG YARD', client: '-', status: 'Available' },
+          statusMap: equipmentStatusMap,
+        });
         if (!row.equipmentNo || !String(row.equipmentNo).trim()) throw new Error('equipmentNo is required');
         
-        await Crane.create({ ...row, location: row.location || 'RAG YARD', client: row.client || '-' });
+        await Crane.create(row);
         results.success++;
       } catch (err) {
         results.failed++;
