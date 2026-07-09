@@ -141,6 +141,54 @@ const FloatingChat = ({ user }) => {
     return chat.participants.find(p => p._id !== user._id);
   };
 
+  const getUserInitials = (account) => {
+    const source = account?.name || account?.email || '?';
+    const words = source.trim().split(/\s+/).filter(Boolean);
+    if (words.length >= 2) return `${words[0][0]}${words[1][0]}`.toUpperCase();
+    return source.slice(0, 2).toUpperCase();
+  };
+
+  const getAvatarColors = (account) => {
+    const palette = [
+      ['#1F6BEB', '#ffffff'],
+      ['#1A7F37', '#ffffff'],
+      ['#BC4C00', '#ffffff'],
+      ['#6E40C9', '#ffffff'],
+      ['#0E7A6E', '#ffffff'],
+      ['#9A6700', '#ffffff'],
+    ];
+    const value = account?._id || account?.email || account?.name || 'user';
+    const index = Array.from(value).reduce((sum, char) => sum + char.charCodeAt(0), 0) % palette.length;
+    return palette[index];
+  };
+
+  const UserAvatar = ({ account, size = 34 }) => {
+    const [background, color] = getAvatarColors(account);
+    return (
+      <div
+        title={account?.name || account?.email || 'User'}
+        style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          borderRadius: '50%',
+          background,
+          color,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          fontSize: `${Math.max(10, Math.round(size * 0.34))}px`,
+          fontWeight: 800,
+          border: '2px solid rgba(255,255,255,0.75)',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+          letterSpacing: 0,
+        }}
+      >
+        {getUserInitials(account)}
+      </div>
+    );
+  };
+
   const localDateKey = (dateValue) => format(new Date(dateValue), 'yyyy-MM-dd');
 
   const formatDateDivider = (dateValue) => format(new Date(dateValue), 'MMM d, yyyy');
@@ -284,13 +332,16 @@ const FloatingChat = ({ user }) => {
             justifyContent: 'space-between',
             alignItems: 'center'
           }}>
-            <div>
-              <h3 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 600 }}>Messages</h3>
-              {selectedChat && (
-                <p style={{ margin: 0, fontSize: '12px', opacity: 0.9 }}>
-                  {getOtherParticipant(selectedChat)?.name}
-                </p>
-              )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+              {selectedChat && <UserAvatar account={getOtherParticipant(selectedChat)} size={34} />}
+              <div style={{ minWidth: 0 }}>
+                <h3 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 600 }}>Messages</h3>
+                {selectedChat && (
+                  <p style={{ margin: 0, fontSize: '12px', opacity: 0.9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '230px' }}>
+                    {getOtherParticipant(selectedChat)?.name}
+                  </p>
+                )}
+              </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
               {selectedChat && (
@@ -451,10 +502,11 @@ const FloatingChat = ({ user }) => {
                           onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2, #f9fafb)'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                            <UserAvatar account={other} size={38} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
-                                <p style={{ margin: 0, fontWeight: 600, fontSize: '13px' }}>
+                                <p style={{ margin: 0, fontWeight: 600, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                   {other?.name}
                                 </p>
                                 <span style={{ fontSize: '11px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
@@ -468,7 +520,7 @@ const FloatingChat = ({ user }) => {
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
-                                maxWidth: '250px'
+                                maxWidth: '230px'
                               }}>
                                 {chat.lastMessage || 'No messages yet'}
                               </p>
@@ -529,8 +581,9 @@ const FloatingChat = ({ user }) => {
                         onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2, #f9fafb)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <UserAvatar account={availableUser} size={38} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ margin: '0 0 4px 0', fontWeight: 600, fontSize: '13px' }}>
                               {availableUser.name}
                             </p>
@@ -538,7 +591,10 @@ const FloatingChat = ({ user }) => {
                               margin: 0,
                               fontSize: '12px',
                               color: 'var(--text-secondary)',
-                              maxWidth: '250px'
+                              maxWidth: '230px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
                             }}>
                               {availableUser.email}
                             </p>
@@ -676,9 +732,12 @@ const FloatingChat = ({ user }) => {
                           style={{
                             display: 'flex',
                             justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
+                            alignItems: 'flex-end',
+                            gap: '7px',
                             marginBottom: '4px'
                           }}
                         >
+                          {!isOwnMessage && <UserAvatar account={msg.sender} size={28} />}
                           <div style={{
                             maxWidth: '70%',
                             padding: '8px 12px',
@@ -706,6 +765,7 @@ const FloatingChat = ({ user }) => {
                               )}
                             </div>
                           </div>
+                          {isOwnMessage && <UserAvatar account={user} size={28} />}
                         </div>
                       </React.Fragment>
                     );
