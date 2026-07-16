@@ -1,68 +1,113 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ArrowLeftIcon, ChevronDownIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import {
+  ArrowLeftIcon,
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  PlusIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline';
 import { StatusBadge, Spinner, EmptyState, ConfirmDialog } from '../components/common';
 import api from '../utils/api';
 import { format } from 'date-fns';
 
-const AttachmentTable = ({ title, items, columns, emptyIcon, onDelete, isOpen, onToggle }) => (
-  <div className="card mb-4 overflow-hidden">
-    <button
-      type="button"
-      onClick={onToggle}
-      className="w-full flex items-center justify-between gap-3 rounded-lg px-1 py-2 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40"
-    >
-      <div className="flex items-center gap-3">
-        <span className="text-lg" aria-hidden="true">{emptyIcon}</span>
-        <div>
-          <p className="font-semibold text-gray-800 dark:text-white">{title} ({items.length})</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{isOpen ? 'Hide list' : 'Show list'}</p>
-        </div>
-      </div>
-      <ChevronDownIcon className={`w-5 h-5 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-    </button>
+const AttachmentTable = ({ title, items, columns, emptyIcon, onDelete, isOpen, onToggle, pageSize = 5 }) => {
+  const [page, setPage] = useState(1);
 
-    {isOpen && (
-      items.length === 0 ? (
-        <div className="mt-3">
-          <EmptyState message={`No ${title.toLowerCase()} assigned`} icon={emptyIcon} />
+  useEffect(() => {
+    setPage(prev => Math.min(prev, Math.max(1, Math.ceil(items.length / pageSize))));
+  }, [items.length, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  const paginatedItems = items.slice((page - 1) * pageSize, page * pageSize);
+
+  return (
+    <div className="card mb-4 overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center justify-between gap-3 rounded-lg px-1 py-2 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-lg" aria-hidden="true">{emptyIcon}</span>
+          <div>
+            <p className="font-semibold text-gray-800 dark:text-white">{title} ({items.length})</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{isOpen ? 'Hide list' : 'Show list'}</p>
+          </div>
         </div>
-      ) : (
-        <div className="overflow-x-auto mt-3">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b dark:border-gray-700">
-                {columns.map(c => <th key={c.key} className="table-header">{c.label}</th>)}
-                <th className="table-header text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, i) => (
-                <tr key={item._id || i} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                  {columns.map(c => (
-                    <td key={c.key} className="table-cell">
-                      {c.badge ? <StatusBadge status={item[c.key]} /> : (item[c.key] || '—')}
-                    </td>
+        <ChevronDownIcon className={`w-5 h-5 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        items.length === 0 ? (
+          <div className="mt-3">
+            <EmptyState message={`No ${title.toLowerCase()} assigned`} icon={emptyIcon} />
+          </div>
+        ) : (
+          <div className="mt-3">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b dark:border-gray-700">
+                    {columns.map(c => <th key={c.key} className="table-header">{c.label}</th>)}
+                    <th className="table-header text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedItems.map((item, i) => (
+                    <tr key={item._id || i} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                      {columns.map(c => (
+                        <td key={c.key} className="table-cell">
+                          {c.badge ? <StatusBadge status={item[c.key]} /> : (item[c.key] || '—')}
+                        </td>
+                      ))}
+                      <td className="table-cell text-center">
+                        <button
+                          onClick={() => onDelete(item._id, item.itemName || item.boomCode || item.hookSerialNo || 'Item')}
+                          title="Delete"
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                        >
+                          <TrashIcon className="w-3 h-3" /> Delete
+                        </button>
+                      </td>
+                    </tr>
                   ))}
-                  <td className="table-cell text-center">
-                    <button
-                      onClick={() => onDelete(item._id, item.itemName || item.boomCode || item.hookSerialNo || 'Item')}
-                      title="Delete"
-                      className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
-                    >
-                      <TrashIcon className="w-3 h-3" /> Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )
-    )}
-  </div>
-);
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Showing {Math.min((page - 1) * pageSize + 1, items.length)}-{Math.min(page * pageSize, items.length)} of {items.length}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                  disabled={page === 1}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeftIcon className="w-3.5 h-3.5" /> Prev
+                </button>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Page {page} of {totalPages}</span>
+                <button
+                  type="button"
+                  onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={page === totalPages}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Next <ChevronRightIcon className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      )}
+    </div>
+  );
+};
 
 export default function CraneDetailPage() {
   const { id } = useParams();
