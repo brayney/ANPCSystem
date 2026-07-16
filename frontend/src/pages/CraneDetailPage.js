@@ -1,47 +1,65 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ArrowLeftIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, ChevronDownIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { StatusBadge, Spinner, EmptyState, ConfirmDialog } from '../components/common';
 import api from '../utils/api';
 import { format } from 'date-fns';
 
-const AttachmentTable = ({ title, items, columns, emptyIcon, onDelete, endpoint }) => (
-  <div className="card mb-4">
-    <h3 className="font-semibold text-gray-800 dark:text-white mb-4">{title} ({items.length})</h3>
-    {items.length === 0 ? (
-      <EmptyState message={`No ${title.toLowerCase()} assigned`} icon={emptyIcon} />
-    ) : (
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b dark:border-gray-700">
-              {columns.map(c => <th key={c.key} className="table-header">{c.label}</th>)}
-              <th className="table-header text-center">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, i) => (
-              <tr key={item._id || i} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                {columns.map(c => (
-                  <td key={c.key} className="table-cell">
-                    {c.badge ? <StatusBadge status={item[c.key]} /> : (item[c.key] || '—')}
-                  </td>
-                ))}
-                <td className="table-cell text-center">
-                  <button
-                    onClick={() => onDelete(item._id, item.itemName || item.boomCode || 'Item')}
-                    title="Delete"
-                    className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
-                  >
-                    <TrashIcon className="w-3 h-3" /> Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+const AttachmentTable = ({ title, items, columns, emptyIcon, onDelete, isOpen, onToggle }) => (
+  <div className="card mb-4 overflow-hidden">
+    <button
+      type="button"
+      onClick={onToggle}
+      className="w-full flex items-center justify-between gap-3 rounded-lg px-1 py-2 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40"
+    >
+      <div className="flex items-center gap-3">
+        <span className="text-lg" aria-hidden="true">{emptyIcon}</span>
+        <div>
+          <p className="font-semibold text-gray-800 dark:text-white">{title} ({items.length})</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{isOpen ? 'Hide list' : 'Show list'}</p>
+        </div>
       </div>
+      <ChevronDownIcon className={`w-5 h-5 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+    </button>
+
+    {isOpen && (
+      items.length === 0 ? (
+        <div className="mt-3">
+          <EmptyState message={`No ${title.toLowerCase()} assigned`} icon={emptyIcon} />
+        </div>
+      ) : (
+        <div className="overflow-x-auto mt-3">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b dark:border-gray-700">
+                {columns.map(c => <th key={c.key} className="table-header">{c.label}</th>)}
+                <th className="table-header text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item, i) => (
+                <tr key={item._id || i} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                  {columns.map(c => (
+                    <td key={c.key} className="table-cell">
+                      {c.badge ? <StatusBadge status={item[c.key]} /> : (item[c.key] || '—')}
+                    </td>
+                  ))}
+                  <td className="table-cell text-center">
+                    <button
+                      onClick={() => onDelete(item._id, item.itemName || item.boomCode || item.hookSerialNo || 'Item')}
+                      title="Delete"
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                    >
+                      <TrashIcon className="w-3 h-3" /> Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
     )}
   </div>
 );
@@ -54,6 +72,11 @@ export default function CraneDetailPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteType, setDeleteType] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [openSections, setOpenSections] = useState({
+    counterweights: false,
+    boomSections: false,
+    hooks: false,
+  });
 
   useEffect(() => {
     api.get(`/cranes/${id}`)
@@ -65,6 +88,13 @@ export default function CraneDetailPage() {
   const handleDeleteAttachment = async (itemId, itemName, type) => {
     setDeleteTarget({ itemId, itemName });
     setDeleteType(type);
+  };
+
+  const toggleSection = section => {
+    setOpenSections(prev => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
   };
 
   const confirmDelete = async () => {
@@ -164,10 +194,18 @@ export default function CraneDetailPage() {
         )}
       </div>
 
-      {/* Counterweights */}
+      {/* Attachments */}
+      <div className="mb-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-3">
+          Assigned Equipment
+        </p>
+      </div>
+
       <AttachmentTable title="Counterweights" emptyIcon="⚖️"
         items={crane.counterweights || []}
         onDelete={(id, name) => handleDeleteAttachment(id, name, 'counterweight')}
+        isOpen={openSections.counterweights}
+        onToggle={() => toggleSection('counterweights')}
         columns={[
           { key: 'itemName', label: 'Item Name' },
           { key: 'serialNo', label: 'Serial No.' },
@@ -179,10 +217,11 @@ export default function CraneDetailPage() {
         ]}
       />
 
-      {/* Boom Sections */}
       <AttachmentTable title="Boom Sections" emptyIcon="📏"
         items={crane.boomSections || []}
         onDelete={(id, name) => handleDeleteAttachment(id, name, 'boom')}
+        isOpen={openSections.boomSections}
+        onToggle={() => toggleSection('boomSections')}
         columns={[
           { key: 'itemName', label: 'Item Name' },
           { key: 'boomCode', label: 'Boom Code' },
@@ -194,10 +233,11 @@ export default function CraneDetailPage() {
         ]}
       />
 
-      {/* Hooks */}
       <AttachmentTable title="Hooks" emptyIcon="🪝"
         items={crane.hooks || []}
         onDelete={(id, name) => handleDeleteAttachment(id, name, 'hook')}
+        isOpen={openSections.hooks}
+        onToggle={() => toggleSection('hooks')}
         columns={[
           { key: 'itemName', label: 'Item Name' },
           { key: 'hookSerialNo', label: 'Serial No.' },
