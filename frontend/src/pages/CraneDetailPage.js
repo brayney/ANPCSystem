@@ -3,11 +3,15 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ArrowLeftIcon,
+  BoltIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  LinkIcon,
   PlusIcon,
+  ScaleIcon,
   TrashIcon,
+  TruckIcon,
 } from '@heroicons/react/24/outline';
 import { StatusBadge, Spinner, EmptyState, ConfirmDialog } from '../components/common';
 import api from '../utils/api';
@@ -31,7 +35,9 @@ const AttachmentTable = ({ title, items, columns, emptyIcon, onDelete, isOpen, o
         className="w-full flex items-center justify-between gap-3 rounded-lg px-1 py-2 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40"
       >
         <div className="flex items-center gap-3">
-          <span className="text-lg" aria-hidden="true">{emptyIcon}</span>
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200" aria-hidden="true">
+            {emptyIcon}
+          </span>
           <div>
             <p className="font-semibold text-gray-800 dark:text-white">{title} ({items.length})</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">{isOpen ? 'Hide list' : 'Show list'}</p>
@@ -209,7 +215,10 @@ export default function CraneDetailPage() {
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white font-mono">{crane.equipmentNo}</h1>
+            <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1">
+              <TruckIcon className="w-4 h-4 text-slate-700 dark:text-slate-200" />
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white font-mono">{crane.equipmentNo}</h1>
+            </div>
             <StatusBadge status={crane.status} />
           </div>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{crane.equipmentType} — {crane.craneModel}</p>
@@ -246,7 +255,7 @@ export default function CraneDetailPage() {
         </p>
       </div>
 
-      <AttachmentTable title="Counterweights" emptyIcon="⚖️"
+      <AttachmentTable title="Counterweights" emptyIcon={<ScaleIcon className="w-4 h-4" />}
         items={crane.counterweights || []}
         onDelete={(id, name) => handleDeleteAttachment(id, name, 'counterweight')}
         isOpen={openSections.counterweights}
@@ -262,7 +271,7 @@ export default function CraneDetailPage() {
         ]}
       />
 
-      <AttachmentTable title="Boom Sections" emptyIcon="📏"
+      <AttachmentTable title="Boom Sections" emptyIcon={<BoltIcon className="w-4 h-4" />}
         items={crane.boomSections || []}
         onDelete={(id, name) => handleDeleteAttachment(id, name, 'boom')}
         isOpen={openSections.boomSections}
@@ -278,7 +287,7 @@ export default function CraneDetailPage() {
         ]}
       />
 
-      <AttachmentTable title="Hooks" emptyIcon="🪝"
+      <AttachmentTable title="Hooks" emptyIcon={<LinkIcon className="w-4 h-4" />}
         items={crane.hooks || []}
         onDelete={(id, name) => handleDeleteAttachment(id, name, 'hook')}
         isOpen={openSections.hooks}

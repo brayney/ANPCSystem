@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, EyeIcon, TruckIcon } from '@heroicons/react/24/outline';
 import { PageHeader, StatusBadge, Spinner, Pagination, EmptyState, Modal, ConfirmDialog } from '../components/common';
 import CSVImport from '../components/common/CSVImport';
 import api from '../utils/api';
@@ -217,7 +217,7 @@ export default function CranesPage() {
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}><Spinner size="lg" /></div>
         ) : cranes.length === 0 ? (
-          <EmptyState message="No cranes found" icon="🏗️" />
+          <EmptyState message="No cranes found" icon={<TruckIcon style={{ width: '22px', height: '22px' }} />} />
         ) : (
           <>
             <div style={{ overflowX: 'auto' }}>
