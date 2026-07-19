@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { PageHeader, Spinner, StatusBadge, EmptyState } from '../components/common';
 import api from '../utils/api';
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subDays, startOfMonth } from 'date-fns';
 import { MagnifyingGlassIcon, ArrowDownTrayIcon, FunnelIcon } from '@heroicons/react/24/outline';
 
 const COLORS = ['#1f6feb','#1a7f37','#9a6700','#cf222e','#6e40c9','#0e7a6e','#bc4c00','#2563eb','#059669','#d97706'];
