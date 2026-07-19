@@ -6,6 +6,8 @@ const {
   getLoginBackground,
   deleteLoginBackground,
   updateLanguage,
+  uploadAvatar,
+  deleteAvatar,
 } = require('../controllers/settingsController');
 
 const router = express.Router();
@@ -14,7 +16,7 @@ const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (allowedTypes.includes(file.mimetype)) {
@@ -46,5 +48,21 @@ router.delete('/login-background', protect, adminOnly, deleteLoginBackground);
 
 // Update user language preference (protected)
 router.put('/language', protect, updateLanguage);
+
+// Upload profile avatar (protected - own avatar only)
+router.post('/avatar', protect, (req, res, next) => {
+  upload.single('image')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message || 'File upload failed',
+      });
+    }
+    uploadAvatar(req, res, next);
+  });
+});
+
+// Delete profile avatar (protected - own avatar only)
+router.delete('/avatar', protect, deleteAvatar);
 
 module.exports = router;

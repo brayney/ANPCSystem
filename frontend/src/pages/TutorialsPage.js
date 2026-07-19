@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowPathIcon,
   BookOpenIcon,
@@ -9,10 +9,11 @@ import {
   DocumentChartBarIcon,
   DocumentTextIcon,
   MagnifyingGlassIcon,
+  PauseIcon,
+  PlayIcon,
   ShieldCheckIcon,
   TruckIcon,
 } from '@heroicons/react/24/outline';
-import { PageHeader } from '../components/common';
 
 const guideSections = [
   {
@@ -107,7 +108,7 @@ const guideSections = [
       'Use filters to narrow records by date, equipment, customer, project, or status when available.',
       'Open Calendar to see scheduled transaction activity by date.',
       'Compare upcoming schedules before assigning the same equipment to another job.',
-      'Use report results during planning meetings or when checking operational history.',
+      'Use report results during planning meetings or when checking previous activity.',
     ],
     tips: [
       'Check the Calendar before confirming a new schedule.',
@@ -154,200 +155,186 @@ const guideSections = [
   },
 ];
 
-const quickStart = [
-  {
-    label: 'First time using the system',
-    text: 'Read Daily System Flow, then Managing Equipment, then Creating Transactions.',
-    target: '#overview',
-  },
-  {
-    label: 'Preparing a release',
-    text: 'Update equipment records first, then create and review the transaction.',
-    target: '#transactions',
-  },
-  {
-    label: 'Closing completed work',
-    text: 'Open the active transaction, mark the return, and confirm equipment availability.',
-    target: '#returns',
-  },
-];
-
-const essentials = [
-  'Search before adding records.',
-  'Keep equipment status current.',
-  'Review transactions before saving.',
-  'Return completed transactions promptly.',
-];
-
 export default function TutorialsPage() {
   const [query, setQuery] = useState('');
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(true);
   const normalizedQuery = query.trim().toLowerCase();
-  const filteredSections = normalizedQuery
-    ? guideSections.filter(section => (
-        section.title.toLowerCase().includes(normalizedQuery) ||
-        section.summary.toLowerCase().includes(normalizedQuery) ||
-        section.bestFor.toLowerCase().includes(normalizedQuery) ||
-        section.steps.some(step => step.toLowerCase().includes(normalizedQuery)) ||
-        section.tips.some(tip => tip.toLowerCase().includes(normalizedQuery))
-      ))
-    : guideSections;
+
+  const filteredSections = useMemo(() => {
+    if (!normalizedQuery) return guideSections;
+
+    return guideSections.filter(section => (
+      section.title.toLowerCase().includes(normalizedQuery) ||
+      section.summary.toLowerCase().includes(normalizedQuery) ||
+      section.bestFor.toLowerCase().includes(normalizedQuery) ||
+      section.steps.some(step => step.toLowerCase().includes(normalizedQuery)) ||
+      section.tips.some(tip => tip.toLowerCase().includes(normalizedQuery))
+    ));
+  }, [normalizedQuery]);
+
+  useEffect(() => {
+    if (activeIndex >= filteredSections.length) {
+      setActiveIndex(0);
+    }
+  }, [activeIndex, filteredSections.length]);
+
+  useEffect(() => {
+    if (!autoPlay || filteredSections.length <= 1) return undefined;
+
+    const timer = window.setInterval(() => {
+      setActiveIndex(current => (current + 1) % filteredSections.length);
+    }, 6500);
+
+    return () => window.clearInterval(timer);
+  }, [autoPlay, filteredSections.length]);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'ArrowRight') {
+        setActiveIndex(current => Math.min(current + 1, filteredSections.length - 1));
+      }
+      if (event.key === 'ArrowLeft') {
+        setActiveIndex(current => Math.max(current - 1, 0));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filteredSections.length]);
+
+  const currentSlide = filteredSections[activeIndex] || null;
+  const progressPercent = filteredSections.length ? ((activeIndex + 1) / filteredSections.length) * 100 : 0;
+  const CurrentSlideIcon = currentSlide?.icon;
 
   return (
-    <div className="animate-fade-in">
-      <PageHeader
-        title="Instructions"
-        subtitle="Clear operating guides for equipment records, transactions, returns, reports, messages, and account access."
-        actions={
-          <div style={{ position: 'relative', width: 'min(100%, 320px)' }}>
-            <MagnifyingGlassIcon style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: 'var(--text-secondary)' }} />
-            <input
-              type="text"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Search by task, page, or status"
-              className="input-field"
-              style={{ paddingLeft: '36px' }}
-            />
-          </div>
-        }
-      />
-
-      <section
-        className="card"
-        style={{
-          borderRadius: '8px',
-          padding: '20px',
-          marginBottom: '16px',
-          background: 'linear-gradient(135deg, var(--surface), var(--surface-2))',
-        }}
-      >
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '18px', alignItems: 'start' }}>
-          <div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: '8px', background: 'var(--surface)', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 700, marginBottom: '12px' }}>
-              <ShieldCheckIcon style={{ width: '15px', height: '15px', color: 'var(--success)' }} />
-              Standard workflow
-            </div>
-            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.25 }}>
-              Use these instructions to keep every equipment movement easy to trace.
-            </h2>
-            <p style={{ margin: '8px 0 0', color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.6, maxWidth: '720px' }}>
-              Each guide is written as a practical checklist. Start with the task you need, follow the steps in order, then use the notes to avoid common mistakes.
-            </p>
-          </div>
-
-          <div style={{ display: 'grid', gap: '8px' }}>
-            {essentials.map(item => (
-              <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '10px 12px', border: '1px solid var(--border-muted)', borderRadius: '8px', background: 'var(--surface)' }}>
-                <CheckCircleIcon style={{ width: '17px', height: '17px', color: 'var(--success)', flexShrink: 0 }} />
-                <span style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: 650 }}>{item}</span>
-              </div>
-            ))}
-          </div>
+    <div className="instructions-page-shell animate-fade-in">
+      <div className="instructions-topbar">
+        <div className="instructions-topbar-copy">
+          <span className="slideshow-pill accent">Full-page instructions</span>
+          <h1>Instructions</h1>
+          <p>Follow the system step-by-step as a full-screen presentation deck.</p>
         </div>
-      </section>
 
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '12px', marginBottom: '16px' }}>
-        {quickStart.map(item => (
-          <a
-            key={item.label}
-            href={item.target}
-            className="card"
-            style={{ display: 'block', padding: '15px', borderRadius: '8px', textDecoration: 'none', color: 'inherit' }}
-          >
-            <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '13px', fontWeight: 800 }}>{item.label}</p>
-            <p style={{ margin: '5px 0 0', color: 'var(--text-secondary)', fontSize: '12px', lineHeight: 1.5 }}>{item.text}</p>
-          </a>
-        ))}
-      </section>
+        <div className="instructions-search">
+          <MagnifyingGlassIcon style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: 'var(--text-secondary)' }} />
+          <input
+            type="text"
+            value={query}
+            onChange={e => {
+              setQuery(e.target.value);
+              setActiveIndex(0);
+            }}
+            placeholder="Search by task, page, or status"
+            className="input-field"
+            style={{ paddingLeft: '36px' }}
+          />
+        </div>
+      </div>
 
-      <nav
-        aria-label="Instruction sections"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: '10px',
-          marginBottom: '18px',
-        }}
-      >
-        {guideSections.map(section => {
-          const Icon = section.icon;
-          return (
-            <a
-              key={section.id}
-              href={`#${section.id}`}
-              className="card"
-              style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', textDecoration: 'none', color: 'inherit', borderRadius: '8px' }}
+      {filteredSections.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: '36px 20px', borderRadius: '8px' }}>
+          <BookOpenIcon style={{ width: '34px', height: '34px', margin: '0 auto 10px', color: 'var(--text-muted)' }} />
+          <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700 }}>No instructions found</p>
+          <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '13px' }}>Try searching for equipment, transaction, return, report, message, or account.</p>
+        </div>
+      ) : (
+        <section className="slideshow-shell instructions-deck card">
+          <div className="slideshow-toolbar">
+            <div className="slideshow-toolbar-left">
+              <span className="slideshow-pill">Slide {activeIndex + 1} of {filteredSections.length}</span>
+              <span className="slideshow-pill accent">{currentSlide?.bestFor}</span>
+            </div>
+
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setAutoPlay(value => !value)}
             >
-              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--accent-subtle)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Icon style={{ width: '17px', height: '17px' }} />
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: '12px', fontWeight: 800, color: 'var(--text-primary)' }}>{section.title}</p>
-                <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>{section.time}</p>
-              </div>
-            </a>
-          );
-        })}
-      </nav>
-
-      <div style={{ display: 'grid', gap: '14px' }}>
-        {filteredSections.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: '36px 20px', borderRadius: '8px' }}>
-            <BookOpenIcon style={{ width: '34px', height: '34px', margin: '0 auto 10px', color: 'var(--text-muted)' }} />
-            <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700 }}>No instructions found</p>
-            <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '13px' }}>Try searching for equipment, transaction, return, report, message, or account.</p>
+              {autoPlay ? <PauseIcon style={{ width: '15px', height: '15px' }} /> : <PlayIcon style={{ width: '15px', height: '15px' }} />}
+              {autoPlay ? 'Pause' : 'Play'}
+            </button>
           </div>
-        ) : (
-          filteredSections.map(section => {
-            const Icon = section.icon;
-            return (
-              <section key={section.id} id={section.id} className="card" style={{ borderRadius: '8px', padding: '18px', scrollMarginTop: '18px' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '14px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', minWidth: '240px', flex: 1 }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--accent-subtle)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Icon style={{ width: '21px', height: '21px' }} />
+
+          <div className="slideshow-layout">
+            <aside className="slideshow-sidebar">
+              {filteredSections.map((section, index) => {
+                const Icon = section.icon;
+                const isActive = index === activeIndex;
+                return (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveIndex(index);
+                      setAutoPlay(false);
+                    }}
+                    className={`slideshow-thumb ${isActive ? 'active' : ''}`}
+                  >
+                    <div className="slideshow-thumb-icon">
+                      <Icon style={{ width: '16px', height: '16px' }} />
+                    </div>
+                    <div className="slideshow-thumb-copy">
+                      <span>{section.title}</span>
+                      <small>{section.time}</small>
+                    </div>
+                  </button>
+                );
+              })}
+            </aside>
+
+            <div className="slideshow-stage">
+              <div className="slideshow-progress-bar">
+                <span style={{ width: `${progressPercent}%` }} />
+              </div>
+
+              {currentSlide && (
+                <div key={currentSlide.id} className="slideshow-slide">
+                  <div className="slideshow-slide-top">
+                    <div className="slideshow-icon-wrap">
+                      {CurrentSlideIcon ? <CurrentSlideIcon style={{ width: '24px', height: '24px' }} /> : null}
                     </div>
                     <div>
-                      <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: 'var(--text-primary)' }}>{section.title}</h2>
-                      <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.55 }}>{section.summary}</p>
+                      <h3>{currentSlide.title}</h3>
+                      <p>{currentSlide.summary}</p>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span style={{ padding: '5px 8px', borderRadius: '8px', background: 'var(--surface-2)', border: '1px solid var(--border-muted)', color: 'var(--text-secondary)', fontSize: '11px', fontWeight: 700 }}>{section.bestFor}</span>
-                    <span style={{ padding: '5px 8px', borderRadius: '8px', background: 'var(--accent-subtle)', color: 'var(--accent-text)', fontSize: '11px', fontWeight: 700 }}>{section.time}</span>
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '16px', alignItems: 'start' }}>
-                  <ol style={{ margin: 0, padding: 0, display: 'grid', gap: '9px', listStyle: 'none' }}>
-                    {section.steps.map((step, index) => (
-                      <li key={step} style={{ display: 'grid', gridTemplateColumns: '30px minmax(0, 1fr)', gap: '10px', alignItems: 'start' }}>
-                        <span style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'var(--surface-2)', border: '1px solid var(--border-muted)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 800 }}>
-                          {index + 1}
-                        </span>
-                        <span style={{ color: 'var(--text-primary)', fontSize: '13px', lineHeight: 1.6, paddingTop: '5px' }}>{step}</span>
-                      </li>
-                    ))}
-                  </ol>
-
-                  <aside style={{ border: '1px solid var(--border-muted)', borderRadius: '8px', padding: '12px', background: 'var(--surface-2)' }}>
-                    <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '12px', fontWeight: 800 }}>Helpful notes</p>
-                    <div style={{ display: 'grid', gap: '8px', marginTop: '9px' }}>
-                      {section.tips.map(tip => (
-                        <div key={tip} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                          <CheckCircleIcon style={{ width: '15px', height: '15px', color: 'var(--success)', flexShrink: 0, marginTop: '2px' }} />
-                          <span style={{ color: 'var(--text-secondary)', fontSize: '12px', lineHeight: 1.5 }}>{tip}</span>
-                        </div>
-                      ))}
+                  <div className="slideshow-grid">
+                    <div className="slideshow-step-panel">
+                      <div className="slideshow-step-list">
+                        {currentSlide.steps.map((step, index) => (
+                          <div key={step} className="slideshow-step-item">
+                            <span>{index + 1}</span>
+                            <p>{step}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </aside>
+
+                    <aside className="slideshow-note-panel">
+                      <div className="slideshow-note-header">
+                        <ShieldCheckIcon style={{ width: '18px', height: '18px', color: 'var(--success)' }} />
+                        Helpful notes
+                      </div>
+                      <div className="slideshow-note-list">
+                        {currentSlide.tips.map(tip => (
+                          <div key={tip} className="slideshow-note-item">
+                            <CheckCircleIcon style={{ width: '15px', height: '15px', color: 'var(--success)', flexShrink: 0 }} />
+                            <span>{tip}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="slideshow-note-badge">{currentSlide.time}</div>
+                    </aside>
+                  </div>
+
                 </div>
-              </section>
-            );
-          })
-        )}
-      </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

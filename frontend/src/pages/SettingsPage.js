@@ -10,7 +10,6 @@ const PRIMARY_ADMIN_EMAIL = 'admin@anpc.com';
 
 const formatDateTime = (value) => {
   if (!value) return 'Not available';
-
   return new Intl.DateTimeFormat('en', {
     year: 'numeric',
     month: 'short',
@@ -26,6 +25,9 @@ const formatRole = (role) => {
   if (role === 'viewer') return 'Viewer';
   return 'User';
 };
+
+const sectionHeaderStyle = { fontFamily: 'var(--font-sans)', fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' };
+const sectionSubtitleStyle = { fontSize: '13px', color: 'var(--text-secondary)', marginBottom: 0, lineHeight: 1.5 };
 
 export default function SettingsPage() {
   const { user, updateUser } = useAuth();
@@ -50,11 +52,14 @@ export default function SettingsPage() {
   const [deletingBackground, setDeletingBackground] = useState(false);
   const [loadingBackground, setLoadingBackground] = useState(false);
   const [pendingFile, setPendingFile] = useState(null);
+  const [avatar, setAvatar] = useState(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [deletingAvatar, setDeletingAvatar] = useState(false);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState(null);
   const selectedLanguage = currentLanguage?.split('-')[0] || 'en';
 
   const fetchAccounts = useCallback(async () => {
     if (user?.role !== 'admin') return;
-
     setLoadingAccounts(true);
     try {
       const { data } = await api.get('/auth/users');
@@ -72,7 +77,6 @@ export default function SettingsPage() {
       const { data } = await api.get('/settings/login-background');
       setBackgroundImage(data.data || null);
     } catch (err) {
-      // Error fetching background
       setBackgroundImage(null);
     } finally {
       setLoadingBackground(false);
@@ -85,11 +89,18 @@ export default function SettingsPage() {
   }, [activeTab, fetchAccounts, fetchBackgroundImage]);
 
   useEffect(() => {
-    // Sync editProfileForm with user data when entering edit mode
     if (editProfileMode && user) {
       setEditProfileForm({ name: user.name || '', email: user.email || '' });
     }
   }, [editProfileMode, user]);
+
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '');
+    const validTabs = ['profile', 'language', 'accounts', 'create', 'login-background', 'password', 'system'];
+    if (hash && validTabs.includes(hash)) {
+      setActiveTab(hash);
+    }
+  }, []);
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -106,66 +117,27 @@ export default function SettingsPage() {
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    console.log('🔵 Form submitted, editProfileForm:', editProfileForm);
-    console.log('🔵 Current user:', user);
-    
-    if (!editProfileForm.name?.trim()) { 
-      console.log('❌ Name is empty');
-      toast.error('Name is required'); 
-      return; 
-    }
-    if (!editProfileForm.email?.trim()) { 
-      console.log('❌ Email is empty');
-      toast.error('Email is required'); 
-      return; 
-    }
-    if (editProfileForm.name.trim().length < 2) { 
-      console.log('❌ Name too short');
-      toast.error('Name must be at least 2 characters'); 
-      return; 
-    }
-    
+    if (!editProfileForm.name?.trim()) { toast.error('Name is required'); return; }
+    if (!editProfileForm.email?.trim()) { toast.error('Email is required'); return; }
+    if (editProfileForm.name.trim().length < 2) { toast.error('Name must be at least 2 characters'); return; }
     setSavingProfile(true);
     const payload = { name: editProfileForm.name.trim(), email: editProfileForm.email.trim() };
-    console.log('📤 Sending payload:', payload);
-    
     try {
       const response = await api.put('/auth/update-profile', payload);
-      console.log('📥 Full response:', response);
-      console.log('📥 Response data:', response.data);
-      console.log('📥 Response user:', response.data?.user);
-      
       if (response.data?.success) {
-        console.log('✅ Success response received');
-        
-        // Check if updated user data is in response
         if (response.data?.user) {
-          console.log('📝 Updated user from response:', response.data.user);
-          // Store updated user in localStorage
           localStorage.setItem('user', JSON.stringify(response.data.user));
-          console.log('💾 Stored updated user in localStorage');
         }
-        
         toast.success('Profile updated successfully');
         setEditProfileMode(false);
-        
-        // Refresh the page to get latest data
-        console.log('🔄 Page will refresh in 2 seconds...');
-        setTimeout(() => {
-          console.log('🔄 Reloading now...');
-          window.location.reload();
-        }, 2000);
+        setTimeout(() => window.location.reload(), 1500);
       } else {
-        console.log('❌ Response not successful:', response.data);
         toast.error(response.data?.message || 'Failed to update profile');
       }
-    } catch (err) { 
-      console.error('❌ Error caught:', err);
-      console.error('Response status:', err.response?.status);
-      console.error('Response data:', err.response?.data);
-      console.error('Error message:', err.message);
+    } catch (err) {
       const errorMsg = err.response?.data?.message || err.message || 'Failed to update profile';
       toast.error(errorMsg);
+    } finally {
       setSavingProfile(false);
     }
   };
@@ -178,37 +150,18 @@ export default function SettingsPage() {
   const handleLanguageChange = async (newLanguage) => {
     setSavingLanguage(true);
     try {
-      console.log(`📝 Sending language update request for: ${newLanguage}`);
-      
-      // First, change the language in i18next immediately for UI response
       await changeLanguage(newLanguage);
-      console.log(`✅ i18next language changed to: ${newLanguage}`);
-      
-      // Then update on the backend
       const { data } = await api.put('/settings/language', { language: newLanguage });
-      console.log(`📊 Backend response:`, data);
-      
       if (data.success) {
-        // Update user in both React state and localStorage
         updateUser({ language: newLanguage });
-        console.log(`✅ User state and localStorage updated with language: ${newLanguage}`);
-        
         toast.success(`Language changed to ${newLanguage.toUpperCase()}`);
-        setSavingLanguage(false);
       } else {
-        console.error('❌ Backend response not successful:', data);
         toast.error(data?.message || 'Failed to update language preference');
-        setSavingLanguage(false);
       }
     } catch (err) {
-      console.error('❌ Error caught in handleLanguageChange:');
-      console.error('  Status:', err.response?.status);
-      console.error('  Data:', err.response?.data);
-      console.error('  Message:', err.message);
-      console.error('  Full error:', err);
-      
       const errorMsg = err.response?.data?.message || err.message || 'Failed to update language preference';
       toast.error(errorMsg);
+    } finally {
       setSavingLanguage(false);
     }
   };
@@ -250,33 +203,18 @@ export default function SettingsPage() {
 
   const handleBackgroundUpload = async (file) => {
     if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5242880) {
-      toast.error('Image is too large. Maximum size: 5MB');
-      return;
-    }
-
-    // Set pending file and wait for user to confirm upload
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
+    if (file.size > 5242880) { toast.error('Image is too large. Maximum size: 5MB'); return; }
     setPendingFile(file);
   };
 
   const confirmBackgroundUpload = async () => {
     if (!pendingFile) return;
-
     setUploadingBackground(true);
     try {
       const formData = new FormData();
       formData.append('image', pendingFile);
-
       const { data } = await api.post('/settings/login-background', formData);
-
       if (data.success) {
         toast.success('Background image uploaded successfully');
         setPendingFile(null);
@@ -291,7 +229,8 @@ export default function SettingsPage() {
 
   const cancelBackgroundUpload = () => {
     setPendingFile(null);
-    document.getElementById('background-upload').value = '';
+    const input = document.getElementById('background-upload');
+    if (input) input.value = '';
   };
 
   const handleDeleteBackground = async () => {
@@ -312,7 +251,6 @@ export default function SettingsPage() {
   const confirmDeleteAccount = async () => {
     const account = confirmDelete.account;
     setConfirmDelete({ open: false, account: null });
-
     setDeletingAccountId(account._id);
     try {
       await api.delete(`/auth/users/${account._id}`);
@@ -324,6 +262,64 @@ export default function SettingsPage() {
       setDeletingAccountId(null);
     }
   };
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image is too large. Maximum size: 5MB'); return; }
+    setPendingAvatarFile(file);
+  };
+
+  const confirmAvatarUpload = async () => {
+    if (!pendingAvatarFile) return;
+    setUploadingAvatar(true);
+    const formData = new FormData();
+    formData.append('image', pendingAvatarFile);
+    try {
+      const { data } = await api.post('/settings/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      if (data.success) {
+        toast.success('Profile avatar updated');
+        setAvatar(data.data.avatar);
+        updateUser({ avatar: data.data.avatar });
+        setPendingAvatarFile(null);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to upload avatar');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const cancelAvatarUpload = () => {
+    setPendingAvatarFile(null);
+    const input = document.getElementById('avatar-upload');
+    if (input) input.value = '';
+  };
+
+  const handleDeleteAvatar = async () => {
+    setDeletingAvatar(true);
+    try {
+      const { data } = await api.delete('/settings/avatar');
+      if (data.success) {
+        toast.success('Profile avatar removed');
+        setAvatar(null);
+        updateUser({ avatar: null });
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete avatar');
+    } finally {
+      setDeletingAvatar(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.avatar) {
+      setAvatar(user.avatar);
+    }
+  }, [user]);
 
   const tabs = [
     { key: 'profile', label: 'Profile', icon: UserCircleIcon },
@@ -347,20 +343,30 @@ export default function SettingsPage() {
   const isAdmin = user?.role === 'admin';
 
   return (
-    <div className="animate-fade-in" style={{ maxWidth: '800px' }}>
+    <div className="animate-fade-in" style={{ maxWidth: '1100px' }}>
       <PageHeader title="Settings" subtitle="Account management and system information" />
 
-      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
         {/* Sidebar nav */}
-        <div style={{ width: '200px', flexShrink: 0 }}>
-          <div className="card" style={{ padding: '8px' }}>
-            {tabs.map(({ key, label, icon: Icon }) => (
-              <button key={key} onClick={() => setActiveTab(key)}
-                style={{ display: 'flex', alignItems: 'center', gap: '9px', width: '100%', padding: '9px 12px', borderRadius: '7px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: activeTab === key ? 600 : 400, background: activeTab === key ? 'var(--accent)' : 'transparent', color: activeTab === key ? '#fff' : 'var(--text-secondary)', transition: 'background 0.15s, color 0.15s', marginBottom: '2px', textAlign: 'left' }}>
-                <Icon style={{ width: '14px', height: '14px', flexShrink: 0 }} />
-                {label}
-              </button>
-            ))}
+        <div style={{ width: '220px', flexShrink: 0 }}>
+          <div className="card" style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {tabs.map(({ key, label, icon: Icon }) => {
+              const isActive = activeTab === key;
+              return (
+                <button key={key} onClick={() => setActiveTab(key)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 14px',
+                    borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: isActive ? 600 : 500,
+                    background: isActive ? 'var(--accent)' : 'transparent',
+                    color: isActive ? '#fff' : 'var(--text-secondary)',
+                    transition: 'all 0.15s ease',
+                    textAlign: 'left', position: 'relative',
+                  }}>
+                  <Icon style={{ width: '16px', height: '16px', flexShrink: 0, opacity: isActive ? 1 : 0.7 }} />
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -371,39 +377,40 @@ export default function SettingsPage() {
               {editProfileMode ? (
                 <>
                   <div style={{ marginBottom: '20px' }}>
-                    <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Edit Profile</h2>
-                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Update your full name and email address</p>
+                    <h2 style={sectionHeaderStyle}>Edit Profile</h2>
+                    <p style={sectionSubtitleStyle}>Update your full name and email address</p>
                   </div>
-                  <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div>
                       <label className="label">Full Name</label>
-                      <input 
-                        type="text" 
-                        required 
-                        className="input-field" 
+                      <input
+                        type="text"
+                        required
+                        className="input-field"
                         value={editProfileForm.name}
-                        onChange={e => setEditProfileForm({ ...editProfileForm, name: e.target.value })} 
+                        onChange={e => setEditProfileForm({ ...editProfileForm, name: e.target.value })}
                       />
                     </div>
                     <div>
                       <label className="label">Email Address</label>
-                      <input 
-                        type="email" 
-                        required 
-                        className="input-field" 
+                      <input
+                        type="email"
+                        required
+                        className="input-field"
                         value={editProfileForm.email}
-                        onChange={e => setEditProfileForm({ ...editProfileForm, email: e.target.value })} 
+                        onChange={e => setEditProfileForm({ ...editProfileForm, email: e.target.value })}
                       />
                     </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
                       <button type="submit" disabled={savingProfile} className="btn-primary" style={{ flex: 1 }}>
                         {savingProfile ? <><Spinner size="sm" /> Saving...</> : 'Save Changes'}
                       </button>
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={handleCancelProfileEdit}
                         disabled={savingProfile}
-                        style={{ flex: 1, padding: '10px 14px', borderRadius: '9px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-secondary)', cursor: savingProfile ? 'not-allowed' : 'pointer', opacity: savingProfile ? 0.55 : 1, fontWeight: 500, fontSize: '13px' }}
+                        className="btn-secondary"
+                        style={{ flex: 1 }}
                       >
                         Cancel
                       </button>
@@ -412,30 +419,98 @@ export default function SettingsPage() {
                 </>
               ) : (
                 <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '22px' }}>
-                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--accent-subtle)', color: 'var(--accent-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 800, flexShrink: 0 }}>
-                      {user?.name?.[0]?.toUpperCase() || '?'}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <div style={{
+                        width: '56px', height: '56px', borderRadius: '50%',
+                        background: avatar ? 'var(--surface-2)' : 'linear-gradient(135deg, var(--accent-subtle), var(--accent))',
+                        color: avatar ? 'transparent' : 'var(--accent-text)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '22px', fontWeight: 800, flexShrink: 0, boxShadow: avatar ? 'none' : '0 0 0 4px var(--accent-subtle)',
+                        overflow: 'hidden',
+                      }}>
+                        {avatar ? (
+                          <img src={avatar.cloudinaryUrl} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          user?.name?.[0]?.toUpperCase() || '?'
+                        )}
+                      </div>
+                      <label htmlFor="avatar-upload" style={{
+                        position: 'absolute', bottom: '-6px', right: '-6px',
+                        width: '24px', height: '24px', borderRadius: '50%',
+                        background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', boxShadow: 'var(--shadow-sm)', border: '2px solid var(--surface)',
+                      }}>
+                        <PhotoIcon style={{ width: '12px', height: '12px' }} />
+                      </label>
+                      <input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>{user?.name || 'Profile Information'}</h2>
-                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{user?.email || 'Review your signed-in account details'}</p>
+                      <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>{user?.name || 'Profile Information'}</h2>
+                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>{user?.email || 'Review your signed-in account details'}</p>
                     </div>
                   </div>
 
+                  {pendingAvatarFile && (
+                    <div style={{ marginBottom: '20px', padding: '16px', borderRadius: '10px', background: 'var(--surface-2)', border: '1px solid var(--border-muted)' }}>
+                      <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' }}>Preview - New Avatar</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--accent)', flexShrink: 0 }}>
+                          <img src={URL.createObjectURL(pendingAvatarFile)} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ margin: '4px 0', fontSize: '13px', color: 'var(--text-primary)' }}><strong>File:</strong> {pendingAvatarFile.name}</p>
+                          <p style={{ margin: '4px 0', fontSize: '13px', color: 'var(--text-primary)' }}><strong>Size:</strong> {(pendingAvatarFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </div>
+                      </div>
+                      <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}>
+                        <button type="button" onClick={confirmAvatarUpload} disabled={uploadingAvatar} className="btn-primary" style={{ flex: 1 }}>
+                          {uploadingAvatar ? <><Spinner size="sm" /> Uploading...</> : '✓ Upload'}
+                        </button>
+                        <button type="button" onClick={cancelAvatarUpload} disabled={uploadingAvatar} className="btn-secondary" style={{ flex: 1 }}>
+                          ✕ Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {avatar && !pendingAvatarFile && (
+                    <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderRadius: '8px', background: 'var(--surface-2)', border: '1px solid var(--border-muted)' }}>
+                      <img src={avatar.cloudinaryUrl} alt="Current avatar" style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                      <div style={{ flex: 1 }}>
+                        <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>Current Avatar</p>
+                        <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>{avatar.fileName}</p>
+                      </div>
+                      <button type="button" onClick={handleDeleteAvatar} disabled={deletingAvatar} className="btn-danger" style={{ padding: '6px 12px', fontSize: '12px' }}>
+                        {deletingAvatar ? <><Spinner size="sm" /> Removing...</> : 'Remove'}
+                      </button>
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     {profileRows.map(([label, value], index) => (
-                      <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', padding: '12px 0', borderBottom: index === profileRows.length - 1 ? 'none' : '1px solid var(--border-muted)' }}>
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>{label}</span>
-                        <span style={{ fontSize: '13px', fontWeight: 500, color: label === 'Account Status' && value === 'Active' ? 'var(--success)' : 'var(--text-primary)', textAlign: 'right', maxWidth: '60%', wordBreak: 'break-word' }}>{value}</span>
+                      <div key={label} style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        gap: '16px', padding: '14px 0',
+                        borderBottom: index === profileRows.length - 1 ? 'none' : '1px solid var(--border-muted)'
+                      }}>
+                        <span style={{
+                          fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)',
+                          textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0
+                        }}>{label}</span>
+                        <span style={{
+                          fontSize: '13px', fontWeight: 500,
+                          color: label === 'Account Status' && value === 'Active' ? 'var(--success)' : 'var(--text-primary)',
+                          textAlign: 'right', maxWidth: '60%', wordBreak: 'break-word'
+                        }}>{value}</span>
                       </div>
                     ))}
                   </div>
 
-                  <div style={{ marginTop: '20px' }}>
-                    <button 
+                  <div style={{ marginTop: '24px' }}>
+                    <button
                       type="button"
                       onClick={() => setEditProfileMode(true)}
-                      style={{ padding: '10px 14px', borderRadius: '9px', border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontWeight: 500, fontSize: '13px' }}
+                      className="btn-primary"
                     >
                       Edit Profile
                     </button>
@@ -448,11 +523,11 @@ export default function SettingsPage() {
           {activeTab === 'language' && (
             <div className="card animate-fade-in">
               <div style={{ marginBottom: '24px' }}>
-                <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>{t('settings.select_language')}</h2>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: 0 }}>{t('settings.choose_system_language')}</p>
+                <h2 style={sectionHeaderStyle}>{t('settings.select_language')}</h2>
+                <p style={sectionSubtitleStyle}>{t('settings.choose_system_language')}</p>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '14px' }}>
                 {[
                   { code: 'en', name: 'English', flag: '🇪🇳' },
                   { code: 'es', name: 'Español', flag: '🇪🇸' },
@@ -462,40 +537,35 @@ export default function SettingsPage() {
                   { code: 'ar', name: 'العربية', flag: '🇸🇦' },
                   { code: 'zh', name: '中文', flag: '🇨🇳' },
                   { code: 'ja', name: '日本語', flag: '🇯🇵' },
-                ].map(({ code, name, flag }) => (
-                  <button
-                    key={code}
-                    onClick={() => handleLanguageChange(code)}
-                    disabled={savingLanguage}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      padding: '16px',
-                      borderRadius: '12px',
-                      border: selectedLanguage === code ? '2px solid var(--accent)' : '1px solid var(--border)',
-                      background: selectedLanguage === code ? 'var(--accent-subtle)' : 'var(--surface)',
-                      color: 'var(--text-primary)',
-                      cursor: savingLanguage ? 'not-allowed' : 'pointer',
-                      opacity: savingLanguage && selectedLanguage !== code ? 0.6 : 1,
-                      fontWeight: selectedLanguage === code ? 600 : 500,
-                      fontSize: '13px',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    <span style={{ fontSize: '24px' }}>{flag}</span>
-                    <span>{name}</span>
-                    {selectedLanguage === code && savingLanguage && (
-                      <Spinner size="sm" style={{ marginTop: '4px' }} />
-                    )}
-                  </button>
-                ))}
+                ].map(({ code, name, flag }) => {
+                  const isSelected = selectedLanguage === code;
+                  return (
+                    <button
+                      key={code}
+                      onClick={() => handleLanguageChange(code)}
+                      disabled={savingLanguage}
+                      style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        gap: '10px', padding: '18px 12px', borderRadius: '14px',
+                        border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border)',
+                        background: isSelected ? 'var(--accent-subtle)' : 'var(--surface)',
+                        color: 'var(--text-primary)', cursor: savingLanguage ? 'not-allowed' : 'pointer',
+                        opacity: savingLanguage && !isSelected ? 0.55 : 1,
+                        fontWeight: isSelected ? 700 : 500, fontSize: '13px',
+                        transition: 'all 0.2s ease', boxShadow: isSelected ? 'var(--shadow-sm)' : 'none',
+                      }}
+                    >
+                      <span style={{ fontSize: '28px' }}>{flag}</span>
+                      <span>{name}</span>
+                      {isSelected && savingLanguage && <Spinner size="sm" style={{ marginTop: '2px' }} />}
+                    </button>
+                  );
+                })}
               </div>
 
-              <div style={{ marginTop: '24px', padding: '14px', borderRadius: '8px', background: 'var(--surface-2)', border: '1px solid var(--border-muted)' }}>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
+              <div style={{ marginTop: '24px', padding: '14px 16px', borderRadius: '10px', background: 'var(--surface-2)', border: '1px solid var(--border-muted)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <GlobeAltIcon style={{ width: '18px', height: '18px', color: 'var(--accent-text)', flexShrink: 0 }} />
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
                   <strong>{t('settings.current_language')}:</strong> {selectedLanguage.toUpperCase()}
                 </p>
               </div>
@@ -504,21 +574,21 @@ export default function SettingsPage() {
 
           {user?.role === 'admin' && activeTab === 'accounts' && (
             <div className="animate-fade-in">
-              <div style={{ marginBottom: '14px' }}>
-                <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Created Accounts</h2>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{accounts.length} account{accounts.length === 1 ? '' : 's'} registered</p>
+              <div style={{ marginBottom: '18px' }}>
+                <h2 style={sectionHeaderStyle}>Created Accounts</h2>
+                <p style={sectionSubtitleStyle}>{accounts.length} account{accounts.length === 1 ? '' : 's'} registered</p>
               </div>
 
               {loadingAccounts ? (
-                <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+                <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)', padding: '20px' }}>
                   <Spinner size="sm" /> Loading accounts...
                 </div>
               ) : accounts.length === 0 ? (
-                <div className="card">
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No created accounts found.</p>
+                <div className="card" style={{ textAlign: 'center', padding: '40px 20px' }}>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>No created accounts found.</p>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gap: '10px' }}>
+                <div style={{ display: 'grid', gap: '12px' }}>
                   {accounts.map(account => {
                     const isCurrentUser = account._id === user?._id;
                     const isPrimaryAccount = account.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL;
@@ -547,27 +617,36 @@ export default function SettingsPage() {
                     ];
 
                     return (
-                      <div key={account._id} className="card" style={{ overflow: 'hidden', borderRadius: '14px' }}>
+                      <div key={account._id} className="card" style={{ overflow: 'hidden', borderRadius: '14px', padding: 0 }}>
                         <button
                           type="button"
                           onClick={() => setExpandedAccountId(isExpanded ? null : account._id)}
                           style={{
-                            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
-                            padding: '16px 18px', background: 'var(--surface)', border: 'none', cursor: 'pointer', textAlign: 'left'
+                            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px',
+                            padding: '18px 20px', background: 'var(--surface)', border: 'none', cursor: 'pointer', textAlign: 'left'
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                            <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: account.isActive === false ? 'var(--surface-3)' : 'var(--accent-subtle)', color: account.isActive === false ? 'var(--text-muted)' : 'var(--accent-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 800, flexShrink: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+                            <div style={{
+                              width: '44px', height: '44px', borderRadius: '12px',
+                              background: account.isActive === false ? 'var(--surface-3)' : 'var(--accent-subtle)',
+                              color: account.isActive === false ? 'var(--text-muted)' : 'var(--accent-text)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: '17px', fontWeight: 800, flexShrink: 0
+                            }}>
                               {account.name?.[0]?.toUpperCase() || '?'}
                             </div>
                             <div style={{ minWidth: 0 }}>
-                              <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{account.name || 'Unnamed Account'}</h3>
+                              <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{account.name || 'Unnamed Account'}</h3>
                               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{account.email || 'No email available'}</p>
                             </div>
                           </div>
 
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                            <span style={{ padding: '5px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, color: statusColors.text, background: statusColors.bg, border: '1px solid var(--border-muted)' }}>
+                            <span style={{
+                              padding: '5px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 700,
+                              color: statusColors.text, background: statusColors.bg, border: '1px solid var(--border-muted)'
+                            }}>
                               {statusLabel}
                             </span>
                             {isExpanded ? <ChevronUpIcon style={{ width: '18px', height: '18px', color: 'var(--text-secondary)' }} /> : <ChevronDownIcon style={{ width: '18px', height: '18px', color: 'var(--text-secondary)' }} />}
@@ -575,23 +654,35 @@ export default function SettingsPage() {
                         </button>
 
                         {isExpanded && (
-                          <div style={{ padding: '18px', borderTop: '1px solid var(--border-muted)', background: 'var(--surface)' }}>
+                          <div style={{ padding: '20px', borderTop: '1px solid var(--border-muted)', background: 'var(--surface)' }}>
                             <div style={{ display: 'grid', gap: '10px' }}>
                               {accountRows.map(([label, value], index) => (
-                                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', padding: '10px 0', borderBottom: index === accountRows.length - 1 ? 'none' : '1px solid var(--border-muted)' }}>
-                                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>{label}</span>
-                                  <span style={{ fontSize: '13px', fontWeight: 500, color: label === 'Status' && value === 'Active' ? 'var(--success)' : 'var(--text-primary)', textAlign: 'right', maxWidth: '65%', wordBreak: 'break-word' }}>{value}</span>
+                                <div key={label} style={{
+                                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                  gap: '12px', padding: '10px 0',
+                                  borderBottom: index === accountRows.length - 1 ? 'none' : '1px solid var(--border-muted)'
+                                }}>
+                                  <span style={{
+                                    fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)',
+                                    textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0
+                                  }}>{label}</span>
+                                  <span style={{
+                                    fontSize: '13px', fontWeight: 500,
+                                    color: label === 'Status' && value === 'Active' ? 'var(--success)' : 'var(--text-primary)',
+                                    textAlign: 'right', maxWidth: '65%', wordBreak: 'break-word'
+                                  }}>{value}</span>
                                 </div>
                               ))}
                             </div>
 
                             {canDeleteAccount && (
-                              <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                              <div style={{ marginTop: '18px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                                 <button
                                   type="button"
                                   onClick={() => handleToggleAccountStatus(account)}
                                   disabled={togglingStatusId === account._id}
-                                  style={{ padding: '10px 14px', borderRadius: '9px', border: '1px solid var(--border)', background: account.isActive ? 'var(--danger-bg)' : 'var(--success-bg)', color: account.isActive ? 'var(--danger)' : 'var(--success)', cursor: togglingStatusId === account._id ? 'not-allowed' : 'pointer', opacity: togglingStatusId === account._id ? 0.55 : 1, fontSize: '13px', fontWeight: 500 }}
+                                  className={account.isActive ? 'btn-danger' : 'btn-success'}
+                                  style={{ opacity: togglingStatusId === account._id ? 0.55 : 1 }}
                                 >
                                   {togglingStatusId === account._id ? <><Spinner size="sm" /> Processing...</> : (account.isActive ? 'Deactivate' : 'Activate')}
                                 </button>
@@ -599,9 +690,10 @@ export default function SettingsPage() {
                                   type="button"
                                   onClick={() => handleDeleteAccount(account)}
                                   disabled={deletingAccountId === account._id}
-                                  style={{ padding: '10px 14px', borderRadius: '9px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--danger)', cursor: deletingAccountId === account._id ? 'not-allowed' : 'pointer', opacity: deletingAccountId === account._id ? 0.55 : 1 }}
+                                  className="btn-danger"
+                                  style={{ opacity: deletingAccountId === account._id ? 0.55 : 1 }}
                                 >
-                                  {deletingAccountId === account._id ? <Spinner size="sm" /> : 'Delete Account'}
+                                  {deletingAccountId === account._id ? <><Spinner size="sm" /> Deleting...</> : 'Delete Account'}
                                 </button>
                               </div>
                             )}
@@ -618,12 +710,10 @@ export default function SettingsPage() {
           {user?.role === 'admin' && activeTab === 'create' && (
             <div className="card animate-fade-in">
               <div style={{ marginBottom: '20px' }}>
-                <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Create Manager Account</h2>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  Managers can create transactions, but cannot edit or delete equipment records.
-                </p>
+                <h2 style={sectionHeaderStyle}>Create Manager Account</h2>
+                <p style={sectionSubtitleStyle}>Managers can create transactions, but cannot edit or delete equipment records.</p>
               </div>
-              <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {[['Full Name', 'name', 'text'], ['Email Address', 'email', 'email'], ['Password', 'password', 'password']].map(([label, name, type]) => (
                   <div key={name}>
                     <label className="label">{label}</label>
@@ -643,14 +733,12 @@ export default function SettingsPage() {
           {user?.role === 'admin' && activeTab === 'login-background' && (
             <div className="card animate-fade-in">
               <div style={{ marginBottom: '20px' }}>
-                <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Login Page Background</h2>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  Upload an image to customize the background of the login page. Supported formats: JPEG, PNG, GIF, WebP. Maximum size: 5MB.
-                </p>
+                <h2 style={sectionHeaderStyle}>Login Page Background</h2>
+                <p style={sectionSubtitleStyle}>Upload an image to customize the background of the login page. Supported formats: JPEG, PNG, GIF, WebP. Maximum size: 5MB.</p>
               </div>
 
               {loadingBackground ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', padding: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)', padding: '20px' }}>
                   <Spinner size="sm" /> Loading background...
                 </div>
               ) : (
@@ -660,31 +748,24 @@ export default function SettingsPage() {
                       <div style={{ marginBottom: '10px' }}>
                         <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px' }}>Preview - New Image</p>
                       </div>
-                      <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--accent)', maxHeight: '300px', background: 'var(--surface-2)' }}>
+                      <div style={{ borderRadius: '14px', overflow: 'hidden', border: '2px solid var(--accent)', maxHeight: '320px', background: 'var(--surface-2)' }}>
                         <img
                           src={URL.createObjectURL(pendingFile)}
                           alt="Pending login background"
                           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                         />
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-                        <p style={{ margin: '4px 0' }}>
-                          <strong>File:</strong> {pendingFile.name}
-                        </p>
-                        <p style={{ margin: '4px 0' }}>
-                          <strong>Size:</strong> {(pendingFile.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '10px', display: 'flex', gap: '16px' }}>
+                        <span><strong>File:</strong> {pendingFile.name}</span>
+                        <span><strong>Size:</strong> {(pendingFile.size / 1024 / 1024).toFixed(2)} MB</span>
                       </div>
                       <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
                         <button
                           type="button"
                           onClick={confirmBackgroundUpload}
                           disabled={uploadingBackground}
-                          style={{
-                            flex: 1, padding: '10px 14px', borderRadius: '9px', border: 'none', background: 'var(--accent)',
-                            color: '#fff', cursor: uploadingBackground ? 'not-allowed' : 'pointer', opacity: uploadingBackground ? 0.55 : 1, fontWeight: 500,
-                            fontSize: '13px', transition: 'opacity 0.2s'
-                          }}
+                          className="btn-primary"
+                          style={{ flex: 1 }}
                         >
                           {uploadingBackground ? <><Spinner size="sm" /> Uploading...</> : '✓ Upload'}
                         </button>
@@ -692,11 +773,8 @@ export default function SettingsPage() {
                           type="button"
                           onClick={cancelBackgroundUpload}
                           disabled={uploadingBackground}
-                          style={{
-                            flex: 1, padding: '10px 14px', borderRadius: '9px', border: '1px solid var(--border)', background: 'var(--surface-2)',
-                            color: 'var(--text-secondary)', cursor: uploadingBackground ? 'not-allowed' : 'pointer', opacity: uploadingBackground ? 0.55 : 1, fontWeight: 500,
-                            fontSize: '13px', transition: 'opacity 0.2s'
-                          }}
+                          className="btn-secondary"
+                          style={{ flex: 1 }}
                         >
                           ✕ Cancel
                         </button>
@@ -707,37 +785,26 @@ export default function SettingsPage() {
                       <div style={{ marginBottom: '10px' }}>
                         <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px' }}>Current Background</p>
                       </div>
-                      <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border)', maxHeight: '300px', background: 'var(--surface-2)' }}>
+                      <div style={{ borderRadius: '14px', overflow: 'hidden', border: '1px solid var(--border)', maxHeight: '320px', background: 'var(--surface-2)' }}>
                         <img
                           src={backgroundImage.imageUrl}
                           alt="Current login background"
                           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                         />
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-                        <p style={{ margin: '4px 0' }}>
-                          <strong>File:</strong> {backgroundImage.fileName}
-                        </p>
-                        <p style={{ margin: '4px 0' }}>
-                          <strong>Uploaded:</strong> {new Intl.DateTimeFormat('en', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                          }).format(new Date(backgroundImage.uploadedAt))}
-                        </p>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '10px', display: 'flex', gap: '16px' }}>
+                        <span><strong>File:</strong> {backgroundImage.fileName}</span>
+                        <span><strong>Uploaded:</strong> {new Intl.DateTimeFormat('en', {
+                          year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+                        }).format(new Date(backgroundImage.uploadedAt))}</span>
                       </div>
                       <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
                         <button
                           type="button"
                           onClick={() => document.getElementById('background-upload').click()}
                           disabled={uploadingBackground}
-                          style={{
-                            flex: 1, padding: '10px 14px', borderRadius: '9px', border: 'none', background: 'var(--accent)',
-                            color: '#fff', cursor: uploadingBackground ? 'not-allowed' : 'pointer', opacity: uploadingBackground ? 0.55 : 1, fontWeight: 500,
-                            fontSize: '13px', transition: 'opacity 0.2s'
-                          }}
+                          className="btn-primary"
+                          style={{ flex: 1 }}
                         >
                           Change Image
                         </button>
@@ -745,11 +812,8 @@ export default function SettingsPage() {
                           type="button"
                           onClick={handleDeleteBackground}
                           disabled={deletingBackground}
-                          style={{
-                            flex: 1, padding: '10px 14px', borderRadius: '9px', border: '1px solid var(--border)', background: 'var(--surface-2)',
-                            color: 'var(--danger)', cursor: deletingBackground ? 'not-allowed' : 'pointer', opacity: deletingBackground ? 0.55 : 1, fontWeight: 500,
-                            fontSize: '13px', transition: 'opacity 0.2s'
-                          }}
+                          className="btn-danger"
+                          style={{ flex: 1 }}
                         >
                           {deletingBackground ? <><Spinner size="sm" /> Deleting...</> : 'Set to Default'}
                         </button>
@@ -757,24 +821,23 @@ export default function SettingsPage() {
                     </div>
                   ) : (
                     <div style={{
-                      border: '2px dashed var(--border)',
-                      borderRadius: '12px',
-                      padding: '40px 20px',
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
+                      border: '2px dashed var(--border)', borderRadius: '14px',
+                      padding: '48px 24px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s'
                     }}
                       onClick={() => document.getElementById('background-upload').click()}
                       onDragOver={(e) => {
                         e.preventDefault();
                         e.currentTarget.style.background = 'var(--accent-subtle)';
+                        e.currentTarget.style.borderColor = 'var(--accent)';
                       }}
                       onDragLeave={(e) => {
                         e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.borderColor = 'var(--border)';
                       }}
                       onDrop={(e) => {
                         e.preventDefault();
                         e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.borderColor = 'var(--border)';
                         if (e.dataTransfer.files[0]) {
                           handleBackgroundUpload(e.dataTransfer.files[0]);
                         }
@@ -807,10 +870,10 @@ export default function SettingsPage() {
           {activeTab === 'password' && (
             <div className="card animate-fade-in">
               <div style={{ marginBottom: '20px' }}>
-                <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Change Password</h2>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Update your account password. Minimum 6 characters.</p>
+                <h2 style={sectionHeaderStyle}>Change Password</h2>
+                <p style={sectionSubtitleStyle}>Update your account password. Minimum 6 characters.</p>
               </div>
-              <form onSubmit={handlePasswordChange} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <form onSubmit={handlePasswordChange} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {[['Current Password', 'currentPassword'], ['New Password', 'newPassword'], ['Confirm New Password', 'confirmPassword']].map(([label, name]) => (
                   <div key={name}>
                     <label className="label">{label}</label>
@@ -829,8 +892,8 @@ export default function SettingsPage() {
 
           {activeTab === 'system' && (
             <div className="card animate-fade-in">
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px' }}>System Information</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+              <h2 style={sectionHeaderStyle}>System Information</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', marginTop: '16px' }}>
                 {[
                   ['System Name', 'ANPC Yard Internal Tracking System'],
                   ['Organization', 'Sarens NASS'],
@@ -839,10 +902,20 @@ export default function SettingsPage() {
                   ['Data Tracked', 'Cranes, boom sections, counterweights, hooks, and rental transactions'],
                   ['Your Role', user?.role === 'admin' ? 'Administrator' : 'Manager'],
                   ['Support', 'Contact system administrator for assistance'],
-                ].map(([label, value]) => (
-                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', padding: '12px 0', borderBottom: '1px solid var(--border-muted)' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>{label}</span>
-                    <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', textAlign: 'right', maxWidth: '60%' }}>{value}</span>
+                ].map(([label, value], index) => (
+                  <div key={label} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    gap: '16px', padding: '14px 0',
+                    borderBottom: index === 6 ? 'none' : '1px solid var(--border-muted)'
+                  }}>
+                    <span style={{
+                      fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)',
+                      textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0
+                    }}>{label}</span>
+                    <span style={{
+                      fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)',
+                      textAlign: 'right', maxWidth: '60%', wordBreak: 'break-word'
+                    }}>{value}</span>
                   </div>
                 ))}
               </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { PageHeader, StatusBadge, Spinner, Pagination, EmptyState, Modal, ConfirmDialog } from '../common';
+import { PageHeader, StatusBadge, Pagination, EmptyState, Modal, ConfirmDialog, TableSkeleton } from '../common';
 import CSVImport from '../common/CSVImport';
 import api from '../../utils/api';
 import { useAuth } from '../../hooks/useAuth';
@@ -129,7 +129,7 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
         {/* Table */}
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}><Spinner size="lg" /></div>
+            <TableSkeleton rows={8} cols={columns.length + (selectionMode && canEditOrDelete ? 2 : 1)} />
           ) : items.length === 0 ? (
             <EmptyState message={`No ${title.toLowerCase()} found`} />
           ) : (

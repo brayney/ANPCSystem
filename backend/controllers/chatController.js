@@ -1,6 +1,16 @@
 const Chat = require('../models/Chat');
 const Message = require('../models/Message');
 const User = require('../models/User');
+const fs = require('fs');
+const path = require('path');
+
+const UPLOAD_DIR = path.join(__dirname, '..', 'uploads', 'chat');
+
+const ALLOWED_MIME = {
+  image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+  video: ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska'],
+};
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
 
 // Get available users for chatting (admin can chat with managers, managers with admin)
 exports.getAvailableUsers = async (req, res, next) => {
@@ -139,15 +149,11 @@ exports.getMessages = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-// Send message
+// Send message (text, optional media image/video, optional caption)
 exports.sendMessage = async (req, res, next) => {
   try {
     const { chatId } = req.params;
-    const { text } = req.body;
-
-    if (!text?.trim()) {
-      return res.status(400).json({ success: false, message: 'Message cannot be empty' });
-    }
+    const text = (req.body.text || '').toString().trim();
 
     const chat = await Chat.findById(chatId);
     if (!chat) {
@@ -159,21 +165,97 @@ exports.sendMessage = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Unauthorized' });
     }
 
+    // Must have either text or media
+    if (!text && !req.file) {
+      return res.status(400).json({ success: false, message: 'Message cannot be empty' });
+    }
+
+    let media = null;
+    if (req.file) {
+      const file = req.file;
+      const mediaType = file.mimetype.startsWith('image/') ? 'image' : (file.mimetype.startsWith('video/') ? 'video' : null);
+
+      if (!mediaType) {
+        if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        return res.status(400).json({ success: false, message: 'Only image or video files are allowed' });
+      }
+
+      const allowed = ALLOWED_MIME[mediaType];
+      if (!allowed.includes(file.mimetype)) {
+        if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        return res.status(400).json({ success: false, message: 'Unsupported file type' });
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        return res.status(400).json({ success: false, message: 'File exceeds the 25MB limit' });
+      }
+
+      if (!fs.existsSync(UPLOAD_DIR)) {
+        fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+      }
+
+      const ext = path.extname(file.originalname) || '';
+      const safeName = `${chatId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}${ext}`;
+      const dest = path.join(UPLOAD_DIR, safeName);
+      fs.renameSync(file.path, dest);
+
+      media = {
+        type: mediaType,
+        url: `/chats/media/${safeName}`,
+        filename: safeName,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size,
+      };
+    }
+
     const message = await Message.create({
       chat: chatId,
       sender: req.user._id,
-      text: text.trim()
+      text,
+      media,
     });
 
-    // Update chat's last message
+    // Update chat's last message preview
+    const preview = media
+      ? `${media.type === 'image' ? '📷 Image' : '🎬 Video'}${text ? ': ' + text.substring(0, 60) : ''}`
+      : text.substring(0, 100);
     await Chat.findByIdAndUpdate(chatId, {
-      lastMessage: text.trim().substring(0, 100),
+      lastMessage: preview,
       lastMessageTime: new Date()
     });
 
     const populatedMessage = await message.populate('sender', 'name email role');
 
     res.status(201).json({ success: true, data: populatedMessage });
+  } catch (error) { next(error); }
+};
+
+// Serve a chat media file (participants only)
+exports.getMedia = async (req, res, next) => {
+  try {
+    const { filename } = req.params;
+
+    // Basic guard against path traversal
+    if (!/^[\w.\-]+$/.test(filename)) {
+      return res.status(400).json({ success: false, message: 'Invalid filename' });
+    }
+
+    const filePath = path.join(UPLOAD_DIR, filename);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, message: 'File not found' });
+    }
+
+    // Find the message that references this file to enforce participant access
+    const message = await Message.findOne({ 'media.filename': filename }).populate('chat');
+    if (message && message.chat) {
+      if (!message.chat.participants.includes(req.user._id)) {
+        return res.status(403).json({ success: false, message: 'Unauthorized' });
+      }
+    }
+
+    return res.sendFile(filePath);
   } catch (error) { next(error); }
 };
 

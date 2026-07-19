@@ -13,6 +13,11 @@ const userSchema = new mongoose.Schema({
   loginAttempts: { type: Number, default: 5 },
   loginStage: { type: String, enum: ['standard', 'reduced'], default: 'standard' },
   lockedUntil: { type: Date },
+  avatar: {
+    cloudinaryPublicId: { type: String },
+    cloudinaryUrl: { type: String },
+    fileName: { type: String },
+  },
 }, { timestamps: true });
 
 userSchema.pre('save', async function (next) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { XMarkIcon, PaperAirplaneIcon, UserGroupIcon, EllipsisVerticalIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PaperAirplaneIcon, UserGroupIcon, MagnifyingGlassIcon, ArrowLeftIcon, PaperClipIcon, ArrowDownTrayIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -14,17 +14,22 @@ const FloatingChat = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [tab, setTab] = useState('chats'); // 'chats' or 'users'
-  const [optionsOpen, setOptionsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [pendingFile, setPendingFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const messagesScrollRef = useRef(null);
+
+  const mediaBaseUrl = (api.defaults.baseURL || '').replace(/\/$/, '');
 
   // Fetch chats
   const fetchChats = async () => {
     try {
       const { data } = await api.get('/chats');
       setChats(data.data);
-      
+
       // Calculate total unread
       const total = data.data.reduce((sum, chat) => sum + (chat.unreadCount || 0), 0);
       setUnreadCount(total);
@@ -74,10 +79,30 @@ const FloatingChat = ({ user }) => {
     }
   };
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom only when the user is already near the bottom,
+  // so polling updates don't yank them down while reading older messages.
+  const isNearBottom = () => {
+    const el = messagesScrollRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+  };
+
+  const scrollToBottom = (smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+  };
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isNearBottom()) scrollToBottom(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
+
+  // Jump to bottom instantly when opening a chat
+  useEffect(() => {
+    if (selectedChat && isOpen) {
+      requestAnimationFrame(() => scrollToBottom(false));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedChat, isOpen]);
 
   // Initial fetch and polling
   useEffect(() => {
@@ -130,9 +155,46 @@ const FloatingChat = ({ user }) => {
 
       setMessages([...messages, data.data]);
       await fetchChats(); // Update chats list
+      scrollToBottom(true); // follow your own sent message
     } catch (error) {
       toast.error('Failed to send message');
       setMessageText(messageText);
+    }
+  };
+
+  // Handle file selection from the paperclip button
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) setPendingFile(file);
+    e.target.value = '';
+  };
+
+  // Send the pending image/video (with optional caption)
+  const handleSendFile = async () => {
+    if (!pendingFile || !selectedChat) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('media', pendingFile);
+      if (messageText.trim()) formData.append('text', messageText.trim());
+      setMessageText('');
+      setPendingFile(null);
+
+      const token = localStorage.getItem('token');
+      const { data } = await api.post(
+        `/chats/${selectedChat._id}/messages`,
+        formData,
+        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
+      );
+
+      setMessages(prev => [...prev, data.data]);
+      await fetchChats();
+      scrollToBottom(true);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to send file');
+      setPendingFile(null);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -201,9 +263,68 @@ const FloatingChat = ({ user }) => {
       : format(date, 'MMM d');
   };
 
+  const mediaUrl = (media) => media?.url ? `${mediaBaseUrl}${media.url}` : '';
+
+  const renderMedia = (media) => {
+    if (!media || !media.url) return null;
+    const url = mediaUrl(media);
+    const downloadName = media.originalName || media.filename || 'file';
+
+    const downloadBtn = (
+      <a
+        href={url}
+        download={downloadName}
+        title="Download"
+        onClick={e => e.stopPropagation()}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '4px',
+          padding: '4px 8px',
+          borderRadius: '6px',
+          background: 'rgba(0,0,0,0.45)',
+          color: '#fff',
+          fontSize: '11px',
+          fontWeight: 600,
+          textDecoration: 'none',
+          backdropFilter: 'blur(2px)',
+        }}
+      >
+        <ArrowDownTrayIcon style={{ width: '13px', height: '13px' }} />
+        Save
+      </a>
+    );
+
+    if (media.type === 'video') {
+      return (
+        <div style={{ position: 'relative', maxWidth: '100%' }}>
+          <video
+            src={url}
+            controls
+            style={{ width: '100%', maxWidth: '240px', borderRadius: '10px', display: 'block', background: '#000' }}
+          />
+          <div style={{ position: 'absolute', bottom: '8px', right: '8px' }}>{downloadBtn}</div>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ position: 'relative', maxWidth: '100%' }}>
+        <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'block' }}>
+          <img
+            src={url}
+            alt={downloadName}
+            style={{ width: '100%', maxWidth: '240px', maxHeight: '280px', objectFit: 'cover', borderRadius: '10px', display: 'block', cursor: 'pointer' }}
+          />
+        </a>
+        <div style={{ position: 'absolute', bottom: '8px', right: '8px' }}>{downloadBtn}</div>
+      </div>
+    );
+  };
+
+
   const handleSelectChat = (chat) => {
     setSelectedChat(chat);
-    setOptionsOpen(false);
     setSearchOpen(false);
     setSearchQuery('');
   };
@@ -211,7 +332,6 @@ const FloatingChat = ({ user }) => {
   const handleCloseChat = () => {
     setIsOpen(false);
     setSelectedChat(null);
-    setOptionsOpen(false);
     setSearchOpen(false);
     setSearchQuery('');
   };
@@ -249,55 +369,66 @@ const FloatingChat = ({ user }) => {
     return parts;
   };
 
+  const panel = 'var(--surface)';
+  const panelAlt = 'var(--surface-2)';
+  const line = 'var(--border)';
+  const primary = 'var(--text-primary)';
+  const secondary = 'var(--text-secondary)';
+  const muted = 'var(--text-muted)';
+  const accent = 'var(--accent)';
+  const accentHover = 'var(--accent-hover)';
+  const accentText = 'var(--accent-text)';
+
   return (
     <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 50, fontFamily: 'inherit' }}>
       {/* Floating Chat Heads (when collapsed) */}
       {!isOpen && (
         <div style={{ display: 'flex', gap: '12px', flexDirection: 'column', alignItems: 'flex-end' }}>
-
-          {/* Main Chat Button */}
           <button
             onClick={() => setIsOpen(true)}
             style={{
+              position: 'relative',
               width: '56px',
               height: '56px',
               borderRadius: '50%',
-              background: '#1F6BEB',
-              color: 'white',
+              background: accent,
+              color: '#fff',
               border: 'none',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 16px rgba(31, 107, 235, 0.5)',
-              transition: 'all 0.2s',
-              fontSize: '24px'
+              boxShadow: '0 8px 24px color-mix(in srgb, var(--accent) 45%, transparent)',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.transform = 'scale(1.15)';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(31, 107, 235, 0.7)';
+              e.currentTarget.style.transform = 'scale(1.08)';
+              e.currentTarget.style.boxShadow = '0 10px 28px color-mix(in srgb, var(--accent) 60%, transparent)';
             }}
             onMouseLeave={e => {
               e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = '0 4px 16px rgba(31, 107, 235, 0.5)';
+              e.currentTarget.style.boxShadow = '0 8px 24px color-mix(in srgb, var(--accent) 45%, transparent)';
             }}
           >
             <UserGroupIcon style={{ width: '24px', height: '24px' }} />
             {unreadCount > 0 && (
               <span style={{
                 position: 'absolute',
-                top: '-8px',
-                right: '-8px',
-                background: '#EF4444',
-                color: 'white',
+                top: '-4px',
+                right: '-4px',
+                background: '#ef4444',
+                color: '#fff',
                 borderRadius: '50%',
-                width: '24px',
-                height: '24px',
+                minWidth: '22px',
+                height: '22px',
+                padding: '0 6px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '12px',
-                fontWeight: 700
+                fontSize: '11px',
+                fontWeight: 700,
+                border: '2px solid var(--surface)',
+                boxSizing: 'border-box',
               }}>
                 {unreadCount}
               </span>
@@ -313,106 +444,92 @@ const FloatingChat = ({ user }) => {
           bottom: '20px',
           right: '20px',
           width: '380px',
-          height: '500px',
-          background: 'white',
-          borderRadius: '12px',
-          boxShadow: '0 5px 40px rgba(0, 0, 0, 0.16)',
+          height: '520px',
+          maxHeight: 'calc(100vh - 40px)',
+          background: panel,
+          borderRadius: '16px',
+          boxShadow: 'var(--shadow-lg)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          backgroundColor: 'var(--surface-1, #ffffff)',
-          color: 'var(--text-primary, #000000)'
+          color: primary,
+          border: `1px solid ${line}`,
         }}>
           {/* Header */}
           <div style={{
-            padding: '16px',
-            background: '#1F6BEB',
-            color: 'white',
+            padding: '14px 16px',
+            background: panel,
+            borderBottom: `1px solid ${line}`,
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center'
+            alignItems: 'center',
+            gap: '10px',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-              {selectedChat && <UserAvatar account={getOtherParticipant(selectedChat)} size={34} />}
-              <div style={{ minWidth: 0 }}>
-                <h3 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 600 }}>Messages</h3>
-                {selectedChat && (
-                  <p style={{ margin: 0, fontSize: '12px', opacity: 0.9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '230px' }}>
-                    {getOtherParticipant(selectedChat)?.name}
-                  </p>
-                )}
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+              {selectedChat ? (
+                <>
+                  <button
+                    onClick={() => setSelectedChat(null)}
+                    title="Back"
+                    style={{ background: 'transparent', border: 'none', color: secondary, cursor: 'pointer', padding: '4px', display: 'flex', borderRadius: '6px' }}
+                    onMouseEnter={e => e.currentTarget.style.background = panelAlt}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <ArrowLeftIcon style={{ width: '18px', height: '18px' }} />
+                  </button>
+                  <UserAvatar account={getOtherParticipant(selectedChat)} size={36} />
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ margin: '0 0 2px', fontSize: '14px', fontWeight: 700, color: primary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {getOtherParticipant(selectedChat)?.name}
+                    </p>
+                    <p style={{ margin: 0, fontSize: '11px', color: 'var(--success)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--success)', display: 'inline-block' }} />
+                      Online
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <div style={{ minWidth: 0 }}>
+                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: primary }}>Messages</h3>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: muted }}>Team conversations</p>
+                </div>
+              )}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2px', position: 'relative' }}>
               {selectedChat && (
                 <button
-                  onClick={() => setOptionsOpen(!optionsOpen)}
-                  title="Conversation options"
+                  onClick={() => setSearchOpen(true)}
+                  title="Search conversation"
                   style={{
                     background: 'transparent',
                     border: 'none',
-                    color: 'white',
+                    color: secondary,
                     cursor: 'pointer',
-                    padding: '4px',
-                    display: 'flex'
+                    padding: '6px',
+                    display: 'flex',
+                    borderRadius: '6px',
                   }}
+                  onMouseEnter={e => e.currentTarget.style.background = panelAlt}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                  <EllipsisVerticalIcon style={{ width: '20px', height: '20px' }} />
+                  <MagnifyingGlassIcon style={{ width: '18px', height: '18px' }} />
                 </button>
-              )}
-              {optionsOpen && (
-                <div style={{
-                  position: 'absolute',
-                  top: '30px',
-                  right: '30px',
-                  width: '190px',
-                  background: 'var(--surface, #ffffff)',
-                  color: 'var(--text-primary, #1f2328)',
-                  border: '1px solid var(--border, #d0d7de)',
-                  borderRadius: '8px',
-                  boxShadow: 'var(--shadow-lg, 0 8px 24px rgba(31,35,40,0.12))',
-                  padding: '6px',
-                  zIndex: 3
-                }}>
-                  <button
-                    onClick={() => {
-                      setSearchOpen(true);
-                      setOptionsOpen(false);
-                    }}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px',
-                      border: 'none',
-                      borderRadius: '6px',
-                      background: 'transparent',
-                      color: 'inherit',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      textAlign: 'left'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2, #f6f8fa)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <MagnifyingGlassIcon style={{ width: '15px', height: '15px' }} />
-                    Search conversation
-                  </button>
-                </div>
               )}
               <button
                 onClick={handleCloseChat}
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: 'white',
+                  color: secondary,
                   cursor: 'pointer',
-                  padding: '4px',
-                  display: 'flex'
+                  padding: '6px',
+                  display: 'flex',
+                  borderRadius: '6px',
                 }}
+                onMouseEnter={e => e.currentTarget.style.background = panelAlt}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <XMarkIcon style={{ width: '20px', height: '20px' }} />
+                <XMarkIcon style={{ width: '18px', height: '18px' }} />
               </button>
             </div>
           </div>
@@ -423,64 +540,39 @@ const FloatingChat = ({ user }) => {
               {/* Tabs */}
               <div style={{
                 display: 'flex',
-                borderBottom: '1px solid var(--border, #e5e7eb)',
-                padding: '0 8px',
-                gap: '0',
-                backgroundColor: 'var(--surface-2, #f9fafb)'
+                borderBottom: `1px solid ${line}`,
+                backgroundColor: panel,
               }}>
-                <button
-                  onClick={() => setTab('chats')}
-                  style={{
-                    flex: 1,
-                    padding: '10px 12px',
-                    border: 'none',
-                    background: tab === 'chats' ? 'white' : 'transparent',
-                    borderBottom: tab === 'chats' ? '2px solid #1F6BEB' : 'none',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontWeight: tab === 'chats' ? 600 : 500,
-                    color: tab === 'chats' ? '#1F6BEB' : 'var(--text-secondary)',
-                    transition: 'all 0.15s'
-                  }}
-                >
-                  Chats
-                </button>
-                <button
-                  onClick={() => setTab('users')}
-                  style={{
-                    flex: 1,
-                    padding: '10px 12px',
-                    border: 'none',
-                    background: tab === 'users' ? 'white' : 'transparent',
-                    borderBottom: tab === 'users' ? '2px solid #1F6BEB' : 'none',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontWeight: tab === 'users' ? 600 : 500,
-                    color: tab === 'users' ? '#1F6BEB' : 'var(--text-secondary)',
-                    transition: 'all 0.15s'
-                  }}
-                >
-                  Accounts
-                </button>
+                {[
+                  { key: 'chats', label: 'Chats' },
+                  { key: 'users', label: 'Accounts' },
+                ].map(t => (
+                  <button
+                    key={t.key}
+                    onClick={() => setTab(t.key)}
+                    style={{
+                      flex: 1,
+                      padding: '12px 12px',
+                      border: 'none',
+                      background: 'transparent',
+                      borderBottom: tab === t.key ? `2px solid ${accent}` : `2px solid transparent`,
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: tab === t.key ? 700 : 500,
+                      color: tab === t.key ? accentText : secondary,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
               </div>
 
               {/* Content */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }} className="app-scrollbar">
                 {tab === 'chats' ? (
-                  // Chats Tab
                   chats.length === 0 ? (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      height: '100%',
-                      color: 'var(--text-secondary)',
-                      fontSize: '13px',
-                      textAlign: 'center',
-                      padding: '16px'
-                    }}>
-                      No conversations yet. Check Accounts tab!
-                    </div>
+                    <div style={emptyState}>No conversations yet. Check Accounts tab!</div>
                   ) : (
                     chats.map(chat => {
                       const other = getOtherParticipant(chat);
@@ -490,78 +582,68 @@ const FloatingChat = ({ user }) => {
                           onClick={() => handleSelectChat(chat)}
                           style={{
                             width: '100%',
-                            padding: '12px',
+                            padding: '11px 12px',
                             background: 'transparent',
-                            border: '1px solid var(--border, #e5e7eb)',
-                            borderRadius: '8px',
+                            border: `1px solid ${line}`,
+                            borderRadius: '12px',
                             marginBottom: '8px',
                             cursor: 'pointer',
                             textAlign: 'left',
-                            transition: 'all 0.15s'
+                            transition: 'all 0.15s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '11px',
                           }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2, #f9fafb)'}
+                          onMouseEnter={e => e.currentTarget.style.background = panelAlt}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
-                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                            <UserAvatar account={other} size={38} />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
-                                <p style={{ margin: 0, fontWeight: 600, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {other?.name}
-                                </p>
-                                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                                  {formatConversationDate(chat.lastMessageAt || chat.updatedAt || chat.createdAt)}
-                                </span>
-                              </div>
-                              <p style={{
-                                margin: 0,
-                                fontSize: '12px',
-                                color: 'var(--text-secondary)',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                maxWidth: '230px'
-                              }}>
-                                {chat.lastMessage || 'No messages yet'}
+                          <UserAvatar account={other} size={40} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '3px' }}>
+                              <p style={{ margin: 0, fontWeight: 600, fontSize: '13px', color: primary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {other?.name}
                               </p>
-                            </div>
-                            {chat.unreadCount > 0 && (
-                              <span style={{
-                                background: '#1F6BEB',
-                                color: 'white',
-                                borderRadius: '50%',
-                                width: '20px',
-                                height: '20px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '11px',
-                                fontWeight: 700,
-                                marginLeft: '8px'
-                              }}>
-                                {chat.unreadCount}
+                              <span style={{ fontSize: '11px', color: muted, whiteSpace: 'nowrap' }}>
+                                {formatConversationDate(chat.lastMessageAt || chat.updatedAt || chat.createdAt)}
                               </span>
-                            )}
+                            </div>
+                            <p style={{
+                              margin: 0,
+                              fontSize: '12px',
+                              color: secondary,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              maxWidth: '210px',
+                            }}>
+                              {chat.lastMessage || 'No messages yet'}
+                            </p>
                           </div>
+                          {chat.unreadCount > 0 && (
+                            <span style={{
+                              background: accent,
+                              color: '#fff',
+                              borderRadius: '999px',
+                              minWidth: '20px',
+                              height: '20px',
+                              padding: '0 6px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              flexShrink: 0,
+                            }}>
+                              {chat.unreadCount}
+                            </span>
+                          )}
                         </button>
                       );
                     })
                   )
                 ) : (
-                  // Available Users Tab
                   availableUsers.length === 0 ? (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      height: '100%',
-                      color: 'var(--text-secondary)',
-                      fontSize: '13px',
-                      textAlign: 'center',
-                      padding: '16px'
-                    }}>
-                      No accounts available
-                    </div>
+                    <div style={emptyState}>No accounts available</div>
                   ) : (
                     availableUsers.map(availableUser => (
                       <button
@@ -569,51 +651,53 @@ const FloatingChat = ({ user }) => {
                         onClick={() => handleStartChat(availableUser._id)}
                         style={{
                           width: '100%',
-                          padding: '12px',
+                          padding: '11px 12px',
                           background: 'transparent',
-                          border: '1px solid var(--border, #e5e7eb)',
-                          borderRadius: '8px',
+                          border: `1px solid ${line}`,
+                          borderRadius: '12px',
                           marginBottom: '8px',
                           cursor: 'pointer',
                           textAlign: 'left',
-                          transition: 'all 0.15s'
+                          transition: 'all 0.15s',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '11px',
                         }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2, #f9fafb)'}
+                        onMouseEnter={e => e.currentTarget.style.background = panelAlt}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <UserAvatar account={availableUser} size={38} />
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ margin: '0 0 4px 0', fontWeight: 600, fontSize: '13px' }}>
-                              {availableUser.name}
-                            </p>
-                            <p style={{
-                              margin: 0,
-                              fontSize: '12px',
-                              color: 'var(--text-secondary)',
-                              maxWidth: '230px',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap'
-                            }}>
-                              {availableUser.email}
-                            </p>
-                          </div>
-                          {availableUser.hasChat && (
-                            <span style={{
-                              background: 'var(--accent-subtle, #f0f6fc)',
-                              color: '#1F6BEB',
-                              borderRadius: '4px',
-                              padding: '2px 8px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              marginLeft: '8px',
-                              whiteSpace: 'nowrap'
-                            }}>
-                              Active
-                            </span>
-                          )}
+                        <UserAvatar account={availableUser} size={40} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ margin: '0 0 3px 0', fontWeight: 600, fontSize: '13px', color: primary }}>
+                            {availableUser.name}
+                          </p>
+                          <p style={{
+                            margin: 0,
+                            fontSize: '12px',
+                            color: secondary,
+                            maxWidth: '210px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {availableUser.email}
+                          </p>
                         </div>
+                        {availableUser.hasChat && (
+                          <span style={{
+                            background: 'var(--success-bg)',
+                            color: 'var(--success)',
+                            borderRadius: '999px',
+                            padding: '3px 9px',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            marginLeft: '8px',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                          }}>
+                            Active
+                          </span>
+                        )}
                       </button>
                     ))
                   )
@@ -625,13 +709,13 @@ const FloatingChat = ({ user }) => {
               {searchOpen && (
                 <div style={{
                   padding: '10px 12px',
-                  borderBottom: '1px solid var(--border, #e5e7eb)',
+                  borderBottom: `1px solid ${line}`,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  background: 'var(--surface-2, #f9fafb)'
+                  background: panelAlt,
                 }}>
-                  <MagnifyingGlassIcon style={{ width: '16px', height: '16px', color: 'var(--text-secondary)' }} />
+                  <MagnifyingGlassIcon style={{ width: '16px', height: '16px', color: secondary }} />
                   <input
                     type="text"
                     placeholder="Search conversation"
@@ -640,14 +724,14 @@ const FloatingChat = ({ user }) => {
                     autoFocus
                     style={{
                       flex: 1,
-                      border: '1px solid var(--border, #e5e7eb)',
-                      borderRadius: '6px',
-                      padding: '7px 9px',
+                      border: `1px solid ${line}`,
+                      borderRadius: '8px',
+                      padding: '8px 10px',
                       fontSize: '13px',
                       fontFamily: 'inherit',
-                      background: 'var(--surface, #ffffff)',
-                      color: 'var(--text-primary)',
-                      outline: 'none'
+                      background: panel,
+                      color: primary,
+                      outline: 'none',
                     }}
                   />
                   <button
@@ -656,7 +740,9 @@ const FloatingChat = ({ user }) => {
                       setSearchQuery('');
                     }}
                     title="Close search"
-                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px', display: 'flex' }}
+                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: secondary, padding: '4px', display: 'flex', borderRadius: '6px' }}
+                    onMouseEnter={e => e.currentTarget.style.background = panel}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
                     <XMarkIcon style={{ width: '16px', height: '16px' }} />
                   </button>
@@ -664,48 +750,22 @@ const FloatingChat = ({ user }) => {
               )}
 
               {/* Messages List */}
-              <div style={{
+              <div
+                ref={messagesScrollRef}
+                style={{
                 flex: 1,
                 overflowY: 'auto',
-                padding: '12px',
+                padding: '14px 14px 6px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '8px'
-              }}>
+                gap: '10px',
+              }} className="app-scrollbar">
                 {loading ? (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '100%',
-                    color: 'var(--text-secondary)'
-                  }}>
-                    Loading messages...
-                  </div>
+                  <div style={emptyState}>Loading messages...</div>
                 ) : messages.length === 0 ? (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '100%',
-                    color: 'var(--text-secondary)',
-                    fontSize: '13px'
-                  }}>
-                    No messages yet. Start the conversation!
-                  </div>
+                  <div style={emptyState}>No messages yet. Start the conversation!</div>
                 ) : visibleMessages.length === 0 ? (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '100%',
-                    color: 'var(--text-secondary)',
-                    fontSize: '13px',
-                    textAlign: 'center',
-                    padding: '16px'
-                  }}>
-                    No messages match your search.
-                  </div>
+                  <div style={emptyState}>No messages match your search.</div>
                 ) : (
                   visibleMessages.map((msg, index) => {
                     const isOwnMessage = msg.sender?._id === user._id;
@@ -716,56 +776,71 @@ const FloatingChat = ({ user }) => {
                         {showDateDivider && (
                           <div style={{
                             alignSelf: 'center',
-                            padding: '3px 9px',
+                            padding: '3px 10px',
                             borderRadius: '999px',
-                            background: 'var(--surface-2, #f6f8fa)',
-                            border: '1px solid var(--border, #e5e7eb)',
-                            color: 'var(--text-secondary)',
+                            background: panelAlt,
+                            border: `1px solid ${line}`,
+                            color: secondary,
                             fontSize: '11px',
                             fontWeight: 600,
-                            margin: '4px 0'
+                            margin: '2px 0',
                           }}>
                             {formatDateDivider(msg.createdAt)}
                           </div>
                         )}
                         <div
+                          className="chat-msg"
                           style={{
                             display: 'flex',
                             justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
                             alignItems: 'flex-end',
                             gap: '7px',
-                            marginBottom: '4px'
                           }}
                         >
-                          {!isOwnMessage && <UserAvatar account={msg.sender} size={28} />}
-                          <div style={{
-                            maxWidth: '70%',
-                            padding: '8px 12px',
-                            borderRadius: '8px',
-                            background: isOwnMessage ? '#1F6BEB' : 'var(--surface-2, #f0f0f0)',
-                            color: isOwnMessage ? 'white' : 'var(--text-primary)',
-                            fontSize: '13px',
-                            lineHeight: '1.4'
-                          }}>
-                            <p style={{ margin: '0 0 4px 0' }}>{renderMessageText(msg.text)}</p>
+                          {!isOwnMessage && <UserAvatar account={msg.sender} size={26} />}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: isOwnMessage ? 'flex-end' : 'flex-start', minWidth: 0, maxWidth: '85%' }}>
+                            <div style={{
+                              width: 'fit-content',
+                              maxWidth: '100%',
+                              padding: msg.media ? '4px' : '9px 12px',
+                              borderRadius: isOwnMessage ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                              background: isOwnMessage ? accent : panelAlt,
+                              color: isOwnMessage ? '#fff' : primary,
+                              fontSize: '13px',
+                              lineHeight: '1.45',
+                              boxShadow: 'var(--shadow-sm)',
+                              wordBreak: 'break-word',
+                              whiteSpace: 'pre-wrap',
+                              overflow: 'hidden',
+                            }}>
+                              {msg.media && (
+                                <div style={{ marginBottom: msg.text ? '6px' : 0 }}>
+                                  {renderMedia(msg.media)}
+                                </div>
+                              )}
+                              {msg.text && (
+                                <p style={{ margin: '0', whiteSpace: 'pre-wrap' }}>{renderMessageText(msg.text)}</p>
+                              )}
+                            </div>
                             <div style={{
                               display: 'flex',
-                              justifyContent: 'space-between',
                               alignItems: 'center',
-                              gap: '8px',
-                              margin: 0,
-                              fontSize: '11px',
-                              opacity: 0.7
+                              gap: '5px',
+                              marginTop: '3px',
+                              padding: '0 4px',
+                              fontSize: '10px',
+                              color: secondary,
+                              fontWeight: 500,
                             }}>
                               <span>{format(new Date(msg.createdAt), 'h:mm a')}</span>
                               {isOwnMessage && (
-                                <span style={{ marginLeft: '4px', fontSize: '11px', fontWeight: 500 }}>
+                                <span style={{ fontWeight: 600, color: msg.isRead ? 'var(--success)' : muted }}>
                                   {msg.isRead ? 'seen' : 'sent'}
                                 </span>
                               )}
                             </div>
                           </div>
-                          {isOwnMessage && <UserAvatar account={user} size={28} />}
+                          {isOwnMessage && <UserAvatar account={user} size={26} />}
                         </div>
                       </React.Fragment>
                     );
@@ -776,63 +851,131 @@ const FloatingChat = ({ user }) => {
 
               {/* Input */}
               <div style={{
-                padding: '12px',
-                borderTop: '1px solid var(--border, #e5e7eb)',
+                padding: '12px 14px',
+                borderTop: `1px solid ${line}`,
+                background: panel,
                 display: 'flex',
-                gap: '8px'
+                flexDirection: 'column',
+                gap: '8px',
               }}>
-                <input
-                  type="text"
-                  placeholder="Type a message..."
-                  value={messageText}
-                  onChange={e => setMessageText(e.target.value)}
-                  onKeyPress={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    border: '1px solid var(--border, #e5e7eb)',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    fontFamily: 'inherit',
-                    backgroundColor: 'var(--surface-2, #ffffff)',
-                    color: 'var(--text-primary)',
-                    outline: 'none'
-                  }}
-                  onFocus={e => e.target.style.borderColor = '#1F6BEB'}
-                  onBlur={e => e.target.style.borderColor = 'var(--border, #e5e7eb)'}
-                />
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!messageText.trim()}
-                  style={{
-                    padding: '8px 12px',
-                    background: '#1F6BEB',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: messageText.trim() ? 'pointer' : 'not-allowed',
+                {pendingFile && (
+                  <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: messageText.trim() ? 1 : 0.5,
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={e => {
-                    if (messageText.trim()) {
-                      e.currentTarget.style.background = '#1651D6';
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = '#1F6BEB';
-                  }}
-                >
-                  <PaperAirplaneIcon style={{ width: '16px', height: '16px' }} />
-                </button>
+                    gap: '8px',
+                    padding: '6px 10px',
+                    borderRadius: '10px',
+                    background: panelAlt,
+                    border: `1px solid ${line}`,
+                    fontSize: '12px',
+                    color: primary,
+                  }}>
+                    {pendingFile.type.startsWith('image/')
+                      ? <PhotoIcon style={{ width: '16px', height: '16px', color: accentText, flexShrink: 0 }} />
+                      : <PaperClipIcon style={{ width: '16px', height: '16px', color: accentText, flexShrink: 0 }} />}
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {pendingFile.name}
+                    </span>
+                    <button
+                      onClick={() => setPendingFile(null)}
+                      title="Remove"
+                      style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: secondary, padding: '2px', display: 'flex', borderRadius: '4px' }}
+                    >
+                      <XMarkIcon style={{ width: '15px', height: '15px' }} />
+                    </button>
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleFileSelect}
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Attach image or video"
+                    disabled={uploading}
+                    style={{
+                      padding: '10px',
+                      width: '40px',
+                      height: '40px',
+                      background: panelAlt,
+                      color: secondary,
+                      border: `1px solid ${line}`,
+                      borderRadius: '50%',
+                      cursor: uploading ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => { if (!uploading) e.currentTarget.style.color = accentText; }}
+                    onMouseLeave={e => e.currentTarget.style.color = secondary}
+                  >
+                    <PaperClipIcon style={{ width: '18px', height: '18px' }} />
+                  </button>
+                  <input
+                    type="text"
+                    placeholder="Type a message..."
+                    value={messageText}
+                    onChange={e => setMessageText(e.target.value)}
+                    onKeyPress={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        pendingFile ? handleSendFile() : handleSendMessage();
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '10px 14px',
+                      border: `1px solid ${line}`,
+                      borderRadius: '999px',
+                      fontSize: '13px',
+                      fontFamily: 'inherit',
+                      backgroundColor: panelAlt,
+                      color: primary,
+                      outline: 'none',
+                      transition: 'border-color 0.15s, box-shadow 0.15s',
+                    }}
+                    onFocus={e => {
+                      e.target.style.borderColor = accent;
+                      e.target.style.boxShadow = '0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent)';
+                    }}
+                    onBlur={e => {
+                      e.target.style.borderColor = line;
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                  <button
+                    onClick={() => pendingFile ? handleSendFile() : handleSendMessage()}
+                    disabled={(!messageText.trim() && !pendingFile) || uploading}
+                    style={{
+                      padding: '10px',
+                      width: '40px',
+                      height: '40px',
+                      background: accent,
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '50%',
+                      cursor: ((messageText.trim() || pendingFile) && !uploading) ? 'pointer' : 'not-allowed',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: ((messageText.trim() || pendingFile) && !uploading) ? 1 : 0.5,
+                      transition: 'all 0.2s',
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={e => { if ((messageText.trim() || pendingFile) && !uploading) e.currentTarget.style.background = accentHover; }}
+                    onMouseLeave={e => e.currentTarget.style.background = accent}
+                  >
+                    {uploading
+                      ? <span style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />
+                      : <PaperAirplaneIcon style={{ width: '17px', height: '17px' }} />}
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -840,6 +983,17 @@ const FloatingChat = ({ user }) => {
       )}
     </div>
   );
+};
+
+const emptyState = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: '100%',
+  color: 'var(--text-secondary)',
+  fontSize: '13px',
+  textAlign: 'center',
+  padding: '16px',
 };
 
 export default FloatingChat;

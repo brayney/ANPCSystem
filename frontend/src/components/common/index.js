@@ -3,6 +3,55 @@ import ReactDOM from 'react-dom';
 import { Link } from 'react-router-dom';
 import { EllipsisVerticalIcon, XMarkIcon, InboxIcon } from '@heroicons/react/24/outline';
 
+// ── Skeleton loaders ────────────────────────────────────────────────────────
+export const Skeleton = ({ width = '100%', height = '14px', radius = '6px', style }) => (
+  <span
+    className="skeleton"
+    aria-hidden="true"
+    style={{ display: 'block', width, height, borderRadius: radius, ...style }}
+  />
+);
+
+export const StatCardSkeleton = () => (
+  <div className="card" style={{ padding: '16px 18px', minHeight: '132px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+      <div style={{ flex: 1 }}>
+        <Skeleton width="55%" height="11px" />
+        <div style={{ height: '14px' }} />
+        <Skeleton width="40%" height="28px" />
+      </div>
+      <Skeleton width="40px" height="40px" radius="8px" />
+    </div>
+    <Skeleton height="3px" style={{ marginTop: '16px' }} />
+  </div>
+);
+
+export const TableSkeleton = ({ rows = 8, cols = 6 }) => (
+  <div className="app-scrollbar" style={{ overflowX: 'auto' }}>
+    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <tbody>
+        {Array.from({ length: rows }).map((_, r) => (
+          <tr key={r} style={{ borderBottom: '1px solid var(--border-muted)' }}>
+            {Array.from({ length: cols }).map((_, c) => (
+              <td key={c} className="table-cell">
+                <Skeleton width={c === 0 ? '70%' : `${40 + ((r + c) % 4) * 12}%`} height="12px" />
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+export const CardSkeleton = ({ height = '220px' }) => (
+  <div className="card" style={{ padding: '20px', minHeight: height }}>
+    <Skeleton width="40%" height="14px" />
+    <div style={{ height: '20px' }} />
+    <Skeleton width="100%" height={`${Math.max(40, (height - 80))}px`} radius="8px" />
+  </div>
+);
+
 // ── Status Badge ──────────────────────────────────────────────────────────────
 export const StatusBadge = ({ status }) => {
   const styles = {
@@ -60,7 +109,7 @@ export const PageHeader = ({ title, subtitle, actions }) => (
   <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
     <div style={{ minWidth: 0 }}>
       <h1 style={{
-        fontFamily: "'Syne', sans-serif",
+        fontFamily: 'var(--font-sans)',
         fontSize: 'clamp(22px, 3vw, 30px)',
         fontWeight: 800,
         color: 'var(--text-primary)',
@@ -200,7 +249,7 @@ export const StatCard = ({ title, value, icon: Icon, color = 'blue', subtitle })
           <p style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
             {title}
           </p>
-          <p style={{ fontSize: '30px', fontFamily: "'Syne', sans-serif", fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, letterSpacing: 0 }}>
+          <p style={{ fontSize: '30px', fontFamily: 'var(--font-sans)', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, letterSpacing: 0 }}>
             {value ?? '-'}
           </p>
           {subtitle && <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '7px', lineHeight: 1.35 }}>{subtitle}</p>}
@@ -224,6 +273,8 @@ export const StatCard = ({ title, value, icon: Icon, color = 'blue', subtitle })
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 export const Modal = ({ open, onClose, title, children, size = 'md' }) => {
+  const dialogRef = React.useRef(null);
+
   React.useEffect(() => {
     if (!open) return undefined;
 
@@ -234,29 +285,59 @@ export const Modal = ({ open, onClose, title, children, size = 'md' }) => {
     rootElement.style.overflow = 'hidden';
     rootElement.style.overflowY = 'hidden';
 
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose?.();
+        return;
+      }
+      if (e.key === 'Tab') {
+        const focusables = dialogRef.current?.querySelectorAll(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (!focusables || focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault(); last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault(); first.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    // Move focus into the dialog for screen-reader / keyboard users
+    const focusTimer = setTimeout(() => {
+      const target = dialogRef.current?.querySelector('input, button, [tabindex], h2');
+      target?.focus?.();
+    }, 30);
+
     return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      clearTimeout(focusTimer);
       rootElement.style.overflow = previousOverflow;
       rootElement.style.overflowY = previousOverflowY;
     };
-  }, [open]);
+  }, [open, onClose]);
 
   if (!open) return null;
   const maxWidths = { sm: '440px', md: '540px', lg: '720px', xl: '900px', full: '1100px' };
 
   return ReactDOM.createPortal(
     <div className="no-print" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 60, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '24px 16px 16px' }}>
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'transparent' }} onClick={onClose} />
-      <div className="animate-scale-in" style={{
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(1,4,9,0.45)', backdropFilter: 'blur(2px)' }} onClick={onClose} />
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={title} className="animate-scale-in" style={{
         position: 'relative',
         background: 'var(--surface)',
-        border: '1px solid var(--border)', borderRadius: '8px',
+        border: '1px solid var(--border)', borderRadius: '12px',
         boxShadow: 'var(--shadow-lg)', width: '100%',
         maxWidth: maxWidths[size], maxHeight: '90vh', display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-          <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{title}</h2>
-          <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text-secondary)', transition: 'background 0.15s' }}
+          <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{title}</h2>
+          <button onClick={onClose} title="Close" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text-secondary)', transition: 'background 0.15s' }}
             onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-3)'}
             onMouseLeave={e => e.currentTarget.style.background = 'var(--surface-2)'}>
             <XMarkIcon style={{ width: '14px', height: '14px' }} />
@@ -284,12 +365,14 @@ export const Pagination = ({ page, pages, total, onPage }) => {
 };
 
 // ── Empty State ───────────────────────────────────────────────────────────────
-export const EmptyState = ({ message = 'No records found', icon }) => (
-  <div style={{ textAlign: 'center', padding: '48px 24px' }}>
-    <div style={{ width: '48px', height: '48px', borderRadius: '8px', margin: '0 auto 14px', background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-      {icon || <InboxIcon style={{ width: '22px', height: '22px' }} />}
+export const EmptyState = ({ message = 'No records found', hint, icon, action }) => (
+  <div style={{ textAlign: 'center', padding: '56px 24px', animation: 'fadeIn 0.3s ease both' }}>
+    <div style={{ width: '56px', height: '56px', borderRadius: '14px', margin: '0 auto 16px', background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+      {icon || <InboxIcon style={{ width: '26px', height: '26px' }} />}
     </div>
-    <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{message}</p>
+    <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{message}</p>
+    {hint && <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '6px 0 0', maxWidth: '360px', marginLeft: 'auto', marginRight: 'auto' }}>{hint}</p>}
+    {action && <div style={{ marginTop: '18px', display: 'flex', justifyContent: 'center' }}>{action}</div>}
   </div>
 );
 

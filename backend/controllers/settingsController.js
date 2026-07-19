@@ -186,9 +186,111 @@ const updateLanguage = async (req, res, next) => {
   }
 };
 
+// Upload profile avatar (protected - own avatar only)
+const uploadAvatar = async (req, res) => {
+  try {
+    const { file } = req;
+
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No image file provided',
+      });
+    }
+
+    const User = require('../models/User');
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Delete previous avatar from Cloudinary if exists
+    if (user.avatar?.cloudinaryPublicId) {
+      try {
+        await cloudinary.uploader.destroy(user.avatar.cloudinaryPublicId);
+      } catch (destroyError) {
+        console.error('Error deleting previous avatar:', destroyError);
+      }
+    }
+
+    // Upload new avatar
+    const base64 = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    const uploadResult = await cloudinary.uploader.upload(base64, {
+      folder: 'anpc-yard/avatars',
+      resource_type: 'auto',
+      quality: 'auto',
+      width: 200,
+      height: 200,
+      crop: 'fill',
+      gravity: 'face',
+    });
+
+    user.avatar = {
+      cloudinaryPublicId: uploadResult.public_id,
+      cloudinaryUrl: uploadResult.secure_url,
+      fileName: file.originalname,
+    };
+
+    await user.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Profile avatar updated successfully',
+      data: {
+        avatar: user.avatar,
+      },
+    });
+  } catch (error) {
+    console.error('Error uploading avatar:', error.message || error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload profile avatar',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
+// Delete profile avatar (protected - own avatar only)
+const deleteAvatar = async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (user.avatar?.cloudinaryPublicId) {
+      try {
+        await cloudinary.uploader.destroy(user.avatar.cloudinaryPublicId);
+      } catch (destroyError) {
+        console.error('Error deleting avatar from Cloudinary:', destroyError);
+      }
+    }
+
+    user.avatar = undefined;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Profile avatar deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting avatar:', error.message || error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete profile avatar',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
 module.exports = {
   uploadLoginBackground,
   getLoginBackground,
   deleteLoginBackground,
   updateLanguage,
+  uploadAvatar,
+  deleteAvatar,
 };
