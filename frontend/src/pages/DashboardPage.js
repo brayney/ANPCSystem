@@ -108,7 +108,7 @@ function DashboardPage() {
   const overdueCount = s.pendingReturns || 0;
 
   const activityItems = data?.recentLogs?.slice(0, 6).map(log => {
-    const timeStr = log.createdAt ? format(new Date(log.createdAt), 'h:mm a') : '';
+    const dateTimeStr = log.createdAt ? format(new Date(log.createdAt), 'MMM d, yyyy • h:mm a') : '';
     const actionLower = (log.action || '').toLowerCase();
     let actionLabel = log.action || 'Activity';
     if (actionLower.includes('create')) actionLabel = 'Created';
@@ -116,7 +116,7 @@ function DashboardPage() {
     else if (actionLower.includes('delete')) actionLabel = 'Deleted';
     else if (actionLower.includes('return')) actionLabel = 'Returned';
     else if (actionLower.includes('login')) actionLabel = 'Logged in';
-    return { ...log, shortLabel: actionLabel, timeStr };
+    return { ...log, shortLabel: actionLabel, dateTimeStr };
   }) || [];
 
   return (
@@ -240,7 +240,9 @@ function DashboardPage() {
                       <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)' }}>{item.userName || 'System'}</p>
                     </div>
                   </div>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>{item.timeStr}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', flexShrink: 0 }}>
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontFamily: "'JetBrains Mono', monospace", textAlign: 'right' }}>{item.dateTimeStr}</span>
+                  </div>
                 </div>
               ))}
             </div>
