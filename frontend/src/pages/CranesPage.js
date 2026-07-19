@@ -5,6 +5,7 @@ import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, EyeIcon, TruckIco
 import { PageHeader, StatusBadge, Spinner, Pagination, EmptyState, Modal, ConfirmDialog } from '../components/common';
 import CSVImport from '../components/common/CSVImport';
 import api from '../utils/api';
+import { useAuth } from '../hooks/useAuth';
 
 const STATUS_OPTIONS = ['Available', 'On Hire', 'Standby', 'Under Maintenance', 'Out of Yard', 'Reserved'];
 
@@ -129,6 +130,9 @@ export default function CranesPage() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
+  const { user } = useAuth();
+  const canCreate = user?.role === 'admin';
+  const canEditOrDelete = user?.role === 'admin';
 
   const fetchCranes = useCallback(async () => {
     setLoading(true);
@@ -178,14 +182,14 @@ export default function CranesPage() {
   return (
     <div className="animate-fade-in">
       <PageHeader title="Cranes" subtitle={`${total} total cranes`}
-        actions={
+        actions={canCreate && (
           <div style={{ display: 'flex', gap: '8px' }}>
             <CSVImport endpoint="/cranes/import" templateUrl="/templates/cranes-import-template.xlsx" onImportSuccess={fetchCranes} />
             <button onClick={() => setModal('create')} className="btn-primary">
               <PlusIcon style={{ width: '14px', height: '14px' }} /> Add Crane
             </button>
           </div>
-        }
+        )}
       />
 
       {/* Filters */}
@@ -200,11 +204,13 @@ export default function CranesPage() {
             <option value="">All Status</option>
             {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
           </select>
-          <button type="button" onClick={() => { setSelectionMode(!selectionMode); setSelectedIds([]); }} 
-            className={selectionMode ? 'btn-secondary' : 'btn-primary'} style={{ fontSize: '12px' }}>
-            {selectionMode ? 'Cancel' : 'Select'}
-          </button>
-          {selectionMode && selectedIds.length > 0 && (
+          {canEditOrDelete && (
+            <button type="button" onClick={() => { setSelectionMode(!selectionMode); setSelectedIds([]); }} 
+              className={selectionMode ? 'btn-secondary' : 'btn-primary'} style={{ fontSize: '12px' }}>
+              {selectionMode ? 'Cancel' : 'Select'}
+            </button>
+          )}
+          {canEditOrDelete && selectionMode && selectedIds.length > 0 && (
             <button type="button" onClick={() => setBulkDeleteOpen(true)} className="btn-danger" style={{ fontSize: '12px' }}>
               <TrashIcon style={{ width: '13px', height: '13px' }} /> Delete Selected ({selectedIds.length})
             </button>
@@ -254,20 +260,29 @@ export default function CranesPage() {
                       <td className="table-cell" style={{ fontWeight: 500 }}>{c.client || '—'}</td>
                       <td className="table-cell"><StatusBadge status={c.status} /></td>
                       <td className="table-cell">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Link to={`/cranes/${c._id}`} title="View"
-                            style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--accent)', textDecoration: 'none', transition: 'background 0.15s' }}>
-                            <EyeIcon style={{ width: '13px', height: '13px' }} />
-                          </Link>
-                          <button onClick={() => setModal(c)} title="Edit"
-                            style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--text-secondary)', cursor: 'pointer', transition: 'background 0.15s' }}>
-                            <PencilIcon style={{ width: '13px', height: '13px' }} />
-                          </button>
-                          <button onClick={() => setDeleteTarget(c)} title="Delete"
-                            style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--danger-bg)', background: 'var(--danger-bg)', display: 'flex', color: 'var(--danger)', cursor: 'pointer', transition: 'opacity 0.15s' }}>
-                            <TrashIcon style={{ width: '13px', height: '13px' }} />
-                          </button>
-                        </div>
+                        {canEditOrDelete ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Link to={`/cranes/${c._id}`} title="View"
+                              style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--accent)', textDecoration: 'none', transition: 'background 0.15s' }}>
+                              <EyeIcon style={{ width: '13px', height: '13px' }} />
+                            </Link>
+                            <button onClick={() => setModal(c)} title="Edit"
+                              style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--text-secondary)', cursor: 'pointer', transition: 'background 0.15s' }}>
+                              <PencilIcon style={{ width: '13px', height: '13px' }} />
+                            </button>
+                            <button onClick={() => setDeleteTarget(c)} title="Delete"
+                              style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--danger-bg)', background: 'var(--danger-bg)', display: 'flex', color: 'var(--danger)', cursor: 'pointer', transition: 'opacity 0.15s' }}>
+                              <TrashIcon style={{ width: '13px', height: '13px' }} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Link to={`/cranes/${c._id}`} title="View"
+                              style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--accent)', textDecoration: 'none', transition: 'background 0.15s' }}>
+                              <EyeIcon style={{ width: '13px', height: '13px' }} />
+                            </Link>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
