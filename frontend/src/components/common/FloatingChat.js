@@ -18,6 +18,7 @@ const FloatingChat = ({ user }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [pendingFile, setPendingFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [revealedMessageId, setRevealedMessageId] = useState(null);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const messagesScrollRef = useRef(null);
@@ -325,6 +326,7 @@ const FloatingChat = ({ user }) => {
 
   const handleSelectChat = (chat) => {
     setSelectedChat(chat);
+    setRevealedMessageId(null);
     setSearchOpen(false);
     setSearchQuery('');
   };
@@ -332,8 +334,13 @@ const FloatingChat = ({ user }) => {
   const handleCloseChat = () => {
     setIsOpen(false);
     setSelectedChat(null);
+    setRevealedMessageId(null);
     setSearchOpen(false);
     setSearchQuery('');
+  };
+
+  const toggleMessageReveal = (messageId) => {
+    setRevealedMessageId(prev => prev === messageId ? null : messageId);
   };
 
   const normalizedSearch = searchQuery.trim().toLowerCase();
@@ -603,9 +610,6 @@ const FloatingChat = ({ user }) => {
                               <p style={{ margin: 0, fontWeight: 600, fontSize: '13px', color: primary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {other?.name}
                               </p>
-                              <span style={{ fontSize: '11px', color: muted, whiteSpace: 'nowrap' }}>
-                                {formatConversationDate(chat.lastMessageAt || chat.updatedAt || chat.createdAt)}
-                              </span>
                             </div>
                             <p style={{
                               margin: 0,
@@ -790,11 +794,22 @@ const FloatingChat = ({ user }) => {
                         )}
                         <div
                           className="chat-msg"
+                          onClick={() => toggleMessageReveal(msg._id)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              toggleMessageReveal(msg._id);
+                            }
+                          }}
                           style={{
                             display: 'flex',
                             justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
                             alignItems: 'flex-end',
                             gap: '7px',
+                            cursor: 'pointer',
+                            userSelect: 'none',
                           }}
                         >
                           {!isOwnMessage && <UserAvatar account={msg.sender} size={26} />}
@@ -831,6 +846,12 @@ const FloatingChat = ({ user }) => {
                               fontSize: '10px',
                               color: secondary,
                               fontWeight: 500,
+                              overflow: 'hidden',
+                              maxHeight: revealedMessageId === msg._id ? '20px' : '0px',
+                              opacity: revealedMessageId === msg._id ? 1 : 0,
+                              transform: revealedMessageId === msg._id ? 'translateY(0)' : 'translateY(-2px)',
+                              transition: 'all 0.18s ease',
+                              pointerEvents: 'none',
                             }}>
                               <span>{format(new Date(msg.createdAt), 'h:mm a')}</span>
                               {isOwnMessage && (
