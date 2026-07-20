@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import FloatingChat from '../common/FloatingChat';
 import CommandPalette from '../common/CommandPalette';
 import ConnectionStatus from '../common/ConnectionStatus';
+import LogoSplash from '../common/LogoSplash';
 import {
   HomeIcon, TruckIcon, ScaleIcon, LinkIcon,
   DocumentTextIcon, ChartBarIcon, Cog6ToothIcon, Bars3Icon, XMarkIcon,
@@ -230,6 +231,10 @@ export default function Layout() {
     setSidebarOpen(false);
     navigate('/login');
   };
+
+  if (isLoggingOut) {
+    return <LogoSplash label="Signing you out..." />;
+  }
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--surface-2)' }}>

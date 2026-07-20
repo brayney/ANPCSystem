@@ -3,21 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
-import { EyeIcon, EyeSlashIcon, LockClosedIcon, EnvelopeIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, LockClosedIcon, EnvelopeIcon, ShieldCheckIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import LogoSplash from '../components/common/LogoSplash';
-
-const formatCountdown = (ms) => {
-  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  if (hours > 0) {
-    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  }
-
-  return `${minutes}:${String(seconds).padStart(2, '0')}`;
-};
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -111,21 +98,16 @@ export default function LoginPage() {
     }
 
     if (result.status === 403) {
-      toast.error(result.message || 'Account locked due to too many failed attempts. Try again later.');
       return;
     }
 
     if (result.status === 401) {
       setInvalidCredentials(true);
     }
-
-    toast.error(result.message || 'Login failed');
   };
 
   const lockedUntilDate = attemptState.lockUntil ? new Date(attemptState.lockUntil) : null;
   const isLocked = lockedUntilDate ? lockedUntilDate > Date.now() : false;
-  const countdown = isLocked ? formatCountdown(lockedUntilDate - Date.now()) : null;
-  const attemptLabel = attemptState.attemptsRemaining === 1 ? 'attempt' : 'attempts';
 
   return (
     <div style={{ height: '100vh', width: '100%', backgroundColor: backgroundImage ? 'transparent' : 'var(--sidebar-bg)', backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
@@ -218,18 +200,19 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Status / hints */}
-              <div style={{ minHeight: '20px', margin: '10px 0 16px' }}>
+              <div style={{ minHeight: '28px', margin: '10px 0 16px', display: 'flex', alignItems: 'center' }}>
                 {isLocked ? (
-                  <p style={{ fontSize: '12px', color: 'var(--danger)', fontWeight: 600 }}>
-                    Account locked. Try again in {countdown}.
-                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#fff', fontWeight: 700 }}>
+                    <ExclamationTriangleIcon style={{ width: '14px', height: '14px', color: '#fff' }} />
+                    <span>Too many attempt. Try again later.</span>
+                  </div>
                 ) : invalidCredentials ? (
-                  <p style={{ fontSize: '12px', color: 'var(--danger)', fontWeight: 600 }}>
-                    Invalid credentials. {attemptState.attemptsRemaining ?? 'Few'} {attemptLabel} remaining.
-                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#fff', fontWeight: 700 }}>
+                    <ExclamationTriangleIcon style={{ width: '14px', height: '14px', color: '#fff' }} />
+                    <span>Invalid Credentials</span>
+                  </div>
                 ) : (
-                  <p style={{ fontSize: '12px', color: 'rgba(230,237,243,0.75)' }}>
+                  <p style={{ margin: 0, fontSize: '12px', color: 'rgba(230,237,243,0.75)' }}>
                     Enter your credentials to sign in.
                   </p>
                 )}

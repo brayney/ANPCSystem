@@ -73,12 +73,12 @@ const HookForm = ({ initial, onSave, onClose, endpoint }) => {
             onChange={e => handleChange('hookSerialNo', e.target.value)} />
         </div>
         <div>
-          <label className="label">Weight (KG)</label>
+          <label className="label">Capacity</label>
           <input type="text" className="input-field" value={form.capacity || ''}
             onChange={e => handleChange('capacity', e.target.value)} />
         </div>
         <div>
-          <label className="label">Weight (kg)</label>
+          <label className="label">Weight (KG)</label>
           <input type="text" className="input-field" value={form.weightKg || ''}
             onChange={e => handleChange('weightKg', e.target.value)} />
         </div>
@@ -191,7 +191,8 @@ export default createEquipmentPage({
     { key: 'itemName', label: 'Item Name' },
     { key: 'hookSerialNo', label: 'Serial No.' },
     { key: 'assignedCrane', label: 'Assigned Crane' },
-    { key: 'capacity', label: 'Weight (KG)', format: v => v ? `${v}kg` : '—' },
+    { key: 'capacity', label: 'Capacity', format: v => v || '—' },
+    { key: 'weightKg', label: 'Weight (KG)', format: v => v ? `${v}kg` : '—' },
     { key: 'ropeDia', label: 'Rope Dia.' },
     { key: 'location', label: 'Location' },
     { key: 'condition', label: 'Condition', badge: true },
