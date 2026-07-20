@@ -387,26 +387,29 @@ const FloatingChat = ({ user }) => {
             onClick={() => setIsOpen(true)}
             style={{
               position: 'relative',
-              width: '56px',
-              height: '56px',
+              width: '60px',
+              height: '60px',
               borderRadius: '50%',
-              background: accent,
+              background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)',
               color: '#fff',
-              border: 'none',
+              border: '1px solid rgba(255,255,255,0.28)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 8px 24px color-mix(in srgb, var(--accent) 45%, transparent)',
-              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              boxShadow: '0 14px 34px color-mix(in srgb, var(--accent) 52%, transparent)',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease',
+              backdropFilter: 'blur(10px)',
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.transform = 'scale(1.08)';
-              e.currentTarget.style.boxShadow = '0 10px 28px color-mix(in srgb, var(--accent) 60%, transparent)';
+              e.currentTarget.style.transform = 'scale(1.07)';
+              e.currentTarget.style.boxShadow = '0 18px 38px color-mix(in srgb, var(--accent) 66%, transparent)';
+              e.currentTarget.style.filter = 'brightness(1.04)';
             }}
             onMouseLeave={e => {
               e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = '0 8px 24px color-mix(in srgb, var(--accent) 45%, transparent)';
+              e.currentTarget.style.boxShadow = '0 14px 34px color-mix(in srgb, var(--accent) 52%, transparent)';
+              e.currentTarget.style.filter = 'brightness(1)';
             }}
           >
             <UserGroupIcon style={{ width: '24px', height: '24px' }} />
@@ -442,27 +445,29 @@ const FloatingChat = ({ user }) => {
           position: 'fixed',
           bottom: '20px',
           right: '20px',
-          width: '380px',
-          height: '520px',
+          width: '390px',
+          height: '560px',
           maxHeight: 'calc(100vh - 40px)',
-          background: panel,
-          borderRadius: '16px',
-          boxShadow: 'var(--shadow-lg)',
+          background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent) 0%, var(--surface) 100%)',
+          borderRadius: '22px',
+          boxShadow: '0 26px 80px rgba(15, 23, 42, 0.22), 0 8px 24px rgba(15, 23, 42, 0.12)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
           color: primary,
           border: `1px solid ${line}`,
+          backdropFilter: 'blur(12px)',
         }}>
           {/* Header */}
           <div style={{
             padding: '14px 16px',
-            background: panel,
+            background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, transparent) 0%, var(--surface-2) 100%)',
             borderBottom: `1px solid ${line}`,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             gap: '10px',
+            boxShadow: 'inset 0 -1px 0 rgba(255,255,255,0.05)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
               {selectedChat ? (
@@ -506,10 +511,17 @@ const FloatingChat = ({ user }) => {
                     cursor: 'pointer',
                     padding: '6px',
                     display: 'flex',
-                    borderRadius: '6px',
+                    borderRadius: '8px',
+                    transition: 'all 0.15s ease',
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = panelAlt}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = panelAlt;
+                    e.currentTarget.style.color = accentText;
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = secondary;
+                  }}
                 >
                   <MagnifyingGlassIcon style={{ width: '18px', height: '18px' }} />
                 </button>
@@ -523,10 +535,17 @@ const FloatingChat = ({ user }) => {
                   cursor: 'pointer',
                   padding: '6px',
                   display: 'flex',
-                  borderRadius: '6px',
+                  borderRadius: '8px',
+                  transition: 'all 0.15s ease',
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = panelAlt}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = panelAlt;
+                  e.currentTarget.style.color = accentText;
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = secondary;
+                }}
               >
                 <XMarkIcon style={{ width: '18px', height: '18px' }} />
               </button>
@@ -560,6 +579,7 @@ const FloatingChat = ({ user }) => {
                       fontWeight: tab === t.key ? 700 : 500,
                       color: tab === t.key ? accentText : secondary,
                       transition: 'all 0.15s',
+                      letterSpacing: '0.01em',
                     }}
                   >
                     {t.label}
@@ -582,19 +602,28 @@ const FloatingChat = ({ user }) => {
                           style={{
                             width: '100%',
                             padding: '11px 12px',
-                            background: 'transparent',
+                            background: 'linear-gradient(180deg, rgba(255,255,255,0.06), transparent)',
                             border: `1px solid ${line}`,
-                            borderRadius: '12px',
+                            borderRadius: '14px',
                             marginBottom: '8px',
                             cursor: 'pointer',
                             textAlign: 'left',
-                            transition: 'all 0.15s',
+                            transition: 'all 0.18s ease',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '11px',
+                            boxShadow: '0 1px 0 rgba(255,255,255,0.04)',
                           }}
-                          onMouseEnter={e => e.currentTarget.style.background = panelAlt}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = 'color-mix(in srgb, var(--surface-2) 90%, transparent)';
+                            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--accent) 38%, var(--border))';
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = 'linear-gradient(180deg, rgba(255,255,255,0.06), transparent)';
+                            e.currentTarget.style.borderColor = line;
+                            e.currentTarget.style.transform = 'translateY(0)';
+                          }}
                         >
                           <UserAvatar account={other} size={40} />
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -648,19 +677,28 @@ const FloatingChat = ({ user }) => {
                         style={{
                           width: '100%',
                           padding: '11px 12px',
-                          background: 'transparent',
+                          background: 'linear-gradient(180deg, rgba(255,255,255,0.06), transparent)',
                           border: `1px solid ${line}`,
-                          borderRadius: '12px',
+                          borderRadius: '14px',
                           marginBottom: '8px',
                           cursor: 'pointer',
                           textAlign: 'left',
-                          transition: 'all 0.15s',
+                          transition: 'all 0.18s ease',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '11px',
+                          boxShadow: '0 1px 0 rgba(255,255,255,0.04)',
                         }}
-                        onMouseEnter={e => e.currentTarget.style.background = panelAlt}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.background = 'color-mix(in srgb, var(--surface-2) 90%, transparent)';
+                          e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--accent) 38%, var(--border))';
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.background = 'linear-gradient(180deg, rgba(255,255,255,0.06), transparent)';
+                          e.currentTarget.style.borderColor = line;
+                          e.currentTarget.style.transform = 'translateY(0)';
+                        }}
                       >
                         <UserAvatar account={availableUser} size={40} />
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -709,7 +747,7 @@ const FloatingChat = ({ user }) => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  background: panelAlt,
+                  background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 92%, transparent) 0%, var(--surface-2) 100%)',
                 }}>
                   <MagnifyingGlassIcon style={{ width: '16px', height: '16px', color: secondary }} />
                   <input
@@ -721,13 +759,14 @@ const FloatingChat = ({ user }) => {
                     style={{
                       flex: 1,
                       border: `1px solid ${line}`,
-                      borderRadius: '8px',
+                      borderRadius: '10px',
                       padding: '8px 10px',
                       fontSize: '13px',
                       fontFamily: 'inherit',
-                      background: panel,
+                      background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent) 0%, var(--surface) 100%)',
                       color: primary,
                       outline: 'none',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
                     }}
                   />
                   <button
@@ -809,16 +848,17 @@ const FloatingChat = ({ user }) => {
                             <div style={{
                               width: 'fit-content',
                               maxWidth: '100%',
-                              padding: msg.media ? '4px' : '9px 12px',
-                              borderRadius: isOwnMessage ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                              background: isOwnMessage ? accent : panelAlt,
+                              padding: msg.media ? '4px' : '10px 12px',
+                              borderRadius: isOwnMessage ? '18px 18px 6px 18px' : '18px 18px 18px 6px',
+                              background: isOwnMessage ? 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)' : 'linear-gradient(180deg, var(--surface-2) 0%, color-mix(in srgb, var(--surface-2) 85%, transparent) 100%)',
                               color: isOwnMessage ? '#fff' : primary,
                               fontSize: '13px',
                               lineHeight: '1.45',
-                              boxShadow: 'var(--shadow-sm)',
+                              boxShadow: '0 8px 20px rgba(15, 23, 42, 0.12)',
                               wordBreak: 'break-word',
                               whiteSpace: 'pre-wrap',
                               overflow: 'hidden',
+                              border: isOwnMessage ? '1px solid color-mix(in srgb, var(--accent) 42%, transparent)' : `1px solid ${line}`,
                             }}>
                               {msg.media && (
                                 <div style={{ marginBottom: msg.text ? '6px' : 0 }}>
@@ -943,15 +983,16 @@ const FloatingChat = ({ user }) => {
                     }}
                     style={{
                       flex: 1,
-                      padding: '10px 14px',
+                      padding: '11px 14px',
                       border: `1px solid ${line}`,
                       borderRadius: '999px',
                       fontSize: '13px',
                       fontFamily: 'inherit',
-                      backgroundColor: panelAlt,
+                      background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 92%, transparent) 0%, var(--surface-2) 100%)',
                       color: primary,
                       outline: 'none',
                       transition: 'border-color 0.15s, box-shadow 0.15s',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
                     }}
                     onFocus={e => {
                       e.target.style.borderColor = accent;
@@ -969,7 +1010,7 @@ const FloatingChat = ({ user }) => {
                       padding: '10px',
                       width: '40px',
                       height: '40px',
-                      background: accent,
+                      background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)',
                       color: '#fff',
                       border: 'none',
                       borderRadius: '50%',
@@ -980,6 +1021,7 @@ const FloatingChat = ({ user }) => {
                       opacity: ((messageText.trim() || pendingFile) && !uploading) ? 1 : 0.5,
                       transition: 'all 0.2s',
                       flexShrink: 0,
+                      boxShadow: '0 8px 18px color-mix(in srgb, var(--accent) 44%, transparent)',
                     }}
                     onMouseEnter={e => { if ((messageText.trim() || pendingFile) && !uploading) e.currentTarget.style.background = accentHover; }}
                     onMouseLeave={e => e.currentTarget.style.background = accent}
