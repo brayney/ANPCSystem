@@ -441,15 +441,15 @@ const FloatingChat = ({ user }) => {
 
       {/* Chat Window (when open) */}
       {isOpen && (
-        <div style={{
+        <div className="animate-scale-in" style={{
           position: 'fixed',
           bottom: '20px',
           right: '20px',
           width: '390px',
           height: '560px',
           maxHeight: 'calc(100vh - 40px)',
-          background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent) 0%, var(--surface) 100%)',
-          borderRadius: '22px',
+          background: 'radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 18%, transparent) 0%, transparent 38%), linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent) 0%, var(--surface) 100%)',
+          borderRadius: '24px',
           boxShadow: '0 26px 80px rgba(15, 23, 42, 0.22), 0 8px 24px rgba(15, 23, 42, 0.12)',
           display: 'flex',
           flexDirection: 'column',
@@ -494,8 +494,24 @@ const FloatingChat = ({ user }) => {
                 </>
               ) : (
                 <div style={{ minWidth: 0 }}>
-                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: primary }}>Messages</h3>
-                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: muted }}>Team conversations</p>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '3px 8px',
+                    borderRadius: '999px',
+                    background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
+                    color: accentText,
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    marginBottom: '4px',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}>
+                    Messages
+                  </div>
+                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: primary }}>Friendly team chat</h3>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: muted }}>Tap a message to reveal the exact time</p>
                 </div>
               )}
             </div>
@@ -618,11 +634,13 @@ const FloatingChat = ({ user }) => {
                             e.currentTarget.style.background = 'color-mix(in srgb, var(--surface-2) 90%, transparent)';
                             e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--accent) 38%, var(--border))';
                             e.currentTarget.style.transform = 'translateY(-1px)';
+                            e.currentTarget.style.boxShadow = '0 10px 22px rgba(15, 23, 42, 0.12)';
                           }}
                           onMouseLeave={e => {
                             e.currentTarget.style.background = 'linear-gradient(180deg, rgba(255,255,255,0.06), transparent)';
                             e.currentTarget.style.borderColor = line;
                             e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 1px 0 rgba(255,255,255,0.04)';
                           }}
                         >
                           <UserAvatar account={other} size={40} />
@@ -841,6 +859,13 @@ const FloatingChat = ({ user }) => {
                             gap: '7px',
                             cursor: 'pointer',
                             userSelect: 'none',
+                            transition: 'transform 0.18s ease',
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.transform = 'translateY(0)';
                           }}
                         >
                           {!isOwnMessage && <UserAvatar account={msg.sender} size={26} />}
@@ -850,15 +875,16 @@ const FloatingChat = ({ user }) => {
                               maxWidth: '100%',
                               padding: msg.media ? '4px' : '10px 12px',
                               borderRadius: isOwnMessage ? '18px 18px 6px 18px' : '18px 18px 18px 6px',
-                              background: isOwnMessage ? 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)' : 'linear-gradient(180deg, var(--surface-2) 0%, color-mix(in srgb, var(--surface-2) 85%, transparent) 100%)',
+                              background: isOwnMessage ? 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)' : 'linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 96%, transparent) 0%, var(--surface-2) 100%)',
                               color: isOwnMessage ? '#fff' : primary,
                               fontSize: '13px',
                               lineHeight: '1.45',
-                              boxShadow: '0 8px 20px rgba(15, 23, 42, 0.12)',
+                              boxShadow: '0 10px 24px rgba(15, 23, 42, 0.14)',
                               wordBreak: 'break-word',
                               whiteSpace: 'pre-wrap',
                               overflow: 'hidden',
                               border: isOwnMessage ? '1px solid color-mix(in srgb, var(--accent) 42%, transparent)' : `1px solid ${line}`,
+                              transform: 'translateZ(0)',
                             }}>
                               {msg.media && (
                                 <div style={{ marginBottom: msg.text ? '6px' : 0 }}>
@@ -884,6 +910,7 @@ const FloatingChat = ({ user }) => {
                               transform: revealedMessageId === msg._id ? 'translateY(0)' : 'translateY(-2px)',
                               transition: 'all 0.18s ease',
                               pointerEvents: 'none',
+                              letterSpacing: '0.02em',
                             }}>
                               <span>{format(new Date(msg.createdAt), 'h:mm a')}</span>
                               {isOwnMessage && (
