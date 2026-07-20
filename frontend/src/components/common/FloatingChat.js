@@ -256,14 +256,6 @@ const FloatingChat = ({ user }) => {
 
   const formatDateDivider = (dateValue) => format(new Date(dateValue), 'MMM d, yyyy');
 
-  const formatConversationDate = (dateValue) => {
-    if (!dateValue) return '';
-    const date = new Date(dateValue);
-    return localDateKey(date) === localDateKey(new Date())
-      ? format(date, 'h:mm a')
-      : format(date, 'MMM d');
-  };
-
   const mediaUrl = (media) => media?.url ? `${mediaBaseUrl}${media.url}` : '';
 
   const renderMedia = (media) => {
