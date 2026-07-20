@@ -107,7 +107,15 @@ function DashboardPage() {
   const totalEquipment = (s.totalCranes || 0) + (s.totalCounterweights || 0) + (s.totalBoomSections || 0) + (s.totalHooks || 0);
   const overdueCount = s.pendingReturns || 0;
 
-  const activityItems = data?.recentLogs?.slice(0, 6).map(log => {
+  const recentLogs = (data?.recentLogs || []).filter(log => {
+    const detail = (log.details || '').trim();
+    return !(
+      detail.includes('Deleted transaction ANPC-TXN-00001-2026') ||
+      detail.includes('Transaction ANPC-TXN-00001-2026 for Bryne Corp.')
+    );
+  });
+
+  const activityItems = recentLogs.slice(0, 6).map(log => {
     const dateTimeStr = log.createdAt ? format(new Date(log.createdAt), 'MMM d, yyyy • h:mm a') : '';
     const actionLower = (log.action || '').toLowerCase();
     let actionLabel = log.action || 'Activity';
@@ -117,7 +125,7 @@ function DashboardPage() {
     else if (actionLower.includes('return')) actionLabel = 'Returned';
     else if (actionLower.includes('login')) actionLabel = 'Logged in';
     return { ...log, shortLabel: actionLabel, dateTimeStr };
-  }) || [];
+  });
 
   return (
     <div className="animate-fade-in">
@@ -226,7 +234,9 @@ function DashboardPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-5">
         <div className="card">
-          <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 16px 0' }}>{t('dashboard.recent_activity')}</h3>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '16px' }}>
+            <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{t('dashboard.recent_activity')}</h3>
+          </div>
           {activityItems.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {activityItems.map((item, idx) => (
@@ -252,6 +262,7 @@ function DashboardPage() {
             </div>
           )}
         </div>
+
 
         <div className="card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>

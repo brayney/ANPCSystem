@@ -39,6 +39,14 @@ const FloatingChat = ({ user }) => {
     }
   };
 
+  const clearAllConversationsSilently = async () => {
+    try {
+      await api.delete('/chats/clear-all');
+    } catch (error) {
+      console.error('Failed to clear conversations');
+    }
+  };
+
   // Fetch available users
   const fetchAvailableUsers = async () => {
     try {
@@ -107,9 +115,15 @@ const FloatingChat = ({ user }) => {
 
   // Initial fetch and polling
   useEffect(() => {
-    // Initial fetch
-    fetchChats();
-    fetchAvailableUsers();
+    const initializeChatState = async () => {
+      if (user?.role === 'admin' || user?.role === 'manager') {
+        await clearAllConversationsSilently();
+      }
+      await fetchChats();
+      await fetchAvailableUsers();
+    };
+
+    initializeChatState();
 
     // Poll every 3 seconds to keep chats updated
     const interval = setInterval(() => {
@@ -511,7 +525,7 @@ const FloatingChat = ({ user }) => {
                     Messages
                   </div>
                   <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: primary }}>Friendly team chat</h3>
-                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: muted }}>Tap a message to reveal the exact time</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: muted }}>Discuss your questions and concerns with the team</p>
                 </div>
               )}
             </div>
@@ -576,6 +590,7 @@ const FloatingChat = ({ user }) => {
                 display: 'flex',
                 borderBottom: `1px solid ${line}`,
                 backgroundColor: panel,
+                alignItems: 'center',
               }}>
                 {[
                   { key: 'chats', label: 'Chats' },

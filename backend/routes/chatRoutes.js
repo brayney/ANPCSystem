@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const { protect } = require('../middleware/auth');
-const { getAvailableUsers, getChats, getOrCreateChat, getMessages, sendMessage, markAsRead, getMedia } = require('../controllers/chatController');
+const { getAvailableUsers, getChats, getOrCreateChat, getMessages, sendMessage, markAsRead, getMedia, clearAllChats } = require('../controllers/chatController');
 
 const router = express.Router();
 
@@ -17,6 +17,7 @@ router.use(protect);
 router.get('/available-users', getAvailableUsers);
 router.get('/chats', getChats);
 router.post('/chats', getOrCreateChat);
+router.delete('/chats/clear-all', clearAllChats);
 router.get('/chats/:chatId/messages', getMessages);
 router.post('/chats/:chatId/messages', upload.single('media'), sendMessage);
 router.put('/chats/:chatId/read', markAsRead);

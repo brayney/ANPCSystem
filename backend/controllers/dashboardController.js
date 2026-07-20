@@ -51,6 +51,14 @@ exports.getDashboard = async (req, res, next) => {
     const prevMonthTxns = lastMonthTransactions || 1;
     const txnGrowth = ((thisMonthTransactions - prevMonthTxns) / prevMonthTxns * 100).toFixed(1);
 
+    const filteredRecentLogs = (recentLogs || []).filter(log => {
+      const detail = (log.details || '').trim();
+      return !(
+        detail.includes('Deleted transaction ANPC-TXN-00001-2026') ||
+        detail.includes('Transaction ANPC-TXN-00001-2026 for Bryne Corp.')
+      );
+    });
+
     res.json({
       success: true,
       data: {
@@ -63,7 +71,7 @@ exports.getDashboard = async (req, res, next) => {
           monthlyGrowth: parseFloat(txnGrowth)
         },
         recentTransactions,
-        recentLogs,
+        recentLogs: filteredRecentLogs,
         charts: { craneStatusDist, transactionsByMonth }
       }
     });

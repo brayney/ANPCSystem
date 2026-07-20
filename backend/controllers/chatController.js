@@ -100,9 +100,10 @@ exports.getOrCreateChat = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Only admins and managers can chat' });
     }
 
-    // Find existing chat or create new one
+    // Find existing active chat or create new one
     let chat = await Chat.findOne({
-      participants: { $all: [currentUserId, userId] }
+      participants: { $all: [currentUserId, userId] },
+      isArchived: false
     }).populate('participants', 'name email role');
 
     if (!chat) {
@@ -288,5 +289,24 @@ exports.markAsRead = async (req, res, next) => {
     );
 
     res.json({ success: true, message: 'Messages marked as read' });
+  } catch (error) { next(error); }
+};
+
+// Clear all chats for the current user
+exports.clearAllChats = async (req, res, next) => {
+  try {
+    const chatsToRemove = await Chat.find({
+      participants: req.user._id,
+      isArchived: false
+    }).select('_id');
+
+    const chatIds = chatsToRemove.map(chat => chat._id);
+
+    if (chatIds.length > 0) {
+      await Message.deleteMany({ chat: { $in: chatIds } });
+      await Chat.deleteMany({ _id: { $in: chatIds } });
+    }
+
+    res.json({ success: true, message: 'All conversations cleared' });
   } catch (error) { next(error); }
 };
