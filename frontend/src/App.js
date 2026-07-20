@@ -21,9 +21,29 @@ import PublicTransactionPage from './pages/PublicTransactionPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import TutorialsPage from './pages/TutorialsPage';
+import MobileBlockedPage from './pages/MobileBlockedPage';
+
+const isMobileBrowser = () => {
+  if (typeof navigator === 'undefined') return false;
+  const userAgent = navigator.userAgent || '';
+  return /android|iphone|ipad|ipod|mobile/i.test(userAgent);
+};
+
+const MobileRestrictedRoute = ({ children }) => {
+  if (isMobileBrowser()) {
+    return <MobileBlockedPage />;
+  }
+
+  return children;
+};
 
 const PrivateRoute = ({ children }) => {
   const { user } = useAuth();
+
+  if (isMobileBrowser()) {
+    return <MobileBlockedPage />;
+  }
+
   return user ? children : <Navigate to="/login" replace />;
 };
 
@@ -55,7 +75,7 @@ function App() {
           <Route path="/public/transactions/:id" element={<PublicTransactionPage />} />
            
           {/* Auth */}
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={<MobileRestrictedRoute><LoginPage /></MobileRestrictedRoute>} />
            
           {/* Private Routes */}
           <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
