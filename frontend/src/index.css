@@ -868,7 +868,7 @@
 /* ── Print ── */
 @media print {
   @page {
-    size: auto;
+    size: A4;
     margin: 10mm;
   }
 

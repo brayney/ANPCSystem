@@ -161,18 +161,18 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
   const publicUrl = `${window.location.origin}/public/transactions/${txn._id}`;
 
   return (
-    <div ref={ref} className="public-transaction-print p-4 md:p-6 bg-white text-gray-900 font-sans max-w-full mx-auto" style={{ width: 'auto', maxWidth: '100%', margin: '0 auto' }}>
+    <div ref={ref} className="public-transaction-print p-3 sm:p-4 md:p-6 bg-white text-gray-900 font-sans max-w-full mx-auto overflow-x-hidden" style={{ width: '100%', maxWidth: '100%', margin: '0 auto' }}>
       <div>
         {/* Header */}
-        <div className="public-transaction-print-header flex flex-col md:flex-row items-start justify-between gap-4 md:gap-6 border-b-2 border-blue-900 pb-3 mb-4">
-          <div className="flex gap-3 flex-shrink-0 items-center">
-            <QRCodeSVG value={publicUrl} size={70} />
+        <div className="public-transaction-print-header flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6 border-b-2 border-blue-900 pb-3 mb-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-shrink-0 sm:items-center">
+            <QRCodeSVG value={publicUrl} size={56} />
             <div>
-              <img src="/logo.png" alt="NASS Logo" style={{ height: '60px', objectFit: 'contain', marginBottom: '4px' }} />
+              <img src="/logo.png" alt="NASS Logo" style={{ height: '48px', objectFit: 'contain', marginBottom: '4px' }} />
               <p className="text-xs text-gray-500">EQUIPMENT PULL-OUT / RENTAL FORM</p>
             </div>
           </div>
-          <div className="text-right text-xs whitespace-nowrap">
+          <div className="text-left sm:text-right text-xs whitespace-normal sm:whitespace-nowrap">
             <p className="font-bold text-blue-900">TXN No: {txn.transactionNo}</p>
             <p className="text-gray-600">{fmt(txn.transactionDate)}</p>
             {txn.transactionTime && <p className="text-gray-600">{txn.transactionTime}</p>}
@@ -180,7 +180,7 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
           </div>
         </div>
 
-        <div className="public-transaction-print-grid grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-8 mb-3 md:mb-6">
+        <div className="public-transaction-print-grid grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-8 mb-3 sm:mb-6">
           <div>
             <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wide mb-1 border-b pb-0.5">Transaction Information</h3>
             <table className="w-full text-xs">
@@ -214,7 +214,7 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
         </div>
 
         {/* Vehicle & Driver */}
-        <div className="public-transaction-print-grid grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-3">
+        <div className="public-transaction-print-grid grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3">
           <div>
             <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wide mb-1 border-b pb-0.5">Vehicle & Driver</h3>
             <table className="w-full text-xs">
@@ -319,7 +319,7 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
         <DetailedRelatedTransactionsTable transactions={txn.childTransactions || []} compact />
 
         {/* Signatures */}
-        <div className="public-transaction-print-signatures mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="public-transaction-print-signatures mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
           {['Released By', 'Received By', 'Authorized By'].map(label => (
             <div key={label} className="text-center">
               <div className="border-b border-gray-400 h-8 mb-1" />
@@ -351,7 +351,10 @@ export default function PublicTransactionPage() {
       .finally(() => setLoading(false));
   }, [id, navigate]);
 
-  const handlePrint = useReactToPrint({ content: () => printRef.current });
+  const handlePrint = useReactToPrint({
+    content: () => printRef.current,
+    pageStyle: '@page { size: A4; margin: 10mm; }',
+  });
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -383,16 +386,16 @@ export default function PublicTransactionPage() {
       </div>
 
       {/* Content */}
-      <div className="w-full max-w-4xl mx-auto py-4 md:py-8 px-4">
+      <div className="w-full max-w-5xl mx-auto py-3 px-3 sm:px-4 sm:py-4 md:py-6 lg:px-6">
         {/* Print View */}
-        <div className="bg-white rounded-lg shadow mb-6 md:mb-8">
+        <div className="bg-white rounded-lg shadow mb-4 sm:mb-6 md:mb-8">
           <PrintView ref={printRef} txn={txn} />
         </div>
 
         {/* Screen View Summary - Mobile Optimized */}
-        <div className="no-print bg-white rounded-lg shadow p-4 md:p-6">
+        <div className="no-print bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
           <h2 className="text-base md:text-lg font-bold text-gray-900 mb-4">Transaction Summary</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs md:text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
             <div>
               <p className="text-gray-500">Transaction Number</p>
               <p className="font-mono font-bold text-base md:text-lg text-blue-600">{txn.transactionNo}</p>
