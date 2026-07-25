@@ -159,6 +159,9 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
   const cranes = getTransactionCranes(txn);
   const fmt = (d) => d ? format(new Date(d), 'MMMM d, yyyy') : '—';
   const publicUrl = `${window.location.origin}/public/transactions/${txn._id}`;
+  const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 640;
+  const qrSize = isSmallScreen ? 44 : 56;
+  const logoHeight = isSmallScreen ? 38 : 48;
 
   return (
     <div ref={ref} className="public-transaction-print p-3 sm:p-4 md:p-6 bg-white text-gray-900 font-sans max-w-full mx-auto overflow-x-hidden" style={{ width: '100%', maxWidth: '100%', margin: '0 auto' }}>
@@ -166,9 +169,9 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
         {/* Header */}
         <div className="public-transaction-print-header flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6 border-b-2 border-blue-900 pb-3 mb-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-shrink-0 sm:items-center">
-            <QRCodeSVG value={publicUrl} size={56} />
+            <QRCodeSVG value={publicUrl} size={qrSize} />
             <div>
-              <img src="/logo.png" alt="NASS Logo" style={{ height: '48px', objectFit: 'contain', marginBottom: '4px' }} />
+              <img src="/logo.png" alt="NASS Logo" style={{ height: `${logoHeight}px`, objectFit: 'contain', marginBottom: '4px' }} />
               <p className="text-xs text-gray-500">EQUIPMENT PULL-OUT / RENTAL FORM</p>
             </div>
           </div>

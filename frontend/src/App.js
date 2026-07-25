@@ -24,18 +24,24 @@ import TutorialsPage from './pages/TutorialsPage';
 import MobileBlockedPage from './pages/MobileBlockedPage';
 
 const isMobileBrowser = () => {
-  if (typeof navigator === 'undefined') return false;
+  if (typeof navigator === 'undefined' || typeof window === 'undefined') return false;
 
   const userAgent = (navigator.userAgent || '').toLowerCase();
   const platform = (navigator.platform || '').toLowerCase();
   const userAgentData = navigator.userAgentData;
+  const maxTouchPoints = navigator.maxTouchPoints || 0;
+  const isTouchDevice = maxTouchPoints > 1 || (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches);
+  const viewportWidth = window.innerWidth || 0;
+  const viewportHeight = window.innerHeight || 0;
+  const isSmallViewport = viewportWidth > 0 && viewportHeight > 0 && viewportWidth <= 1280 && viewportHeight <= 1600;
 
   if (userAgentData?.mobile !== undefined) {
     return userAgentData.mobile;
   }
 
   return /(android|iphone|ipad|ipod|mobile)/i.test(userAgent)
-    || /(android|iphone|ipad|ipod)/i.test(platform);
+    || /(android|iphone|ipad|ipod)/i.test(platform)
+    || (isTouchDevice && isSmallViewport);
 };
 
 const MobileRestrictedRoute = ({ children }) => {
