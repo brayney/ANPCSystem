@@ -25,8 +25,17 @@ import MobileBlockedPage from './pages/MobileBlockedPage';
 
 const isMobileBrowser = () => {
   if (typeof navigator === 'undefined') return false;
-  const userAgent = navigator.userAgent || '';
-  return /android|iphone|ipad|ipod|mobile/i.test(userAgent);
+
+  const userAgent = (navigator.userAgent || '').toLowerCase();
+  const platform = (navigator.platform || '').toLowerCase();
+  const userAgentData = navigator.userAgentData;
+
+  if (userAgentData?.mobile !== undefined) {
+    return userAgentData.mobile;
+  }
+
+  return /(android|iphone|ipad|ipod|mobile)/i.test(userAgent)
+    || /(android|iphone|ipad|ipod)/i.test(platform);
 };
 
 const MobileRestrictedRoute = ({ children }) => {
