@@ -35,17 +35,17 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
   const publicUrl = `${window.location.origin}/public/transactions/${txn._id}`;
 
   return (
-    <div ref={ref} className="p-6 bg-white text-gray-900 font-sans max-w-4xl mx-auto" style={{ width: '210mm', height: '297mm', margin: '0 auto', overflow: 'hidden' }}>
+    <div ref={ref} className="p-8 bg-white text-gray-900 font-sans max-w-4xl mx-auto" style={{ width: '210mm', height: '297mm', margin: '0 auto', overflow: 'hidden' }}>
       {/* Header */}
       <div className="flex items-start justify-between border-b-2 border-blue-900 pb-3 mb-4">
         <div className="flex gap-3 items-center">
-          <QRCodeSVG value={publicUrl} size={70} />
+          <QRCodeSVG value={publicUrl} size={90} />
           <div>
-            <img src="/logo.png" alt="NASS Logo" style={{ height: '60px', objectFit: 'contain', marginBottom: '4px' }} />
-            <p className="text-xs text-gray-500">EQUIPMENT PULL-OUT / RENTAL FORM</p>
+            <img src="/logo.png" alt="NASS Logo" style={{ height: '70px', objectFit: 'contain', marginBottom: '4px' }} />
+            <p className="text-sm text-gray-500">EQUIPMENT PULL-OUT / RENTAL FORM</p>
           </div>
         </div>
-        <div className="text-right text-xs">
+        <div className="text-right text-sm">
           <p className="font-bold text-blue-900">TXN No: {txn.transactionNo}</p>
           <p className="text-gray-600">{fmt(txn.transactionDate)}</p>
           {txn.transactionTime && <p className="text-gray-600">{txn.transactionTime}</p>}
@@ -55,8 +55,8 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
 
       <div className="grid grid-cols-2 gap-8 mb-6">
         <div>
-          <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wide mb-1 border-b pb-0.5">Transaction Information</h3>
-          <table className="w-full text-xs">
+          <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide mb-1 border-b pb-0.5">Transaction Information</h3>
+          <table className="w-full text-sm">
             <tbody>
               {[
                 ['Type', txn.type],
@@ -64,15 +64,15 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
                 ['Expected Return', fmt(txn.expectedReturnDate)],
                 ...(txn.status === 'Returned' ? [['Actual Return', fmtWithTime(txn.actualReturnDate)]] : []),
               ].map(([l, v]) => (
-                <tr key={l}><td className="text-gray-500 pr-2 py-0.5 text-xs">{l}:</td><td className="font-medium text-xs">{v || '—'}</td></tr>
+                <tr key={l}><td className="text-gray-500 pr-2 py-1 text-sm">{l}:</td><td className="font-medium text-sm">{v || '—'}</td></tr>
               ))}
             </tbody>
           </table>
         </div>
 
         <div>
-          <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wide mb-1 border-b pb-0.5">Company Information</h3>
-          <table className="w-full text-xs">
+          <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide mb-1 border-b pb-0.5">Company Information</h3>
+          <table className="w-full text-sm">
             <tbody>
               {[
                 ['Company', txn.companyName],
@@ -80,7 +80,7 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
                 ['Contact Person', txn.contactPerson],
                 ['Contact Number', txn.contactNumber],
               ].map(([l, v]) => (
-                <tr key={l}><td className="text-gray-500 pr-2 py-0.5 text-xs">{l}:</td><td className="font-medium text-xs">{v || '—'}</td></tr>
+                <tr key={l}><td className="text-gray-500 pr-2 py-1 text-sm">{l}:</td><td className="font-medium text-sm">{v || '—'}</td></tr>
               ))}
             </tbody>
           </table>
@@ -90,8 +90,8 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
       {/* Vehicle & Driver */}
       <div className="grid grid-cols-2 gap-4 mb-3">
         <div>
-          <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wide mb-1 border-b pb-0.5">Vehicle & Driver</h3>
-          <table className="w-full text-xs">
+          <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide mb-1 border-b pb-0.5">Vehicle & Driver</h3>
+          <table className="w-full text-sm">
             <tbody>
               {[
                 ['Driver', txn.driverName],
@@ -100,7 +100,7 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
                 ['Pull-Out Location', txn.pullOutLocation],
                 ['Delivery Location', txn.deliveryLocation],
               ].map(([l, v]) => (
-                <tr key={l}><td className="text-gray-500 pr-2 py-0.5 text-xs">{l}:</td><td className="font-medium text-xs">{v || '—'}</td></tr>
+                <tr key={l}><td className="text-gray-500 pr-2 py-1 text-sm">{l}:</td><td className="font-medium text-sm">{v || '—'}</td></tr>
               ))}
             </tbody>
           </table>
@@ -108,28 +108,28 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
       </div>
 
       {/* Crane */}
-      <div className="mb-3">
-        <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wide mb-1 border-b pb-0.5">Crane Details</h3>
-        <table className="w-full text-xs border border-gray-300">
+      <div className="mb-4">
+        <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide mb-1 border-b pb-0.5">Crane Details</h3>
+        <table className="w-full text-sm border border-gray-300">
           <thead className="bg-blue-900 text-white">
             <tr>
-              <th className="px-2 py-1 text-left">Equipment No.</th>
-              <th className="px-2 py-1 text-left">Model</th>
-              <th className="px-2 py-1 text-left">Capacity</th>
-              <th className="px-2 py-1 text-left">Weight (KG)</th>
-              <th className="px-2 py-1 text-left">Expected Return</th>
-              <th className="px-2 py-1 text-left">Actual Return</th>
+              <th className="px-3 py-1.5 text-left text-sm">Equipment No.</th>
+              <th className="px-3 py-1.5 text-left text-sm">Model</th>
+              <th className="px-3 py-1.5 text-left text-sm">Capacity</th>
+              <th className="px-3 py-1.5 text-left text-sm">Weight (KG)</th>
+              <th className="px-3 py-1.5 text-left text-sm">Expected Return</th>
+              <th className="px-3 py-1.5 text-left text-sm">Actual Return</th>
             </tr>
           </thead>
           <tbody>
             {cranes.map((crane, index) => (
               <tr key={crane.craneId || crane.equipmentNo || index} className="border-t border-gray-300">
-                <td className="px-2 py-1 font-mono font-bold text-xs">{crane.equipmentNo}</td>
-                <td className="px-2 py-1 text-xs">{crane.craneModel || '—'}</td>
-                <td className="px-2 py-1 text-xs">{crane.capacity || '—'}</td>
-                <td className="px-2 py-1 text-xs">{crane.weightKg || '—'}</td>
-                <td className="px-2 py-1 text-xs">{fmt(txn.expectedReturnDate)}</td>
-                <td className="px-2 py-1 text-xs">{txn.actualReturnDate ? format(new Date(txn.actualReturnDate), 'MMM d, yyyy h:mm a') : '—'}</td>
+                <td className="px-3 py-1 font-mono font-bold text-sm">{crane.equipmentNo}</td>
+                <td className="px-3 py-1 text-sm">{crane.craneModel || '—'}</td>
+                <td className="px-3 py-1 text-sm">{crane.capacity || '—'}</td>
+                <td className="px-3 py-1 text-sm">{crane.weightKg || '—'}</td>
+                <td className="px-3 py-1 text-sm">{fmt(txn.expectedReturnDate)}</td>
+                <td className="px-3 py-1 text-sm">{txn.actualReturnDate ? format(new Date(txn.actualReturnDate), 'MMM d, yyyy h:mm a') : '—'}</td>
               </tr>
             ))}
           </tbody>
@@ -138,44 +138,44 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
 
       {/* Attachments */}
       {(txn.counterweights?.length > 0 || txn.boomSections?.length > 0 || txn.hooks?.length > 0) && (
-        <div className="mb-2">
-          <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wide mb-1 border-b pb-0.5">Included Attachments</h3>
-          <table className="w-full text-xs border border-gray-300">
+        <div className="mb-3">
+          <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide mb-1 border-b pb-0.5">Included Attachments</h3>
+          <table className="w-full text-sm border border-gray-300">
             <thead className="bg-gray-100">
               <tr>
-                <th className="px-2 py-0.5 text-left text-xs">Type</th>
-                <th className="px-2 py-0.5 text-left text-xs">Item Name</th>
-                <th className="px-2 py-0.5 text-left text-xs">Code / Serial</th>
-                <th className="px-2 py-0.5 text-left text-xs">Length</th>
-                <th className="px-2 py-0.5 text-left text-xs">Weight (kg)</th>
+                <th className="px-3 py-1 text-left text-sm">Type</th>
+                <th className="px-3 py-1 text-left text-sm">Item Name</th>
+                <th className="px-3 py-1 text-left text-sm">Code / Serial</th>
+                <th className="px-3 py-1 text-left text-sm">Length</th>
+                <th className="px-3 py-1 text-left text-sm">Weight (kg)</th>
               </tr>
             </thead>
             <tbody>
               {txn.counterweights?.map((cw, i) => (
                 <tr key={i} className="border-t border-gray-200">
-                  <td className="px-2 py-0.5 text-gray-500 text-xs">Counterweight</td>
-                  <td className="px-2 py-0.5 text-xs">{cw.itemName}</td>
-                  <td className="px-2 py-0.5 font-mono text-xs">{cw.serialNo}</td>
-                  <td className="px-2 py-0.5 text-xs">—</td>
-                  <td className="px-2 py-0.5 text-xs">{cw.weightKg || '—'}</td>
+                  <td className="px-3 py-1 text-gray-500 text-sm">Counterweight</td>
+                  <td className="px-3 py-1 text-sm">{cw.itemName}</td>
+                  <td className="px-3 py-1 font-mono text-sm">{cw.serialNo}</td>
+                  <td className="px-3 py-1 text-sm">—</td>
+                  <td className="px-3 py-1 text-sm">{cw.weightKg || '—'}</td>
                 </tr>
               ))}
               {txn.boomSections?.map((bs, i) => (
                 <tr key={i} className="border-t border-gray-200">
-                  <td className="px-2 py-0.5 text-gray-500 text-xs">Boom Section</td>
-                  <td className="px-2 py-0.5 text-xs">{bs.itemName}</td>
-                  <td className="px-2 py-0.5 font-mono text-xs">{bs.boomCode}</td>
-                  <td className="px-2 py-0.5 text-xs">{bs.length || '—'}</td>
-                  <td className="px-2 py-0.5 text-xs">{bs.weightKg || '—'}</td>
+                  <td className="px-3 py-1 text-gray-500 text-sm">Boom Section</td>
+                  <td className="px-3 py-1 text-sm">{bs.itemName}</td>
+                  <td className="px-3 py-1 font-mono text-sm">{bs.boomCode}</td>
+                  <td className="px-3 py-1 text-sm">{bs.length || '—'}</td>
+                  <td className="px-3 py-1 text-sm">{bs.weightKg || '—'}</td>
                 </tr>
               ))}
               {txn.hooks?.map((h, i) => (
                 <tr key={i} className="border-t border-gray-200">
-                  <td className="px-2 py-0.5 text-gray-500 text-xs">Hook</td>
-                  <td className="px-2 py-0.5 text-xs">{h.itemName}</td>
-                  <td className="px-2 py-0.5 font-mono text-xs">{h.hookSerialNo}</td>
-                  <td className="px-2 py-0.5 text-xs">—</td>
-                  <td className="px-2 py-0.5 text-xs">{h.weightKg || '—'}</td>
+                  <td className="px-3 py-1 text-gray-500 text-sm">Hook</td>
+                  <td className="px-3 py-1 text-sm">{h.itemName}</td>
+                  <td className="px-3 py-1 font-mono text-sm">{h.hookSerialNo}</td>
+                  <td className="px-3 py-1 text-sm">—</td>
+                  <td className="px-3 py-1 text-sm">{h.weightKg || '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -184,19 +184,19 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
       )}
 
       {txn.remarks && (
-        <div className="mb-2 p-2 bg-gray-50 border border-gray-200">
-          <p className="text-xs font-semibold text-gray-500 uppercase mb-0.5">Remarks</p>
-          <p className="text-xs">{txn.remarks}</p>
+        <div className="mb-3 p-3 bg-gray-50 border border-gray-200">
+          <p className="text-sm font-semibold text-gray-500 uppercase mb-1">Remarks</p>
+          <p className="text-sm">{txn.remarks}</p>
         </div>
       )}
 
       {/* Signatures */}
-      <div className="mt-4 grid grid-cols-3 gap-3">
+      <div className="mt-6 grid grid-cols-3 gap-4">
         {['Released By', 'Received By', 'Authorized By'].map(label => (
           <div key={label} className="text-center">
-            <div className="border-b border-gray-400 h-8 mb-1" />
-            <p className="text-xs font-semibold text-gray-600 uppercase">{label}</p>
-            <p className="text-xs text-gray-400 mt-0.5">Signature</p>
+            <div className="border-b border-gray-400 h-10 mb-2" />
+            <p className="text-sm font-semibold text-gray-600 uppercase">{label}</p>
+            <p className="text-sm text-gray-400 mt-1">Signature</p>
           </div>
         ))}
       </div>
