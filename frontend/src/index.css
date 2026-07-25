@@ -869,7 +869,10 @@
 @media print {
   @page {
     size: A4;
-    margin: 10mm;
+    /* Set page margin to zero so browser header/footer area is not reserved.
+       Note: browsers may still inject their own headers/footers via print settings;
+       users must disable them in the print dialog for guaranteed removal. */
+    margin: 0;
   }
 
   html, body, #root {
@@ -889,7 +892,8 @@
     max-width: 100% !important;
     min-width: 0 !important;
     box-sizing: border-box !important;
-    padding: 3mm 4mm !important;
+    /* Use internal padding to simulate margins inside the printable area */
+    padding: 10mm !important;
     margin: 0 !important;
     box-shadow: none !important;
     background: white !important;
