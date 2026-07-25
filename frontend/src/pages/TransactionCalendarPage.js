@@ -168,9 +168,10 @@ export default function TransactionCalendarPage() {
                   </div>
 
                   {/* Transactions */}
-                  <div className="calendar-cell-list" style={{ display: 'flex', flexDirection: 'column', gap: '3px', minHeight: 0, overflowY: 'auto' }}>
-                    {dayTransactions.slice(0, 3).map((txn, i) => {
+                  <div className="calendar-cell-list" style={{ display: 'flex', flexDirection: 'column', gap: '3px', minHeight: 0, overflow: 'visible' }}>
+                    {dayTransactions.map((txn, i) => {
                       const colors = statusColors[txn.status] || { text: 'var(--text-secondary)', bg: 'var(--surface-3)' };
+                      const label = txn.transactionNo || txn._id?.slice(-6) || 'Transaction';
                       return (
                         <Link
                           key={i}
@@ -183,23 +184,18 @@ export default function TransactionCalendarPage() {
                             color: colors.text,
                             background: colors.bg,
                             textDecoration: 'none',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
+                            overflowWrap: 'anywhere',
+                            lineHeight: 1.3,
+                            whiteSpace: 'normal',
                             border: '1px solid',
                             borderColor: colors.text,
                           }}
-                          title={`${txn.companyName || txn.customer || ''} - ${txn.transactionNo}`}
+                          title={`${txn.companyName || txn.customer || ''} - ${label}`}
                         >
-                          {txn.transactionNo}
+                          {label}
                         </Link>
                       );
                     })}
-                    {dayTransactions.length > 3 && (
-                      <div style={{ padding: '2px 6px', fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                        +{dayTransactions.length - 3} more
-                      </div>
-                    )}
                   </div>
                 </div>
               );

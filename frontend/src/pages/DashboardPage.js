@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { TruckIcon, Square3Stack3DIcon, DocumentTextIcon, ChartBarIcon, BoltIcon, LinkIcon, CheckCircleIcon, ExclamationCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { StatCard, StatusBadge, StatCardSkeleton, CardSkeleton, Skeleton } from '../components/common';
+import { StatCard, StatusBadge } from '../components/common';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../i18n/useTranslation';
 import api from '../utils/api';
@@ -10,6 +10,25 @@ import { format, differenceInDays } from 'date-fns';
 import { SunIcon, MoonIcon, CloudIcon } from '@heroicons/react/24/outline';
 
 const PIE_COLORS = ['#1a7f37', '#1f6feb', '#9a6700', '#bc4c00', '#cf222e', '#6e40c9'];
+
+const readCachedDashboardData = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const cached = sessionStorage.getItem('dashboardData');
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    return null;
+  }
+};
+
+const persistDashboardData = (payload) => {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem('dashboardData', JSON.stringify(payload));
+  } catch {
+    // ignore storage failures
+  }
+};
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -47,16 +66,37 @@ const PerformanceIndicator = ({ value, label, trend, unit = '', icon: Icon, icon
 );
 
 function DashboardPage() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const initialData = location.state?.dashboardData || readCachedDashboardData();
+  const [data, setData] = useState(initialData);
+  const [loading, setLoading] = useState(!initialData);
   const [refreshing, setRefreshing] = useState(false);
   const [now, setNow] = useState(new Date());
   const { user } = useAuth();
   const { t } = useTranslation();
 
   useEffect(() => {
-    api.get('/dashboard').then(r => setData(r.data.data)).finally(() => setLoading(false));
-  }, []);
+    if (location.state?.dashboardData) {
+      setData(location.state.dashboardData);
+      persistDashboardData(location.state.dashboardData);
+      setLoading(false);
+      return;
+    }
+
+    if (initialData) {
+      setData(initialData);
+      setLoading(false);
+      return;
+    }
+
+    api.get('/dashboard')
+      .then(r => {
+        const payload = r.data.data;
+        setData(payload);
+        persistDashboardData(payload);
+      })
+      .finally(() => setLoading(false));
+  }, [initialData, location.state?.dashboardData]);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -65,7 +105,14 @@ function DashboardPage() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await api.get('/dashboard').then(r => setData(r.data.data));
+    try {
+      const { data: response } = await api.get('/dashboard');
+      const payload = response?.data || null;
+      setData(payload);
+      persistDashboardData(payload);
+    } catch (err) {
+      // ignore refresh errors and keep current data visible
+    }
     await new Promise(r => setTimeout(r, 300));
     setRefreshing(false);
   };
@@ -77,28 +124,8 @@ function DashboardPage() {
   const partColor = partOfDay === 'morning' ? '#f59e0b' : partOfDay === 'afternoon' ? '#1f6feb' : '#6e40c9';
   const firstName = user?.name?.split(' ')[0] || 'Admin';
 
-  if (loading) {
-    return (
-      <div className="animate-fade-in">
-        <div className="toolbar" style={{ padding: '18px 20px', marginBottom: '24px' }}>
-          <Skeleton width="280px" height="28px" />
-          <div style={{ height: '10px' }} />
-          <Skeleton width="200px" height="13px" />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-5">
-          {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-5">
-          {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
-        </div>
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-5">
-          <CardSkeleton height="240px" />
-          <CardSkeleton height="240px" />
-        </div>
-        <CardSkeleton height="300px" />
-      </div>
-    );
-  }
+  const hasData = Boolean(data);
+  const isHydrating = loading && !hasData;
 
   const s = data?.summary || {};
   const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -129,6 +156,13 @@ function DashboardPage() {
 
   return (
     <div className="animate-fade-in">
+      {isHydrating && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', color: 'var(--text-secondary)', fontSize: '12px' }}>
+          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent)', animation: 'pulse 1.2s ease-in-out infinite' }} />
+          Refreshing dashboard data…
+        </div>
+      )}
+
       <div className="toolbar flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6" style={{ padding: '18px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0 }}>
           <div style={{
