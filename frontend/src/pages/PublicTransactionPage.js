@@ -161,7 +161,7 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
   const publicUrl = `${window.location.origin}/public/transactions/${txn._id}`;
 
   return (
-    <div ref={ref} className="public-transaction-print p-4 md:p-6 bg-white text-gray-900 font-sans max-w-4xl mx-auto" style={{ width: '100%', maxWidth: '210mm', margin: '0 auto' }}>
+    <div ref={ref} className="public-transaction-print p-4 md:p-6 bg-white text-gray-900 font-sans max-w-full mx-auto" style={{ width: 'auto', maxWidth: '100%', margin: '0 auto' }}>
       <div>
         {/* Header */}
         <div className="public-transaction-print-header flex flex-col md:flex-row items-start justify-between gap-4 md:gap-6 border-b-2 border-blue-900 pb-3 mb-4">

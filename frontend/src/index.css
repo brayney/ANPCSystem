@@ -867,15 +867,81 @@
 
 /* ── Print ── */
 @media print {
+  @page {
+    size: auto;
+    margin: 10mm;
+  }
+
+  html, body, #root {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+    min-width: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    color: #000 !important;
+  }
+
   .no-print { display: none !important; }
-  body { background: white !important; }
 
   .public-transaction-print {
-    width: 210mm !important;
-    max-width: 210mm !important;
-    min-height: 297mm !important;
-    padding: 1.5rem !important;
-    margin: 0 auto !important;
+    width: auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    padding: 4mm 6mm !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    background: white !important;
+    font-size: 12pt !important;
+    line-height: 1.4 !important;
+  }
+
+  .public-transaction-print, .public-transaction-print * {
+    color: #000 !important;
+    background: transparent !important;
+    box-sizing: border-box !important;
+  }
+
+  .public-transaction-print table {
+    width: 100% !important;
+    table-layout: auto !important;
+    border-collapse: collapse !important;
+  }
+
+  .public-transaction-print img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .public-transaction-print h1,
+  .public-transaction-print h2,
+  .public-transaction-print h3,
+  .public-transaction-print h4,
+  .public-transaction-print p,
+  .public-transaction-print td,
+  .public-transaction-print th,
+  .public-transaction-print span,
+  .public-transaction-print div {
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+  }
+  .public-transaction-print h2,
+  .public-transaction-print h3,
+  .public-transaction-print h4,
+  .public-transaction-print p,
+  .public-transaction-print td,
+  .public-transaction-print th,
+  .public-transaction-print span,
+  .public-transaction-print div {
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+  }
+
+  .public-transaction-print-header,
+  .public-transaction-print-grid,
+  .public-transaction-print-signatures {
+    width: 100% !important;
   }
 
   .public-transaction-print-header {
