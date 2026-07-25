@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import toast from 'react-hot-toast';
+import confirm from '../utils/confirm';
 import { ArrowLeftIcon, PrinterIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { StatusBadge, Spinner } from '../components/common';
 import { QRCodeSVG } from 'qrcode.react';
@@ -220,7 +221,8 @@ export default function TransactionDetailPage() {
   const handlePrint = useReactToPrint({ content: () => printRef.current });
 
   const handleReturn = async () => {
-    if (!window.confirm('Mark this transaction as returned?')) return;
+    const ok = await confirm('Mark this transaction as returned?');
+    if (!ok) return;
     try {
       await api.put(`/transactions/${id}/return`);
       toast.success('Marked as returned');

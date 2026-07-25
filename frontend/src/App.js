@@ -80,8 +80,11 @@ function App() {
               fontWeight: 500,
               padding: '10px 14px',
             },
-            success: { iconTheme: { primary: 'var(--success)', secondary: 'var(--surface)' } },
-            error: { iconTheme: { primary: 'var(--danger)', secondary: 'var(--surface)' } },
+            success: { iconTheme: { primary: 'var(--success)', secondary: 'var(--surface)' }, duration: 3500 },
+            error: { iconTheme: { primary: 'var(--danger)', secondary: 'var(--surface)' }, duration: 6000 },
+            // custom types
+            warning: { icon: '⚠️', duration: 5000 },
+            info: { icon: 'ℹ️', duration: 4500 },
           }}
         />
         <OfflineBanner />

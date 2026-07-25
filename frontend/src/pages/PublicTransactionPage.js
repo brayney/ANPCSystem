@@ -354,9 +354,9 @@ export default function PublicTransactionPage() {
       .finally(() => setLoading(false));
   }, [id, navigate]);
 
+  // Use default browser print dialog and rely on CSS @page for size
   const handlePrint = useReactToPrint({
     content: () => printRef.current,
-    pageStyle: '@page { size: A4; margin: 10mm; }',
   });
 
   if (loading) return (
