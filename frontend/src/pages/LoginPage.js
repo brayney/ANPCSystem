@@ -599,7 +599,7 @@ export default function LoginPage() {
         <div style={{ marginTop: '1.5rem', textAlign: 'center', opacity: open ? 1 : 0, transition: 'opacity 0.5s ease 0.4s' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: '0.75rem', color: 'rgba(232,234,246,0.28)' }}>
             <ShieldIcon />
-            256-bit encrypted · SOC 2 certified
+            256-bit encrypted · All data is secure and private
           </div>
         </div>
 
