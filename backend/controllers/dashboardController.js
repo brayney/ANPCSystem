@@ -3,6 +3,7 @@ const Counterweight = require('../models/Counterweight');
 const BoomSection = require('../models/BoomSection');
 const Hook = require('../models/Hook');
 const Transaction = require('../models/Transaction');
+const AuditLog = require('../models/AuditLog');
 
 exports.getDashboard = async (req, res, next) => {
   try {
@@ -41,13 +42,13 @@ exports.getDashboard = async (req, res, next) => {
         { $sort: { '_id': 1 } }
       ]),
       Transaction.aggregate([
-        { $match: { isArchived: false, createdAt: { $gte: oneWeekAgo } } },
+        { $match: { isArchived: false, transactionDate: { $gte: oneWeekAgo } } },
         {
           $group: {
             _id: {
               $dateToString: {
                 format: '%Y-%m-%d',
-                date: '$createdAt'
+                date: '$transactionDate'
               }
             },
             jobs: { $sum: 1 }
