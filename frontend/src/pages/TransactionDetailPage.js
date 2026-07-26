@@ -9,6 +9,17 @@ import { QRCodeSVG } from 'qrcode.react';
 import api from '../utils/api';
 import { format } from 'date-fns';
 
+const formatTransactionTime = (timeStr) => {
+  if (!timeStr) return null;
+  const [hours, minutes] = String(timeStr).split(':');
+  if (!hours || !minutes) return String(timeStr);
+  const h = parseInt(hours, 10);
+  if (Number.isNaN(h)) return String(timeStr);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${h12}:${minutes} ${ampm}`;
+};
+
 const InfoRow = ({ label, value }) => (
   <div className="flex justify-between py-1.5 border-b dark:border-gray-700 last:border-0">
     <span className="text-sm text-gray-500 dark:text-gray-400">{label}</span>
@@ -48,7 +59,7 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
         <div className="text-right text-sm">
           <p className="font-bold text-blue-900">TXN No: {txn.transactionNo}</p>
           <p className="text-gray-600">{fmt(txn.transactionDate)}</p>
-          {txn.transactionTime && <p className="text-gray-600">{txn.transactionTime}</p>}
+          {txn.transactionTime && <p className="text-gray-600">{formatTransactionTime(txn.transactionTime)}</p>}
           <p className="font-bold mt-1">Status: {txn.status}</p>
         </div>
       </div>
@@ -272,7 +283,7 @@ export default function TransactionDetailPage() {
           <InfoRow label="Type" value={txn.type} />
           <InfoRow label="Status" value={<StatusBadge status={txn.status} />} />
           <InfoRow label="Date" value={fmt(txn.transactionDate)} />
-          <InfoRow label="Time" value={txn.transactionTime} />
+          <InfoRow label="Time" value={formatTransactionTime(txn.transactionTime)} />
           <InfoRow label="Expected Return" value={fmt(txn.expectedReturnDate)} />
           <InfoRow label="Actual Return" value={fmt(txn.actualReturnDate)} />
           <InfoRow label="Purpose" value={txn.purpose} />

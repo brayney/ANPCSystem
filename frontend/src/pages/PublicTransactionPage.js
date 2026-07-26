@@ -8,6 +8,17 @@ import { QRCodeSVG } from 'qrcode.react';
 import api from '../utils/api';
 import { format } from 'date-fns';
 
+const formatTransactionTime = (timeStr) => {
+  if (!timeStr) return null;
+  const [hours, minutes] = String(timeStr).split(':');
+  if (!hours || !minutes) return String(timeStr);
+  const h = parseInt(hours, 10);
+  if (Number.isNaN(h)) return String(timeStr);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${h12}:${minutes} ${ampm}`;
+};
+
 const getTransactionCranes = (txn) => (
   txn.cranes?.length
     ? txn.cranes
@@ -189,7 +200,7 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
           <div className="text-left sm:text-right text-sm whitespace-normal sm:whitespace-nowrap">
             <p className="font-bold text-blue-900">TXN No: {txn.transactionNo}</p>
             <p className="text-gray-600">{fmt(txn.transactionDate)}</p>
-            {txn.transactionTime && <p className="text-gray-600">{txn.transactionTime}</p>}
+            {txn.transactionTime && <p className="text-gray-600">{formatTransactionTime(txn.transactionTime)}</p>}
             <p className="font-bold mt-1">Status: {txn.status}</p>
           </div>
         </div>
