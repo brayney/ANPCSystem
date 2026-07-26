@@ -96,6 +96,8 @@
   "dashboard.overdue_alert_title": "Alerta de devoluções atrasadas",
   "dashboard.overdue_alert_message": "{count} equipamento(s) alugado(s) ultrapassou(aram) a data de devolução esperada.",
   "dashboard.fleet_health": "Saúde da frota",
+  "dashboard.fleet_health_breakdown": "Resumo da saúde da frota",
+  "dashboard.weekly_job_activity": "Atividade semanal de jobs",
   "dashboard.available": "Disponível",
   "dashboard.active": "Ativo",
   "dashboard.maintenance": "Manutenção",

@@ -96,6 +96,8 @@
   "dashboard.overdue_alert_title": "Alertes retours en retard",
   "dashboard.overdue_alert_message": "{count} équipement(s) en location est/sont passé(s) la date de retour prévue.",
   "dashboard.fleet_health": "Santé de la flotte",
+  "dashboard.fleet_health_breakdown": "Répartition de la santé de la flotte",
+  "dashboard.weekly_job_activity": "Activité hebdomadaire des tâches",
   "dashboard.available": "Disponible",
   "dashboard.active": "Actif",
   "dashboard.maintenance": "Maintenance",

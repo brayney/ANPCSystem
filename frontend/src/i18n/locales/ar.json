@@ -97,6 +97,8 @@
   "dashboard.overdue_alert_title": "تنبيه إرجاعات متأخرة",
   "dashboard.overdue_alert_message": "{count} إيجار معدات قد تجاوز تاريخ الإرجاع المتوقع.",
   "dashboard.fleet_health": "صحة الأسطول",
+  "dashboard.fleet_health_breakdown": "تفصيل صحة الأسطول",
+  "dashboard.weekly_job_activity": "نشاط العمل الأسبوعي",
   "dashboard.available": "متاح",
   "dashboard.active": "نشط",
   "dashboard.maintenance": "صيانة",

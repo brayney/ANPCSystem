@@ -97,6 +97,8 @@
   "dashboard.overdue_alert_title": "超期归还警告",
   "dashboard.overdue_alert_message": "{count} 台设备租赁已超过预计归还日期。",
   "dashboard.fleet_health": "车队健康度",
+  "dashboard.fleet_health_breakdown": "车队健康分布",
+  "dashboard.weekly_job_activity": "每周作业活动",
   "dashboard.available": "可用",
   "dashboard.active": "使用中",
   "dashboard.maintenance": "维护中",

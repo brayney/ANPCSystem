@@ -98,6 +98,8 @@
   "dashboard.overdue_alert_title": "Overdue Returns Alert",
   "dashboard.overdue_alert_message": "{count} equipment rental(s) are past their expected return date.",
   "dashboard.fleet_health": "Fleet Health",
+  "dashboard.fleet_health_breakdown": "Fleet Health Breakdown",
+  "dashboard.weekly_job_activity": "Weekly Job Activity",
   "dashboard.available": "Available",
   "dashboard.active": "Active",
   "dashboard.maintenance": "Maintenance",

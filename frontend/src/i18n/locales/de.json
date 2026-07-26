@@ -96,6 +96,8 @@
   "dashboard.overdue_alert_title": "Überfällige Rückgaben",
   "dashboard.overdue_alert_message": "{count} Geräteverleih ist über das erwartete Rückgabedatum hinaus.",
   "dashboard.fleet_health": "Flottengesundheit",
+  "dashboard.fleet_health_breakdown": "Flotten-Gesundheitsaufteilung",
+  "dashboard.weekly_job_activity": "Wöchentliche Auftragsaktivität",
   "dashboard.available": "Verfügbar",
   "dashboard.active": "Aktiv",
   "dashboard.maintenance": "Wartung",

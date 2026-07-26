@@ -278,10 +278,15 @@ export const Modal = ({ open, onClose, title, children, size = 'md' }) => {
   React.useEffect(() => {
     if (!open) return undefined;
 
-    const rootElement = document.querySelector('main') || document.body;
+    const rootElement = document.body;
     const previousOverflow = rootElement.style.overflow;
     const previousOverflowY = rootElement.style.overflowY;
+    const previousPaddingRight = rootElement.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
 
+    if (scrollbarWidth > 0) {
+      rootElement.style.paddingRight = `${(parseFloat(previousPaddingRight || '0') || 0) + scrollbarWidth}px`;
+    }
     rootElement.style.overflow = 'hidden';
     rootElement.style.overflowY = 'hidden';
 
@@ -318,6 +323,7 @@ export const Modal = ({ open, onClose, title, children, size = 'md' }) => {
       clearTimeout(focusTimer);
       rootElement.style.overflow = previousOverflow;
       rootElement.style.overflowY = previousOverflowY;
+      rootElement.style.paddingRight = previousPaddingRight;
     };
   }, [open, onClose]);
 

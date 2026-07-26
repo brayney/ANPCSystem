@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { TruckIcon, Square3Stack3DIcon, DocumentTextIcon, ChartBarIcon, BoltIcon, LinkIcon, CheckCircleIcon, ExclamationCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, CartesianGrid } from 'recharts';
 import { StatCard, StatusBadge } from '../components/common';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../i18n/useTranslation';
@@ -44,26 +44,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-const PerformanceIndicator = ({ value, label, trend, unit = '', icon: Icon, iconBg }) => (
-  <div style={{ padding: '12px 16px', borderRadius: '6px', background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-    {Icon && (
-      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: iconBg || 'var(--accent-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <Icon style={{ width: '16px', height: '16px', color: 'var(--accent-text)' }} />
-      </div>
-    )}
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <p style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, margin: '0 0 4px 0' }}>{label}</p>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-        <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{value}{unit}</span>
-        {trend !== undefined && (
-          <span style={{ fontSize: '11px', fontWeight: 600, color: trend > 0 ? '#1a7f37' : trend < 0 ? '#cf222e' : 'var(--text-secondary)' }}>
-            {trend > 0 ? '+' : trend < 0 ? '-' : '='} {Math.abs(trend)}%
-          </span>
-        )}
-      </div>
-    </div>
-  </div>
-);
+
 
 function DashboardPage() {
   const location = useLocation();
@@ -76,24 +57,30 @@ function DashboardPage() {
   const { t } = useTranslation();
 
   useEffect(() => {
+    const applyDashboardData = (payload) => {
+      setData(payload);
+      persistDashboardData(payload);
+    };
+
     if (location.state?.dashboardData) {
-      setData(location.state.dashboardData);
-      persistDashboardData(location.state.dashboardData);
+      applyDashboardData(location.state.dashboardData);
       setLoading(false);
       return;
     }
 
     if (initialData) {
       setData(initialData);
-      setLoading(false);
-      return;
     }
 
     api.get('/dashboard')
       .then(r => {
-        const payload = r.data.data;
-        setData(payload);
-        persistDashboardData(payload);
+        const payload = r.data?.data || null;
+        if (payload) {
+          applyDashboardData(payload);
+        }
+      })
+      .catch(() => {
+        // Keep the existing cached data visible if the refresh fails.
       })
       .finally(() => setLoading(false));
   }, [initialData, location.state?.dashboardData]);
@@ -129,9 +116,34 @@ function DashboardPage() {
 
   const s = data?.summary || {};
   const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const statusChart = data?.charts?.craneStatusDist?.map(d => ({ name: d._id, value: d.count })) || [];
-  const txnChart = data?.charts?.transactionsByMonth?.map(d => ({ month: monthNames[d._id - 1], count: d.count })) || [];
+  const statusChart = (data?.charts?.craneStatusDist || []).length > 0
+    ? data.charts.craneStatusDist.map(d => ({ name: d._id, value: d.count }))
+    : [
+        { name: t('dashboard.available'), value: s.availableCranes || 0 },
+        { name: t('dashboard.active'), value: s.activeRentals || 0 },
+        { name: t('dashboard.maintenance'), value: s.maintenanceCranes || 0 },
+        { name: t('dashboard.retired_label'), value: s.retiredCranes || 0 }
+      ];
+  const txnChart = (data?.charts?.transactionsByMonth || []).length > 0
+    ? data.charts.transactionsByMonth.map(d => ({ month: monthNames[d._id - 1] || `M${d._id}`, count: d.count }))
+    : [];
+  const fleetHealthChart = (data?.charts?.fleetHealthBreakdown || []).length > 0
+    ? data.charts.fleetHealthBreakdown
+    : [
+        { name: 'Operational', value: (s.availableCranes || 0) + (s.activeRentals || 0), color: '#1a7f37' },
+        { name: 'Under Maintenance', value: s.maintenanceCranes || 0, color: '#9a6700' }
+      ];
+  const weeklyActivityChart = (data?.charts?.weeklyJobActivity || []).length > 0
+    ? data.charts.weeklyJobActivity
+    : Array.from({ length: 7 }, (_, index) => ({ day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index], jobs: 0 }));
+  const peakDayIndex = data?.charts?.peakDayIndex ?? -1;
   const totalEquipment = (s.totalCranes || 0) + (s.totalCounterweights || 0) + (s.totalBoomSections || 0) + (s.totalHooks || 0);
+  const kpiTiles = data?.charts?.kpiTiles || [
+    { label: 'Avg Rental Duration', value: s.avgRentalDuration || 0, unit: 'days', color: '#1f6feb' },
+    { label: 'Utilization Rate', value: parseFloat(s.utilizationRate || 0), unit: '%', color: '#1a7f37' },
+    { label: 'Under Maintenance', value: s.maintenanceCranes || 0, unit: 'units', color: '#9a6700' },
+    { label: 'Assets Tracked', value: totalEquipment, unit: 'total', color: '#6e40c9' }
+  ];
   const overdueCount = s.pendingReturns || 0;
 
   const recentLogs = (data?.recentLogs || []).filter(log => {
@@ -163,7 +175,7 @@ function DashboardPage() {
         </div>
       )}
 
-      <div className="toolbar flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6" style={{ padding: '18px 20px' }}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6" style={{ padding: '0 0 10px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0 }}>
           <div style={{
             width: '52px', height: '52px', flexShrink: 0, borderRadius: '14px',
@@ -214,12 +226,9 @@ function DashboardPage() {
         <StatCard title={t('dashboard.total_assets')} value={totalEquipment} icon={ChartBarIcon} color="red" subtitle={t('dashboard.full_inventory')} />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-5 stagger">
-        <StatCard title={t('dashboard.retired_cranes')} value={s.retiredCranes} icon={ExclamationCircleIcon} color="yellow" subtitle={t('dashboard.retired_subtitle')} />
-        <PerformanceIndicator label={t('dashboard.pending_returns')} value={s.pendingReturns || 0} icon={ArrowPathIcon} iconBg="color-mix(in srgb, var(--danger-bg) 60%, transparent)" />
-        <PerformanceIndicator label={t('dashboard.monthly_transactions')} value={s.monthlyTransactions || 0} trend={parseFloat(s.monthlyGrowth) || 0} icon={DocumentTextIcon} iconBg="var(--accent-subtle)" />
-        <PerformanceIndicator label={t('dashboard.fleet_health')} value={`${((s.availableCranes || 0) / (s.totalCranes || 1) * 100).toFixed(0)}%`} icon={CheckCircleIcon} iconBg="var(--success-bg)" />
-      </div>
+      
+
+      
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-5">
         <div className="card">
@@ -262,6 +271,70 @@ function DashboardPage() {
                 <Line type="monotone" dataKey="count" name="Transactions" stroke="var(--accent)" strokeWidth={3} isAnimationActive={true} dot={{ fill: 'var(--accent)', r: 5 }} activeDot={{ r: 7 }} />
               </LineChart>
             </ResponsiveContainer>
+          ) : <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '32px' }}>{t('dashboard.no_data_yet')}</p>}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-5">
+        <div className="card">
+          <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 12px 0' }}>{t('dashboard.fleet_health_breakdown')}</h3>
+          {/* KPI mini-tiles inside Fleet Health card */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px', marginBottom: '12px' }}>
+            {kpiTiles.map((tile, idx) => (
+              <div key={idx} style={{ padding: '10px', borderRadius: '6px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                <p style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', margin: '0 0 6px 0' }}>{tile.label}</p>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                  <span style={{ fontSize: '16px', fontWeight: 700, color: tile.color, fontFamily: "'JetBrains Mono', monospace" }}>{tile.value}</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>{tile.unit}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          {fleetHealthChart.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {fleetHealthChart.map((item, idx) => {
+                const total = fleetHealthChart.reduce((sum, i) => sum + i.value, 0);
+                const percentage = total > 0 ? (item.value / total * 100).toFixed(0) : 0;
+                return (
+                  <div key={idx}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>{item.name}</span>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{item.value} ({percentage}%)</span>
+                    </div>
+                    <div style={{ width: '100%', height: '8px', borderRadius: '4px', background: 'var(--surface-2)', overflow: 'hidden' }}>
+                      <div style={{
+                        width: `${percentage}%`,
+                        height: '100%',
+                        background: item.color || 'var(--accent)',
+                        borderRadius: '4px',
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '32px' }}>{t('dashboard.no_data_yet')}</p>}
+        </div>
+
+        <div className="card">
+          <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 16px 0' }}>{t('dashboard.weekly_job_activity')}</h3>
+          {weeklyActivityChart.length > 0 ? (
+            <div style={{ width: '100%', height: 220 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weeklyActivityChart.map((d, idx) => ({ ...d, isPeak: idx === peakDayIndex }))} margin={{ top: 8, right: 10, left: 0, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} axisLine={false} tickLine={false} width={32} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="jobs" radius={[4, 4, 0, 0]}>
+                    {weeklyActivityChart.map((entry, index) => (
+                      <Cell key={`bar-${index}`} fill={index === peakDayIndex ? '#6e40c9' : 'var(--accent)'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           ) : <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '32px' }}>{t('dashboard.no_data_yet')}</p>}
         </div>
       </div>

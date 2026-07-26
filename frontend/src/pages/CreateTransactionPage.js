@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ArrowLeftIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { Spinner, StatusBadge } from '../components/common';
+import { Spinner, StatusBadge, Modal } from '../components/common';
 import api from '../utils/api';
 
 const renderDetailRow = (detail) => {
@@ -22,9 +22,14 @@ const renderDetailRow = (detail) => {
   return <p className="text-xs text-gray-500 truncate mt-1">{detail}</p>;
 };
 
-const CheckboxList = ({ items, selected, onToggle, labelFn, subFn, isDisabled }) => {
+const CheckboxList = ({ items, selected, onToggle, labelFn, subFn, isDisabled, onView }) => {
   const selectableItems = items.filter(item => !isDisabled?.(item));
   const allSelected = selectableItems.length > 0 && selectableItems.every(item => selected.includes(item._id));
+  const handleViewClick = (event, item) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onView?.(item);
+  };
   const toggleSelectAll = () => {
     if (allSelected) {
       selectableItems.forEach(item => {
@@ -64,7 +69,12 @@ const CheckboxList = ({ items, selected, onToggle, labelFn, subFn, isDisabled })
               {subFn && renderDetailRow(subFn(item))}
               {disabled && <p className="text-xs text-gray-400 mt-1">Already in source transaction</p>}
             </div>
-            <StatusBadge status={item.status || item.condition} />
+            <div className="flex min-w-[92px] flex-shrink-0 flex-col items-end gap-2">
+              {onView && (
+                <button type="button" onClick={(event) => handleViewClick(event, item)} className="whitespace-nowrap text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus:outline-none">View</button>
+              )}
+              <StatusBadge status={item.status || item.condition} />
+            </div>
           </label>
         );})}
       </div>
@@ -97,6 +107,7 @@ export default function CreateTransactionPage() {
   const [selectedBS, setSelectedBS] = useState([]);
   const [selectedHooks, setSelectedHooks] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [detailModal, setDetailModal] = useState({ open: false, item: null, type: '' });
 
   const [form, setForm] = useState({
     companyName: '', companyAddress: '', contactPerson: '', contactNumber: '',
@@ -387,6 +398,7 @@ export default function CreateTransactionPage() {
                 <CheckboxList items={attachments.counterweights} selected={selectedCW}
                   onToggle={id => toggle(setSelectedCW, selectedCW, id)}
                   isDisabled={item => sourceCounterweightIds.has(item._id)}
+                  onView={item => setDetailModal({ open: true, item, type: 'Counterweight' })}
                   labelFn={i => i.itemName || 'Counterweight'}
                   subFn={i => [
                     ['Weight', i.weightKg ? `${i.weightKg} kg` : '—'],
@@ -400,6 +412,7 @@ export default function CreateTransactionPage() {
                 <CheckboxList items={attachments.boomSections} selected={selectedBS}
                   onToggle={id => toggle(setSelectedBS, selectedBS, id)}
                   isDisabled={item => sourceBoomSectionIds.has(item._id)}
+                  onView={item => setDetailModal({ open: true, item, type: 'Boom Section' })}
                   labelFn={i => i.itemName || 'Boom Section'}
                   subFn={i => [
                     ['Boom Code', i.boomCode || '—'],
@@ -413,6 +426,7 @@ export default function CreateTransactionPage() {
                 <CheckboxList items={attachments.hooks} selected={selectedHooks}
                   onToggle={id => toggle(setSelectedHooks, selectedHooks, id)}
                   isDisabled={item => sourceHookIds.has(item._id)}
+                  onView={item => setDetailModal({ open: true, item, type: 'Hook' })}
                   labelFn={i => i.itemName || 'Hook'}
                   subFn={i => [
                     ['Weight', i.weightKg ? `${i.weightKg} kg` : '—'],
@@ -493,6 +507,23 @@ export default function CreateTransactionPage() {
             </div>
           </div>
         </div>
+
+        {/* Item detail modal */}
+        <Modal open={detailModal.open} onClose={() => setDetailModal({ open: false, item: null, type: '' })} title={`View ${detailModal.type || 'Item'}`} size="md">
+          {detailModal.item ? (
+            <div className="space-y-3">
+              <p className="font-semibold text-gray-800">{detailModal.item.itemName || detailModal.item.boomCode || detailModal.item.hookSerialNo || detailModal.item._id}</p>
+              <div className="text-sm text-gray-700">
+                {Object.entries(detailModal.item).filter(([k]) => !['_id','__v'].includes(k)).map(([k, v]) => (
+                  <div key={k} className="flex justify-between py-1 border-b">
+                    <div className="text-xs text-gray-500 capitalize">{k.replace(/([A-Z])/g, ' $1')}</div>
+                    <div className="text-sm text-gray-900 truncate" style={{ maxWidth: '60%' }}>{typeof v === 'object' ? JSON.stringify(v) : String(v)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </Modal>
 
         {/* Submit */}
         <div className="flex justify-end gap-3">
