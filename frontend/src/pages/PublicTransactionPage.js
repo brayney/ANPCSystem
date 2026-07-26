@@ -155,11 +155,22 @@ const DetailedRelatedTransactionsTable = ({ transactions = [], compact = false }
 };
 
 const PrintView = React.forwardRef(({ txn }, ref) => {
+  const [isSmallScreen, setIsSmallScreen] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 640 : false
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 639px)');
+    const handler = (e) => setIsSmallScreen(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   if (!txn) return null;
   const cranes = getTransactionCranes(txn);
   const fmt = (d) => d ? format(new Date(d), 'MMMM d, yyyy') : '—';
   const publicUrl = `${window.location.origin}/public/transactions/${txn._id}`;
-  const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 640;
   const qrSize = isSmallScreen ? 56 : 72;
   const logoHeight = isSmallScreen ? 44 : 56;
 
@@ -169,9 +180,9 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
         {/* Header */}
         <div className="public-transaction-print-header flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6 border-b-2 border-blue-900 pb-4 mb-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-shrink-0 sm:items-center">
-            <QRCodeSVG value={publicUrl} size={qrSize} />
+            <QRCodeSVG value={publicUrl} size={qrSize} className="public-transaction-qr" />
             <div>
-              <img src="/logo.png" alt="NASS Logo" style={{ height: `${logoHeight}px`, objectFit: 'contain', marginBottom: '4px' }} />
+              <img src="/logo.png" alt="NASS Logo" className="public-transaction-logo" style={{ height: `${logoHeight}px`, objectFit: 'contain', marginBottom: '4px' }} />
               <p className="text-sm text-gray-500">EQUIPMENT PULL-OUT / RENTAL FORM</p>
             </div>
           </div>
@@ -319,8 +330,6 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
           </div>
         )}
 
-        <DetailedRelatedTransactionsTable transactions={txn.childTransactions || []} compact />
-
         {/* Signatures */}
         <div className="public-transaction-print-signatures mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
           {['Released By', 'Received By', 'Authorized By'].map(label => (
@@ -374,17 +383,17 @@ export default function PublicTransactionPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Top Bar - Simplified, No Back Button */}
       <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10 no-print">
-        <div className="w-full px-4 py-4 flex items-center justify-between">
+        <div className="w-full px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex-1">
             <h1 className="text-lg md:text-xl font-bold text-gray-900 font-mono">{txn.transactionNo}</h1>
             <p className="text-xs md:text-sm text-gray-500">{txn.companyName}</p>
           </div>
-          <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-2 md:gap-4 flex-wrap">
             <StatusBadge status={txn.status} />
             <button onClick={handlePrint} className="btn-primary flex items-center gap-1 md:gap-2 text-xs md:text-sm px-2 md:px-4 py-2">
               <PrinterIcon className="w-4 h-4" /> Print
             </button>
-            <div className="text-xs text-gray-500 ml-2 hidden sm:inline-block">
+            <div className="text-xs text-gray-500 hidden sm:inline-block">
               Tip: In the print dialog, uncheck "Headers and footers" for a clean printout.
             </div>
           </div>

@@ -969,5 +969,18 @@
   .public-transaction-print-signatures {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
+
+  .public-transaction-qr {
+    width: 90px !important;
+    height: 90px !important;
+  }
+
+  .public-transaction-logo {
+    height: 70px !important;
+  }
+
+  .public-transaction-print .overflow-x-auto {
+    overflow: visible !important;
+  }
 }
 .print-only { display: none; }
