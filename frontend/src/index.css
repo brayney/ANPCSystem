@@ -133,6 +133,14 @@
     margin-bottom: 8px;
     box-shadow: 0 0 10px rgba(249, 115, 22, 0.24), 0 0 20px rgba(249, 115, 22, 0.12);
   }
+  /* Ensure headings and anchor targets aren't hidden behind the top header */
+  .app-scrollbar {
+    scroll-padding-top: 72px; /* header height (56px) + small buffer */
+  }
+  .page-header-kicker,
+  h1, h2, h3, h4 {
+    scroll-margin-top: 72px;
+  }
   code, .font-mono {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
   }

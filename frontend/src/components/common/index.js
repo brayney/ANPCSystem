@@ -332,7 +332,7 @@ export const Modal = ({ open, onClose, title, children, size = 'md' }) => {
   const maxWidths = { sm: '440px', md: '540px', lg: '720px', xl: '900px', full: '1100px' };
 
   return ReactDOM.createPortal(
-    <div className="no-print" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 60, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '24px 16px 16px' }}>
+    <div className="no-print" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10050, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '24px 16px 16px' }}>
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(1,4,9,0.45)', backdropFilter: 'blur(2px)' }} onClick={onClose} />
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={title} className="animate-scale-in" style={{
         position: 'relative',
