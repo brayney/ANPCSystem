@@ -4,6 +4,7 @@ const Counterweight = require('../models/Counterweight');
 const BoomSection = require('../models/BoomSection');
 const Hook = require('../models/Hook');
 const AuditLog = require('../models/AuditLog');
+const { createNotification } = require('../utils/notificationHelper');
 const mongoose = require('mongoose');
 
 const craneLookup = (txn) => {
@@ -470,6 +471,14 @@ exports.createTransaction = async (req, res, next) => {
     }
 
     await AuditLog.create({ user: req.user._id, userName: req.user.name, action: 'CREATE_TRANSACTION', module: 'Transaction', targetId: txn.transactionNo, details: `Transaction ${txn.transactionNo} for ${txn.companyName}` });
+    await createNotification({
+      userId: req.user._id,
+      title: 'Transaction created',
+      message: `Transaction ${txn.transactionNo} for ${txn.companyName} has been created.`,
+      type: 'success',
+      category: 'transactions',
+      link: `/transactions/${txn._id}`,
+    });
     res.status(201).json({ success: true, data: txn });
   } catch (error) { next(error); }
 };
@@ -504,6 +513,7 @@ exports.updateTransaction = async (req, res, next) => {
     }
 
     // Update transaction
+    const previousStatus = txn.status;
     Object.assign(txn, req.body);
     if (wasReturned && isNowActive) {
       txn.actualReturnDate = undefined;
@@ -511,6 +521,17 @@ exports.updateTransaction = async (req, res, next) => {
       txn.actualReturnDate = txn.actualReturnDate || new Date();
     }
     await txn.save();
+
+    if (req.body.status && req.body.status !== previousStatus) {
+      await createNotification({
+        userId: req.user._id,
+        title: 'Transaction status updated',
+        message: `Transaction ${txn.transactionNo} status changed to ${txn.status}.`,
+        type: 'info',
+        category: 'transactions',
+        link: `/transactions/${txn._id}`,
+      });
+    }
 
     // If changing from Returned back to Active, update associated items
     if (wasReturned && isNowActive) {
@@ -595,6 +616,14 @@ exports.returnTransaction = async (req, res, next) => {
         await Hook.updateMany({ _id: { $in: item.hooks } }, { $set: returnedEquipmentState });
 
       await AuditLog.create({ user: req.user._id, userName: req.user.name, action: 'RETURN', module: 'Transaction', targetId: item.transactionNo, details: `Returned transaction ${item.transactionNo}` });
+      await createNotification({
+        userId: req.user._id,
+        title: 'Transaction returned',
+        message: `Transaction ${item.transactionNo} has been returned.`,
+        type: 'success',
+        category: 'transactions',
+        link: `/transactions/${item._id}`,
+      });
     }
 
     res.json({ success: true, data: { target: txn, updatedCount: uniqueTransactions.length } });

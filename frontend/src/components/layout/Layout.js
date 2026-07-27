@@ -7,6 +7,7 @@ import FloatingChat from '../common/FloatingChat';
 import CommandPalette from '../common/CommandPalette';
 import ConnectionStatus from '../common/ConnectionStatus';
 import LogoSplash from '../common/LogoSplash';
+import NotificationBell from '../common/NotificationBell';
 import {
   HomeIcon, TruckIcon, ScaleIcon, LinkIcon,
   DocumentTextIcon, ChartBarIcon, Cog6ToothIcon, Bars3Icon, XMarkIcon,
@@ -262,7 +263,7 @@ export default function Layout() {
       {/* Main Area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
         {/* Top Bar */}
-        <header className="no-print" style={{ background: 'var(--surface-raised)', borderBottom: '1px solid var(--border)', padding: '0 18px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, boxShadow: 'var(--shadow-sm)', backdropFilter: 'blur(14px)' }}>
+        <header className="no-print" style={{ position: 'relative', zIndex: 10000, overflow: 'visible', background: 'var(--surface-raised)', borderBottom: '1px solid var(--border)', padding: '0 18px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, boxShadow: 'var(--shadow-sm)', backdropFilter: 'blur(14px)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden" style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text-secondary)', transition: 'background 0.15s' }}
               onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-3)'}
@@ -288,10 +289,11 @@ export default function Layout() {
             <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', fontWeight: 700, border: '1px solid var(--border)', borderRadius: '4px', padding: '1px 5px', background: 'var(--surface)', color: 'var(--text-secondary)' }}>⌘K</span>
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <NotificationBell user={user} />
             <span className="hidden md:inline-flex" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.04em' }}>
               {format(now, 'h:mm:ss a')}
             </span>
-            <div className="hidden md:flex items-center">
+            <div className="hidden md:flex items-center" style={{ gap: '8px' }}>
               <ConnectionStatus />
             </div>
             <button onClick={toggleDark} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '7px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text-secondary)', transition: 'background 0.15s' }}
