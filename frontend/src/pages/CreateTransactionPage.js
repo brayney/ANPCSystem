@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ArrowLeftIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -100,6 +100,8 @@ export default function CreateTransactionPage() {
   const [craneSearch, setCraneSearch] = useState(prefillCrane);
   const [craneResults, setCraneResults] = useState([]);
   const [selectedCranes, setSelectedCranes] = useState([]);
+  const craneSearchTimer = useRef(null);
+  const latestSearchRef = useRef('');
   const [attachments, setAttachments] = useState({ counterweights: [], boomSections: [], hooks: [] });
   const [sourceTransaction, setSourceTransaction] = useState(null);
   const [loadingCrane, setLoadingCrane] = useState(false);
@@ -207,17 +209,27 @@ export default function CreateTransactionPage() {
     } else if (prefillCrane) {
       handleCraneSelect({ _id: prefillCraneId, equipmentNo: prefillCrane });
     }
+
+    return () => {
+      clearTimeout(craneSearchTimer.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const searchCranes = async (q) => {
     if (!q || q.length < 2) { setCraneResults([]); return; }
+    latestSearchRef.current = q;
     try {
       const { data } = await api.get('/cranes', { params: { search: q, limit: 10 } });
+      if (latestSearchRef.current !== q) return;
       const restrictedStatuses = ['Out of Yard', 'Under Maintenance', 'On Hire'];
       const availableCranes = data.data.filter(c => !restrictedStatuses.includes(c.status));
       setCraneResults(availableCranes);
-    } catch {}
+    } catch {
+      if (latestSearchRef.current === q) {
+        setCraneResults([]);
+      }
+    }
   };
 
   const mergeById = (current, incoming) => {
@@ -349,7 +361,12 @@ export default function CreateTransactionPage() {
             <MagnifyingGlassIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             <input className="input-field pl-9" placeholder="Search by equipment number..."
               value={craneSearch}
-              onChange={e => { setCraneSearch(e.target.value); searchCranes(e.target.value); }}
+              onChange={e => {
+                const nextValue = e.target.value;
+                setCraneSearch(nextValue);
+                clearTimeout(craneSearchTimer.current);
+                craneSearchTimer.current = setTimeout(() => searchCranes(nextValue), 250);
+              }}
               disabled={selectedCranes.length > 0 || !!sourceTransaction}
               style={selectedCranes.length > 0 ? { backgroundColor: 'var(--bg-muted)', cursor: 'not-allowed', opacity: 0.6 } : {}} />
           </div>
