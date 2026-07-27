@@ -106,6 +106,9 @@ export default function CreateTransactionPage() {
   const [selectedCW, setSelectedCW] = useState([]);
   const [selectedBS, setSelectedBS] = useState([]);
   const [selectedHooks, setSelectedHooks] = useState([]);
+  const [filterCW, setFilterCW] = useState('');
+  const [filterBS, setFilterBS] = useState('');
+  const [filterHooks, setFilterHooks] = useState('');
   const [saving, setSaving] = useState(false);
   const [detailModal, setDetailModal] = useState({ open: false, item: null, type: '' });
 
@@ -125,6 +128,12 @@ export default function CreateTransactionPage() {
   const sourceCounterweightIds = new Set((sourceTransaction?.counterweights || []).map(getId));
   const sourceBoomSectionIds = new Set((sourceTransaction?.boomSections || []).map(getId));
   const sourceHookIds = new Set((sourceTransaction?.hooks || []).map(getId));
+
+  const filterItemsByQuery = (items, query, fields) => {
+    if (!query?.trim()) return items;
+    const search = query.trim().toLowerCase();
+    return items.filter(item => fields.some(field => String(item[field] || '').toLowerCase().includes(search)));
+  };
 
   const mergeSourceWithAvailable = (sourceItems = [], craneItems = []) => {
     const sourceIds = new Set(sourceItems.map(item => getId(item)));
@@ -393,10 +402,20 @@ export default function CreateTransactionPage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Counterweights ({selectedCW.length} selected)
-                </h3>
-                <CheckboxList items={attachments.counterweights} selected={selectedCW}
+                <div className="flex flex-col gap-2 mb-2">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Counterweights ({selectedCW.length} selected)
+                  </h3>
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                    <input type="search" value={filterCW}
+                      onChange={e => setFilterCW(e.target.value)}
+                      placeholder="Search serial, name, location..."
+                      className="input-field pl-9" />
+                  </div>
+                </div>
+                <CheckboxList items={filterItemsByQuery(attachments.counterweights, filterCW, ['itemName', 'serialNo', 'location'])}
+                  selected={selectedCW}
                   onToggle={id => toggle(setSelectedCW, selectedCW, id)}
                   isDisabled={item => sourceCounterweightIds.has(item._id)}
                   onView={item => setDetailModal({ open: true, item, type: 'Counterweight' })}
@@ -407,10 +426,20 @@ export default function CreateTransactionPage() {
                   ]} />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Boom Sections ({selectedBS.length} selected)
-                </h3>
-                <CheckboxList items={attachments.boomSections} selected={selectedBS}
+                <div className="flex flex-col gap-2 mb-2">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Boom Sections ({selectedBS.length} selected)
+                  </h3>
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                    <input type="search" value={filterBS}
+                      onChange={e => setFilterBS(e.target.value)}
+                      placeholder="Search boom code, length..."
+                      className="input-field pl-9" />
+                  </div>
+                </div>
+                <CheckboxList items={filterItemsByQuery(attachments.boomSections, filterBS, ['itemName', 'boomCode', 'length'])}
+                  selected={selectedBS}
                   onToggle={id => toggle(setSelectedBS, selectedBS, id)}
                   isDisabled={item => sourceBoomSectionIds.has(item._id)}
                   onView={item => setDetailModal({ open: true, item, type: 'Boom Section' })}
@@ -421,10 +450,20 @@ export default function CreateTransactionPage() {
                   ]} />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Hooks ({selectedHooks.length} selected)
-                </h3>
-                <CheckboxList items={attachments.hooks} selected={selectedHooks}
+                <div className="flex flex-col gap-2 mb-2">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Hooks ({selectedHooks.length} selected)
+                  </h3>
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                    <input type="search" value={filterHooks}
+                      onChange={e => setFilterHooks(e.target.value)}
+                      placeholder="Search serial, location..."
+                      className="input-field pl-9" />
+                  </div>
+                </div>
+                <CheckboxList items={filterItemsByQuery(attachments.hooks, filterHooks, ['itemName', 'hookSerialNo', 'location'])}
+                  selected={selectedHooks}
                   onToggle={id => toggle(setSelectedHooks, selectedHooks, id)}
                   isDisabled={item => sourceHookIds.has(item._id)}
                   onView={item => setDetailModal({ open: true, item, type: 'Hook' })}
