@@ -48,8 +48,15 @@ export default function NotificationBell({ user }) {
   };
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!user) return undefined;
     loadNotifications();
+  }, [user, loadNotifications]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    if (notifications.length === 0 && !loading) {
+      loadNotifications();
+    }
     const closeOnOutsideClick = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setOpen(false);
@@ -57,7 +64,7 @@ export default function NotificationBell({ user }) {
     };
     document.addEventListener('mousedown', closeOnOutsideClick);
     return () => document.removeEventListener('mousedown', closeOnOutsideClick);
-  }, [open, loadNotifications]);
+  }, [open, loadNotifications, notifications.length, loading]);
 
   if (!user) return null;
 
