@@ -17,6 +17,7 @@ export default function NotificationBell({ user }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [markingRead, setMarkingRead] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const menuRef = useRef(null);
 
   const loadNotifications = useCallback(async () => {
@@ -26,6 +27,7 @@ export default function NotificationBell({ user }) {
       const { data } = await api.get('/notifications');
       setNotifications(data.data || []);
       setUnreadCount(data.unreadCount || 0);
+      setHasLoaded(true);
     } catch (err) {
       console.error('Failed to load notifications', err);
     } finally {
@@ -54,7 +56,7 @@ export default function NotificationBell({ user }) {
 
   useEffect(() => {
     if (!open) return undefined;
-    if (notifications.length === 0 && !loading) {
+    if (!hasLoaded && !loading) {
       loadNotifications();
     }
     const closeOnOutsideClick = (event) => {
@@ -64,7 +66,7 @@ export default function NotificationBell({ user }) {
     };
     document.addEventListener('mousedown', closeOnOutsideClick);
     return () => document.removeEventListener('mousedown', closeOnOutsideClick);
-  }, [open, loadNotifications, notifications.length, loading]);
+  }, [open, loadNotifications, hasLoaded, loading]);
 
   if (!user) return null;
 
@@ -131,7 +133,7 @@ export default function NotificationBell({ user }) {
             <div>
               <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>Notifications</div>
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                {loading ? 'Loading…' : `${unreadCount} unread`}
+                {`${unreadCount} unread`}
               </div>
             </div>
             <button
@@ -143,7 +145,19 @@ export default function NotificationBell({ user }) {
             </button>
           </div>
           <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
-            {notifications.length === 0 && !loading ? (
+            {loading ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '10px' }}>
+                <span style={{
+                  width: '24px',
+                  height: '24px',
+                  border: '3px solid rgba(15,23,42,0.2)',
+                  borderTopColor: 'var(--text-primary)',
+                  borderRadius: '50%',
+                  animation: 'spin 0.7s linear infinite',
+                }} />
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Refreshing...</span>
+              </div>
+            ) : notifications.length === 0 ? (
               <div style={{ padding: '28px 12px', color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center' }}>
                 No notifications yet.
               </div>
