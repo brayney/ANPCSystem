@@ -47,7 +47,10 @@ const SidebarContent = ({ setSidebarOpen, onLogoutClick, collapsed = false }) =>
       {/* Nav Section Label */}
       {!collapsed && (
         <div style={{ padding: '16px 20px 8px' }}>
-          <p style={{ fontSize: '10px', fontWeight: 600, color: '#3d444d', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{t('sidebar.navigation')}</p>
+          <p style={{ fontSize: '10px', fontWeight: 600, color: '#3d444d', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ display: 'inline-block', width: '10px', height: '2px', borderRadius: '999px', background: 'linear-gradient(90deg, #fb923c, #f59e0b)', boxShadow: '0 0 8px rgba(251, 146, 60, 0.45), 0 0 14px rgba(245, 158, 11, 0.25)' }} />
+            {t('sidebar.navigation')}
+          </p>
         </div>
       )}
 

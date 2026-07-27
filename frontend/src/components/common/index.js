@@ -108,6 +108,7 @@ export const Spinner = ({ size = 'md' }) => {
 export const PageHeader = ({ title, subtitle, actions }) => (
   <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
     <div style={{ minWidth: 0 }}>
+      <div className="page-header-kicker" />
       <h1 style={{
         fontFamily: 'var(--font-sans)',
         fontSize: 'clamp(22px, 3vw, 30px)',

@@ -10,6 +10,19 @@ import { format, differenceInDays } from 'date-fns';
 import { SunIcon, MoonIcon, CloudIcon } from '@heroicons/react/24/outline';
 
 const PIE_COLORS = ['#1a7f37', '#1f6feb', '#9a6700', '#bc4c00', '#cf222e', '#6e40c9'];
+const STATUS_COLOR_MAP = {
+  'Available': '#1a7f37',
+  'Active': '#1f6feb',
+  'On Hire': '#1f6feb',
+  'Standby': '#9a6700',
+  'Under Maintenance': '#9a6700',
+  'Out of Yard': '#cf222e',
+  'Reserved': '#6e40c9',
+  'Retired': '#6e40c9',
+  'Returned': '#1a7f37',
+  'Operational': '#1a7f37',
+};
+const STATUS_ORDER = ['Available', 'Active', 'On Hire', 'Standby', 'Under Maintenance', 'Out of Yard', 'Reserved', 'Retired', 'Returned', 'Operational'];
 
 const readCachedDashboardData = () => {
   if (typeof window === 'undefined') return null;
@@ -116,7 +129,7 @@ function DashboardPage() {
 
   const s = data?.summary || {};
   const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const statusChart = (data?.charts?.craneStatusDist || []).length > 0
+  const rawStatusChart = (data?.charts?.craneStatusDist || []).length > 0
     ? data.charts.craneStatusDist.map(d => ({ name: d._id, value: d.count }))
     : [
         { name: t('dashboard.available'), value: s.availableCranes || 0 },
@@ -124,6 +137,19 @@ function DashboardPage() {
         { name: t('dashboard.maintenance'), value: s.maintenanceCranes || 0 },
         { name: t('dashboard.retired_label'), value: s.retiredCranes || 0 }
       ];
+  const statusChart = rawStatusChart
+    .map(item => ({
+      ...item,
+      color: STATUS_COLOR_MAP[item.name] || STATUS_COLOR_MAP[item.name.replace(/\s+/g, ' ')] || '#9a6700',
+    }))
+    .sort((a, b) => {
+      const aIndex = STATUS_ORDER.indexOf(a.name);
+      const bIndex = STATUS_ORDER.indexOf(b.name);
+      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+      return a.name.localeCompare(b.name);
+    });
   const txnChart = (data?.charts?.transactionsByMonth || []).length > 0
     ? data.charts.transactionsByMonth.map(d => ({ month: monthNames[d._id - 1] || `M${d._id}`, count: d.count }))
     : [];
@@ -239,7 +265,7 @@ function DashboardPage() {
               <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
                   <Pie data={statusChart} cx="50%" cy="50%" innerRadius={45} outerRadius={75} dataKey="value" paddingAngle={2}>
-                    {statusChart.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                    {statusChart.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                   </Pie>
                   <Tooltip content={<CustomTooltip />} />
                 </PieChart>
@@ -249,7 +275,7 @@ function DashboardPage() {
                 {statusChart.map((d, i) => (
                   <div key={d.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                      <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: d.color || PIE_COLORS[i % PIE_COLORS.length] }} />
                       <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{d.name}</span>
                     </div>
                     <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{d.value} ({((d.value / (statusChart.reduce((sum, x) => sum + x.value, 0))) * 100).toFixed(1)}%)</span>

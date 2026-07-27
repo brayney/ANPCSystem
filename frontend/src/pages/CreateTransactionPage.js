@@ -318,6 +318,7 @@ export default function CreateTransactionPage() {
           <ArrowLeftIcon className="w-4 h-4" /> Back
         </button>
         <div>
+          <div className="page-header-kicker" />
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {sourceTransaction ? `New Transaction from ${sourceTransaction.transactionNo}` : 'New Transaction'}
           </h1>

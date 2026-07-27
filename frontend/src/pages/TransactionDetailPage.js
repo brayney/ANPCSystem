@@ -256,9 +256,12 @@ export default function TransactionDetailPage() {
           <ArrowLeftIcon className="w-4 h-4" /> Back
         </button>
         <div className="flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white font-mono">{txn.transactionNo}</h1>
-            <StatusBadge status={txn.status} />
+          <div>
+            <div className="page-header-kicker" />
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white font-mono">{txn.transactionNo}</h1>
+              <StatusBadge status={txn.status} />
+            </div>
           </div>
           <p className="text-sm text-gray-500 mt-0.5">{txn.companyName} — {fmt(txn.transactionDate)}</p>
         </div>
