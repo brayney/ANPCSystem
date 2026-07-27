@@ -18,11 +18,13 @@ export default function NotificationBell({ user }) {
   const [loading, setLoading] = useState(false);
   const [markingRead, setMarkingRead] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [error, setError] = useState(null);
   const menuRef = useRef(null);
 
   const loadNotifications = useCallback(async () => {
     if (!user) return;
     setLoading(true);
+    setError(null);
     try {
       const { data } = await api.get('/notifications');
       setNotifications(data.data || []);
@@ -30,6 +32,7 @@ export default function NotificationBell({ user }) {
       setHasLoaded(true);
     } catch (err) {
       console.error('Failed to load notifications', err);
+      setError('Unable to load notifications. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -56,9 +59,6 @@ export default function NotificationBell({ user }) {
 
   useEffect(() => {
     if (!open) return undefined;
-    if (!hasLoaded && !loading) {
-      loadNotifications();
-    }
     const closeOnOutsideClick = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setOpen(false);
@@ -66,7 +66,7 @@ export default function NotificationBell({ user }) {
     };
     document.addEventListener('mousedown', closeOnOutsideClick);
     return () => document.removeEventListener('mousedown', closeOnOutsideClick);
-  }, [open, loadNotifications, hasLoaded, loading]);
+  }, [open]);
 
   if (!user) return null;
 
@@ -155,7 +155,11 @@ export default function NotificationBell({ user }) {
                   borderRadius: '50%',
                   animation: 'spin 0.7s linear infinite',
                 }} />
-                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Refreshing...</span>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{hasLoaded ? 'Refreshing...' : 'Loading notifications...'}</span>
+              </div>
+            ) : error ? (
+              <div style={{ padding: '28px 12px', color: 'var(--danger)', fontSize: '13px', textAlign: 'center' }}>
+                {error}
               </div>
             ) : notifications.length === 0 ? (
               <div style={{ padding: '28px 12px', color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center' }}>
