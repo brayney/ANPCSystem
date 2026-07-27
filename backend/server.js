@@ -24,6 +24,7 @@ const app = express();
 const allowedOrigins = new Set(
   [
     process.env.FRONTEND_URL,
+    'https://anpcsystem.vercel.app',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:5173',
@@ -31,11 +32,16 @@ const allowedOrigins = new Set(
   ].filter(Boolean)
 );
 
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (allowedOrigins.has(origin)) return true;
+  return /https:\/\/.*\.vercel\.app$/i.test(origin);
+};
+
 // Middleware
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.has(origin)) return callback(null, true);
+    if (isAllowedOrigin(origin)) return callback(null, true);
     return callback(null, false);
   },
   credentials: true
