@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { BellIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import api from '../../utils/api';
@@ -19,7 +19,7 @@ export default function NotificationBell({ user }) {
   const [markingRead, setMarkingRead] = useState(false);
   const menuRef = useRef(null);
 
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
@@ -31,7 +31,7 @@ export default function NotificationBell({ user }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const markAllRead = async () => {
     if (!user || unreadCount === 0) return;
@@ -57,7 +57,7 @@ export default function NotificationBell({ user }) {
     };
     document.addEventListener('mousedown', closeOnOutsideClick);
     return () => document.removeEventListener('mousedown', closeOnOutsideClick);
-  }, [open, user]);
+  }, [open, loadNotifications]);
 
   if (!user) return null;
 
