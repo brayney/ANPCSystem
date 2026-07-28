@@ -24,7 +24,15 @@ const TutorialsPage = lazy(() => import('./pages/TutorialsPage'));
 const MobileBlockedPage = lazy(() => import('./pages/MobileBlockedPage'));
 
 const PageLoadingFallback = () => (
-  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '60px 24px', background: 'var(--surface-2)', minHeight: '100vh' }}>
+  <div style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    minHeight: '50vh',
+    padding: '24px',
+    background: 'transparent',
+  }}>
     <Spinner size="lg" />
   </div>
 );

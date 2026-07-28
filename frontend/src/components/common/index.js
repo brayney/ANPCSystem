@@ -95,11 +95,16 @@ export const Spinner = ({ size = 'md' }) => {
   const s = size === 'sm' ? '14px' : size === 'lg' ? '36px' : '20px';
   return (
     <div style={{
-      width: s, height: s, flexShrink: 0,
+      display: 'block',
+      width: s,
+      height: s,
+      flexShrink: 0,
+      margin: '0 auto',
       borderRadius: '50%',
       border: `2px solid var(--border)`,
       borderTopColor: 'var(--accent)',
       animation: 'spin 0.7s linear infinite',
+      boxSizing: 'border-box',
     }} />
   );
 };
