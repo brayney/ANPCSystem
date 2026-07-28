@@ -115,13 +115,13 @@ export default function CreateTransactionPage() {
   const [saving, setSaving] = useState(false);
   const [detailModal, setDetailModal] = useState({ open: false, item: null, type: '' });
 
-  const [form, setForm] = useState({
+const [form, setForm] = useState({
     companyName: '', companyAddress: '', contactPerson: '', contactNumber: '',
     driverName: '', vehicleType: '', vehiclePlateNo: '',
     pullOutLocation: '', deliveryLocation: '',
-    transactionDate: new Date().toISOString().split('T')[0],
-    transactionTime: new Date().toTimeString().slice(0, 5),
-    expectedReturnDate: '', purpose: '', remarks: '', type: 'Rental'
+    transactionDate: new Date().toISOString().split('T')[0], transactionTime: new Date().toTimeString().slice(0, 5),
+    expectedReturnDate: '', purpose: '', remarks: '', type: 'Rental',
+    returnDriverName: '', returnVehicleType: '', returnVehiclePlateNo: '',
   });
 
   const getId = (value) => value?._id || value;
@@ -193,6 +193,9 @@ export default function CreateTransactionPage() {
       purpose: '',
       remarks: `Related to ${txn.transactionNo}.`,
       type: 'Rental',
+      returnDriverName: '',
+      returnVehicleType: '',
+      returnVehiclePlateNo: '',
     }));
   };
 
@@ -513,58 +516,75 @@ export default function CreateTransactionPage() {
           </div>
         </div>
 
-        {/* Step 4: Vehicle & Driver */}
-        <div className="card">
-          <h2 className="font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-            <span className="w-6 h-6 bg-blue-600 text-white text-xs flex items-center justify-center font-bold">4</span>
-            Driver & Vehicle
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <FormField label="Driver Name" name="driverName"
-              value={form.driverName} onChange={e => setForm({ ...form, driverName: e.target.value })} />
-            <FormField label="Vehicle Type" name="vehicleType"
-              value={form.vehicleType} onChange={e => setForm({ ...form, vehicleType: e.target.value })} />
-            <FormField label="Plate Number" name="vehiclePlateNo"
-              value={form.vehiclePlateNo} onChange={e => setForm({ ...form, vehiclePlateNo: e.target.value })} />
-          </div>
-        </div>
+{/* Step 4: Vehicle & Driver */}
+         <div className="card">
+           <h2 className="font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+             <span className="w-6 h-6 bg-blue-600 text-white text-xs flex items-center justify-center font-bold">4</span>
+             Driver & Vehicle
+           </h2>
+           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+             <FormField label="Driver Name" name="driverName"
+               value={form.driverName} onChange={e => setForm({ ...form, driverName: e.target.value })} />
+             <FormField label="Vehicle Type" name="vehicleType"
+               value={form.vehicleType} onChange={e => setForm({ ...form, vehicleType: e.target.value })} />
+             <FormField label="Plate Number" name="vehiclePlateNo"
+               value={form.vehiclePlateNo} onChange={e => setForm({ ...form, vehiclePlateNo: e.target.value })} />
+           </div>
+         </div>
 
-        {/* Step 5: Logistics */}
-        <div className="card">
-          <h2 className="font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-            <span className="w-6 h-6 bg-blue-600 text-white text-xs flex items-center justify-center font-bold">5</span>
-            Logistics & Schedule
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField label="Pull-Out Location" name="pullOutLocation"
-              value={form.pullOutLocation} onChange={e => setForm({ ...form, pullOutLocation: e.target.value })} />
-            <FormField label="Delivery Location" name="deliveryLocation"
-              value={form.deliveryLocation} onChange={e => setForm({ ...form, deliveryLocation: e.target.value })} />
-            <FormField label="Transaction Date" name="transactionDate" type="date" required
-              value={form.transactionDate} onChange={e => setForm({ ...form, transactionDate: e.target.value })} />
-            <FormField label="Transaction Time" name="transactionTime" type="time"
-              value={form.transactionTime} onChange={e => setForm({ ...form, transactionTime: e.target.value })} />
-            <FormField label="Expected Return Date" name="expectedReturnDate" type="date"
-              value={form.expectedReturnDate} onChange={e => setForm({ ...form, expectedReturnDate: e.target.value })} />
-            <div>
-              <label className="label">Transaction Type</label>
-              <select className="input-field" value={form.type}
-                onChange={e => setForm({ ...form, type: e.target.value })}>
-                {['Rental', 'Transfer', 'Return', 'Maintenance'].map(t => <option key={t}>{t}</option>)}
-              </select>
-            </div>
-            <div className="sm:col-span-2">
-              <label className="label">Purpose</label>
-              <input type="text" className="input-field" value={form.purpose}
-                onChange={e => setForm({ ...form, purpose: e.target.value })} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="label">Remarks</label>
-              <textarea className="input-field" rows={2} value={form.remarks}
-                onChange={e => setForm({ ...form, remarks: e.target.value })} />
-            </div>
-          </div>
-        </div>
+         {/* Step 5: Return Driver & Vehicle (Optional) */}
+         <div className="card">
+           <h2 className="font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+             <span className="w-6 h-6 bg-blue-600 text-white text-xs flex items-center justify-center font-bold">5</span>
+             Return Driver & Vehicle (Optional)
+           </h2>
+           <p className="text-xs text-gray-400 mb-4">Only fill this if the driver and vehicle returning the cranes and attachments will be different from the pickup ones.</p>
+           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+             <FormField label="Return Driver Name" name="returnDriverName"
+               value={form.returnDriverName} onChange={e => setForm({ ...form, returnDriverName: e.target.value })} />
+             <FormField label="Return Vehicle Type" name="returnVehicleType"
+               value={form.returnVehicleType} onChange={e => setForm({ ...form, returnVehicleType: e.target.value })} />
+             <FormField label="Return Plate Number" name="returnVehiclePlateNo"
+               value={form.returnVehiclePlateNo} onChange={e => setForm({ ...form, returnVehiclePlateNo: e.target.value })} />
+           </div>
+         </div>
+
+         {/* Step 6: Logistics */}
+         <div className="card">
+           <h2 className="font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+             <span className="w-6 h-6 bg-blue-600 text-white text-xs flex items-center justify-center font-bold">6</span>
+             Logistics & Schedule
+           </h2>
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+             <FormField label="Pull-Out Location" name="pullOutLocation"
+               value={form.pullOutLocation} onChange={e => setForm({ ...form, pullOutLocation: e.target.value })} />
+             <FormField label="Delivery Location" name="deliveryLocation"
+               value={form.deliveryLocation} onChange={e => setForm({ ...form, deliveryLocation: e.target.value })} />
+             <FormField label="Transaction Date" name="transactionDate" type="date" required
+               value={form.transactionDate} onChange={e => setForm({ ...form, transactionDate: e.target.value })} />
+             <FormField label="Transaction Time" name="transactionTime" type="time"
+               value={form.transactionTime} onChange={e => setForm({ ...form, transactionTime: e.target.value })} />
+             <FormField label="Expected Return Date" name="expectedReturnDate" type="date"
+               value={form.expectedReturnDate} onChange={e => setForm({ ...form, expectedReturnDate: e.target.value })} />
+             <div>
+               <label className="label">Transaction Type</label>
+               <select className="input-field" value={form.type}
+                 onChange={e => setForm({ ...form, type: e.target.value })}>
+                 {['Rental', 'Transfer', 'Return', 'Maintenance'].map(t => <option key={t}>{t}</option>)}
+               </select>
+             </div>
+             <div className="sm:col-span-2">
+               <label className="label">Purpose</label>
+               <input type="text" className="input-field" value={form.purpose}
+                 onChange={e => setForm({ ...form, purpose: e.target.value })} />
+             </div>
+             <div className="sm:col-span-2">
+               <label className="label">Remarks</label>
+               <textarea className="input-field" rows={2} value={form.remarks}
+                 onChange={e => setForm({ ...form, remarks: e.target.value })} />
+             </div>
+           </div>
+         </div>
 
         {/* Item detail modal */}
         <Modal open={detailModal.open} onClose={() => setDetailModal({ open: false, item: null, type: '' })} title={`View ${detailModal.type || 'Item'}`} size="md">

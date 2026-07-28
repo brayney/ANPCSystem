@@ -138,14 +138,29 @@ export default function CranesPage() {
   const fetchCranes = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { page, limit: 15 };
-      if (search) params.search = search;
-      if (statusFilter) params.status = statusFilter;
-      const cached = await fetchWithCache('/cranes', params, {
-        onStale: (data) => { setCranes(data?.data || []); setPages(data?.pages || 1); setTotal(data?.total || 0); },
-        shouldInflate: false
-      });
-      setCranes(Array.isArray(cached) ? cached : (cached?.data || [])); setPages(Array.isArray(cached) ? 0 : (cached?.pages || 1)); setTotal(Array.isArray(cached) ? (cached?.length || 0) : (cached?.total || 0));
+      const pageSize = 15;
+      const pageParams = { page, limit: pageSize };
+      const totalParams = { page: 1, limit: 1000 };
+      if (search) {
+        pageParams.search = search;
+        totalParams.search = search;
+      }
+      if (statusFilter) {
+        pageParams.status = statusFilter;
+        totalParams.status = statusFilter;
+      }
+      const [pageData, countData] = await Promise.all([
+        fetchWithCache('/cranes', pageParams, { shouldInflate: false }),
+        fetchWithCache('/cranes', totalParams, { force: true, shouldInflate: false })
+      ]);
+      const resolvedItems = Array.isArray(pageData) ? pageData : (pageData?.data || []);
+      const currentTotal = Array.isArray(pageData) ? (pageData?.length || 0) : (pageData?.total ?? resolvedItems.length);
+      const countTotal = Array.isArray(countData) ? (countData?.length || 0) : (countData?.total ?? 0);
+      const resolvedTotal = Math.max(currentTotal, countTotal, resolvedItems.length);
+      const resolvedPages = Math.max(1, Math.ceil((resolvedTotal || 0) / pageSize));
+      setCranes(resolvedItems);
+      setPages(resolvedPages);
+      setTotal(resolvedTotal);
     } catch { toast.error('Failed to load cranes'); }
     finally { setLoading(false); }
   }, [page, search, statusFilter]);
@@ -174,7 +189,8 @@ export default function CranesPage() {
     } catch { toast.error('Bulk delete failed'); }
   };
 
-  const visibleIds = cranes.map(c => c._id);
+  const visibleCranes = cranes;
+  const visibleIds = visibleCranes.map(c => c._id);
   const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.includes(id));
   const toggleSelectAllVisible = () => {
     setSelectedIds(allVisibleSelected
@@ -248,7 +264,7 @@ export default function CranesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {cranes.map(c => (
+                  {visibleCranes.map(c => (
                     <tr key={c._id} style={{ transition: 'background 0.1s' }}
                       onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>

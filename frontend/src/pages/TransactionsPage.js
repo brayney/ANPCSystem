@@ -22,12 +22,14 @@ export default function TransactionsPage() {
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [returnTarget, setReturnTarget] = useState(null);
+  const [returnScope, setReturnScope] = useState('this');
+  const [returnSameDriver, setReturnSameDriver] = useState(true);
+  const [returnForm, setReturnForm] = useState({ returnDriverName: '', returnVehicleType: '', returnVehiclePlateNo: '' });
   const [modal, setModal] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [editSaving, setEditSaving] = useState(false);
   const [expandedRows, setExpandedRows] = useState({});
-  const [returnScope, setReturnScope] = useState('this');
 
   const isActiveGroupingRow = (transaction) => transaction?.status === 'Returned' && tab === 'active' && (transaction.childTransactions || []).some(child => child.status === 'Active');
   const isReturnedGroupingRow = (transaction) => transaction?.status === 'Active' && tab === 'returned' && (transaction.childTransactions || []).some(child => child.status !== 'Active');
@@ -58,14 +60,29 @@ export default function TransactionsPage() {
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
   const handleReturn = async () => {
+    const payload = {};
+    if (!returnSameDriver) {
+      payload.returnDriverName = returnForm.returnDriverName || undefined;
+      payload.returnVehicleType = returnForm.returnVehicleType || undefined;
+      payload.returnVehiclePlateNo = returnForm.returnVehiclePlateNo || undefined;
+    }
     try {
-      await api.put(`/transactions/${returnTarget._id}/return`, { scope: returnScope });
+      await api.put(`/transactions/${returnTarget._id}/return`, { ...payload, scope: returnScope });
       toast.success(returnScope === 'linked' ? 'Linked transactions marked as returned' : 'Transaction marked as returned');
       setReturnTarget(null);
       setReturnScope('this');
+      setReturnSameDriver(true);
+      setReturnForm({ returnDriverName: '', returnVehicleType: '', returnVehiclePlateNo: '' });
       invalidateCache('/transactions');
       fetchItems();
     } catch { toast.error('Failed to process return'); }
+  };
+
+  const handleReturnOpen = (transaction) => {
+    setReturnTarget(transaction);
+    setReturnScope('this');
+    setReturnSameDriver(true);
+    setReturnForm({ returnDriverName: transaction.driverName || '', returnVehicleType: transaction.vehicleType || '', returnVehiclePlateNo: transaction.vehiclePlateNo || '' });
   };
 
   const handleEditOpen = (transaction) => {
@@ -214,30 +231,30 @@ export default function TransactionsPage() {
                               style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--accent)', textDecoration: 'none' }}>
                               <EyeIcon style={{ width: '13px', height: '13px' }} />
                             </Link>
-                            {!t.sourceTransactionId && t.status === 'Active' && (
-                              <Link
-                                to="/transactions/create"
-                                state={{ sourceTransactionId: t._id }}
-                                title="Add transaction from this active transaction"
-                                style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--success)', textDecoration: 'none' }}
-                              >
-                                <PlusIcon style={{ width: '13px', height: '13px' }} />
-                              </Link>
-                            )}
-                            <button onClick={() => handleEditOpen(t)} title="Edit"
-                              style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--text-secondary)', cursor: 'pointer', transition: 'background 0.15s' }}>
-                              <PencilIcon style={{ width: '13px', height: '13px' }} />
-                            </button>
-                            <button onClick={() => setDeleteTarget(t)} title="Delete"
-                              style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--danger-bg)', background: 'var(--danger-bg)', display: 'flex', color: 'var(--danger)', cursor: 'pointer', transition: 'opacity 0.15s' }}>
-                              <TrashIcon style={{ width: '13px', height: '13px' }} />
-                            </button>
-                            {t.status === 'Active' && (
-                              <button onClick={() => { setReturnTarget(t); setReturnScope('this'); }}
-                                style={{ padding: '4px 8px', borderRadius: '5px', border: '1px solid var(--success)', background: 'var(--success-bg)', color: 'var(--success)', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                                <ArrowPathIcon style={{ width: '11px', height: '11px' }} /> Return
-                              </button>
-                            )}
+{!t.sourceTransactionId && t.status === 'Active' && (
+                               <Link
+                                 to="/transactions/create"
+                                 state={{ sourceTransactionId: t._id }}
+                                 title="Add transaction from this active transaction"
+                                 style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--success)', textDecoration: 'none' }}
+                               >
+                                 <PlusIcon style={{ width: '13px', height: '13px' }} />
+                               </Link>
+                             )}
+                             <button onClick={() => handleEditOpen(t)} title="Edit"
+                               style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', color: 'var(--text-secondary)', cursor: 'pointer', transition: 'background 0.15s' }}>
+                               <PencilIcon style={{ width: '13px', height: '13px' }} />
+                             </button>
+                             <button onClick={() => setDeleteTarget(t)} title="Delete"
+                               style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--danger-bg)', background: 'var(--danger-bg)', display: 'flex', color: 'var(--danger)', cursor: 'pointer', transition: 'opacity 0.15s' }}>
+                               <TrashIcon style={{ width: '13px', height: '13px' }} />
+                             </button>
+                             {t.status === 'Active' && (
+                               <button onClick={() => handleReturnOpen(t)}
+                                 style={{ padding: '4px 8px', borderRadius: '5px', border: '1px solid var(--success)', background: 'var(--success-bg)', color: 'var(--success)', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                 <ArrowPathIcon style={{ width: '11px', height: '11px' }} /> Return
+                               </button>
+                             )}
                           </div>
                         )}
                       </td>
@@ -270,12 +287,12 @@ export default function TransactionsPage() {
                                 style={{ padding: '5px', borderRadius: '5px', border: '1px solid var(--danger-bg)', background: 'var(--danger-bg)', display: 'flex', color: 'var(--danger)', cursor: 'pointer', transition: 'opacity 0.15s' }}>
                                 <TrashIcon style={{ width: '13px', height: '13px' }} />
                               </button>
-                              {child.status === 'Active' && (
-                                <button onClick={() => { setReturnTarget(child); setReturnScope('this'); }}
-                                  style={{ padding: '4px 8px', borderRadius: '5px', border: '1px solid var(--success)', background: 'var(--success-bg)', color: 'var(--success)', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                                  <ArrowPathIcon style={{ width: '11px', height: '11px' }} /> Return
-                                </button>
-                              )}
+{child.status === 'Active' && (
+                                 <button onClick={() => handleReturnOpen(child)}
+                                   style={{ padding: '4px 8px', borderRadius: '5px', border: '1px solid var(--success)', background: 'var(--success-bg)', color: 'var(--success)', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                   <ArrowPathIcon style={{ width: '11px', height: '11px' }} /> Return
+                                 </button>
+                               )}
                             </div>
                           </div>
                         </td>
@@ -291,18 +308,66 @@ export default function TransactionsPage() {
         )}
       </div>
 
-      <ConfirmDialog open={!!returnTarget} onClose={() => { setReturnTarget(null); setReturnScope('this'); }} onConfirm={handleReturn}
-        title="Confirm Return"
-        message={`Choose how to handle ${returnTarget?.transactionNo || 'this transaction'}.`}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '4px' }}>
-          <label className="label" style={{ marginBottom: 0 }}>Return scope</label>
-          <select className="input-field" value={returnScope} onChange={(e) => setReturnScope(e.target.value)}>
-            <option value="this">This transaction only</option>
-            <option value="linked">This transaction and linked transaction(s)</option>
-          </select>
+      {returnTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden">
+            <div className="p-4 border-b dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Confirm Return</h3>
+            </div>
+            <div className="p-4 space-y-4">
+              <p className="text-sm text-gray-700 dark:text-gray-200">
+                Choose how to handle {returnTarget?.transactionNo || 'this transaction'}.
+              </p>
+              <div>
+                <label className="label" style={{ marginBottom: 0 }}>Return scope</label>
+                <select className="input-field" value={returnScope} onChange={(e) => setReturnScope(e.target.value)}>
+                  <option value="this">This transaction only</option>
+                  <option value="linked">This transaction and linked transaction(s)</option>
+                </select>
+              </div>
+              <p className="text-sm text-gray-700 dark:text-gray-200">
+                Is the driver and vehicle for the return the same as the pickup?
+              </p>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setReturnSameDriver(true)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-semibold ${returnSameDriver ? 'bg-blue-600 text-white' : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
+                  Same Driver &amp; Vehicle
+                </button>
+                <button type="button" onClick={() => setReturnSameDriver(false)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-semibold ${!returnSameDriver ? 'bg-blue-600 text-white' : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
+                  Different Driver &amp; Vehicle
+                </button>
+              </div>
+              {!returnSameDriver && (
+                <div className="space-y-3 pt-2 border-t dark:border-gray-700">
+                  <div>
+                    <label className="label">Return Driver Name</label>
+                    <input type="text" className="input-field"
+                      value={returnForm.returnDriverName}
+                      onChange={e => setReturnForm({ ...returnForm, returnDriverName: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="label">Return Vehicle Type</label>
+                    <input type="text" className="input-field"
+                      value={returnForm.returnVehicleType}
+                      onChange={e => setReturnForm({ ...returnForm, returnVehicleType: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="label">Return Plate Number</label>
+                    <input type="text" className="input-field"
+                      value={returnForm.returnVehiclePlateNo}
+                      onChange={e => setReturnForm({ ...returnForm, returnVehiclePlateNo: e.target.value })} />
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="p-3 border-t dark:border-gray-700 flex justify-end gap-3">
+              <button onClick={() => { setReturnTarget(null); setReturnScope('this'); setReturnSameDriver(true); setReturnForm({ returnDriverName: '', returnVehicleType: '', returnVehiclePlateNo: '' }); }} className="btn-secondary">Cancel</button>
+              <button onClick={handleReturn} className="btn-primary">Return</button>
+            </div>
+          </div>
         </div>
-      </ConfirmDialog>
+      )}
 
       <Modal open={!!modal && modal === 'edit'} onClose={() => { setModal(null); setEditForm({}); }}
         title={`Edit ${editForm.companyName || 'Transaction'}`} size="lg">

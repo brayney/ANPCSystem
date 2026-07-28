@@ -535,14 +535,18 @@ exports.updateTransaction = async (req, res, next) => {
 
     // If changing from Returned back to Active, update associated items
     if (wasReturned && isNowActive) {
-      const newLocation = txn.deliveryLocation || txn.companyAddress || 'In Transit';
-      const clientName = txn.companyName;
+       const newLocation = txn.deliveryLocation || txn.companyAddress || 'In Transit';
+       const clientName = txn.companyName;
 
-      console.log('🔄 Reactivating transaction:', txn.transactionNo);
-      console.log('  - New Location:', newLocation);
-      console.log('  - Client Name:', clientName);
+       console.log('🔄 Reactivating transaction:', txn.transactionNo);
+       console.log('  - New Location:', newLocation);
+       console.log('  - Client Name:', clientName);
 
-      // Update crane and attachments back to Out of Yard status
+       txn.returnDriverName = undefined;
+       txn.returnVehicleType = undefined;
+       txn.returnVehiclePlateNo = undefined;
+
+       // Update crane and attachments back to Out of Yard status
       await Crane.updateMany(
         craneUpdateQuery(txn),
         { $set: { status: 'Out of Yard', location: newLocation, client: clientName } }
@@ -571,64 +575,68 @@ exports.updateTransaction = async (req, res, next) => {
 };
 
 exports.returnTransaction = async (req, res, next) => {
-  try {
-    const scope = req.body?.scope === 'linked' ? 'linked' : 'this';
-    const txn = await Transaction.findById(req.params.id);
-    if (!txn) return res.status(404).json({ success: false, message: 'Not found' });
+   try {
+     const scope = req.body?.scope === 'linked' ? 'linked' : 'this';
+     const { returnDriverName, returnVehicleType, returnVehiclePlateNo } = req.body;
+     const txn = await Transaction.findById(req.params.id);
+     if (!txn) return res.status(404).json({ success: false, message: 'Not found' });
 
-    const transactionsToReturn = [txn];
-    if (scope === 'linked') {
-      if (txn.sourceTransactionId) {
-        const parentTxn = await Transaction.findOne({ _id: txn.sourceTransactionId, isArchived: false });
-        if (parentTxn) transactionsToReturn.push(parentTxn);
-      } else {
-        const childTransactions = await Transaction.find({ sourceTransactionId: txn._id, isArchived: false });
-        transactionsToReturn.push(...childTransactions);
-      }
-    }
+     const transactionsToReturn = [txn];
+     if (scope === 'linked') {
+       if (txn.sourceTransactionId) {
+         const parentTxn = await Transaction.findOne({ _id: txn.sourceTransactionId, isArchived: false });
+         if (parentTxn) transactionsToReturn.push(parentTxn);
+       } else {
+         const childTransactions = await Transaction.find({ sourceTransactionId: txn._id, isArchived: false });
+         transactionsToReturn.push(...childTransactions);
+       }
+     }
 
-    const uniqueTransactions = [];
-    const seenIds = new Set();
-    transactionsToReturn.forEach(item => {
-      const id = String(item._id);
-      if (!seenIds.has(id)) {
-        seenIds.add(id);
-        uniqueTransactions.push(item);
-      }
-    });
+     const uniqueTransactions = [];
+     const seenIds = new Set();
+     transactionsToReturn.forEach(item => {
+       const id = String(item._id);
+       if (!seenIds.has(id)) {
+         seenIds.add(id);
+         uniqueTransactions.push(item);
+       }
+     });
 
-    for (const item of uniqueTransactions) {
-      if (item.status === 'Returned') continue;
+     for (const item of uniqueTransactions) {
+       if (item.status === 'Returned') continue;
 
-      item.status = 'Returned';
-      item.actualReturnDate = item.actualReturnDate || new Date();
-      await item.save();
+       item.status = 'Returned';
+       item.actualReturnDate = item.actualReturnDate || new Date();
+       if (returnDriverName) item.returnDriverName = returnDriverName;
+       if (returnVehicleType) item.returnVehicleType = returnVehicleType;
+       if (returnVehiclePlateNo) item.returnVehiclePlateNo = returnVehiclePlateNo;
+       await item.save();
 
-      await Crane.updateMany(
-        craneUpdateQuery(item),
-        { $set: returnedEquipmentState }
-      );
-      if (item.counterweights?.length)
-        await Counterweight.updateMany({ _id: { $in: item.counterweights } }, { $set: returnedEquipmentState });
-      if (item.boomSections?.length)
-        await BoomSection.updateMany({ _id: { $in: item.boomSections } }, { $set: returnedEquipmentState });
-      if (item.hooks?.length)
-        await Hook.updateMany({ _id: { $in: item.hooks } }, { $set: returnedEquipmentState });
+       await Crane.updateMany(
+         craneUpdateQuery(item),
+         { $set: returnedEquipmentState }
+       );
+       if (item.counterweights?.length)
+         await Counterweight.updateMany({ _id: { $in: item.counterweights } }, { $set: returnedEquipmentState });
+       if (item.boomSections?.length)
+         await BoomSection.updateMany({ _id: { $in: item.boomSections } }, { $set: returnedEquipmentState });
+       if (item.hooks?.length)
+         await Hook.updateMany({ _id: { $in: item.hooks } }, { $set: returnedEquipmentState });
 
-      await AuditLog.create({ user: req.user._id, userName: req.user.name, action: 'RETURN', module: 'Transaction', targetId: item.transactionNo, details: `Returned transaction ${item.transactionNo}` });
-      await createNotification({
-        userId: req.user._id,
-        title: 'Transaction returned',
-        message: `Transaction ${item.transactionNo} has been returned.`,
-        type: 'success',
-        category: 'transactions',
-        link: `/transactions/${item._id}`,
-      });
-    }
+       await AuditLog.create({ user: req.user._id, userName: req.user.name, action: 'RETURN', module: 'Transaction', targetId: item.transactionNo, details: `Returned transaction ${item.transactionNo}` });
+       await createNotification({
+         userId: req.user._id,
+         title: 'Transaction returned',
+         message: `Transaction ${item.transactionNo} has been returned.`,
+         type: 'success',
+         category: 'transactions',
+         link: `/transactions/${item._id}`,
+       });
+     }
 
-    res.json({ success: true, data: { target: txn, updatedCount: uniqueTransactions.length } });
-  } catch (error) { next(error); }
-};
+     res.json({ success: true, data: { target: txn, updatedCount: uniqueTransactions.length } });
+   } catch (error) { next(error); }
+ };
 
 exports.deleteTransaction = async (req, res, next) => {
   try {

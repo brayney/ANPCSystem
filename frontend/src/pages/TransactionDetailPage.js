@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import toast from 'react-hot-toast';
-import confirm from '../utils/confirm';
 import { ArrowLeftIcon, PrinterIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { StatusBadge, Spinner } from '../components/common';
 import { QRCodeSVG } from 'qrcode.react';
@@ -98,10 +97,10 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
         </div>
       </div>
 
-      {/* Vehicle & Driver */}
+      {/* Vehicle & Driver - Pickup */}
       <div className="grid grid-cols-2 gap-4 mb-3">
         <div>
-          <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide mb-1 border-b pb-0.5">Vehicle & Driver</h3>
+          <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide mb-1 border-b pb-0.5">Vehicle & Driver (Pickup)</h3>
           <table className="w-full text-sm">
             <tbody>
               {[
@@ -117,6 +116,26 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
           </table>
         </div>
       </div>
+
+      {/* Vehicle & Driver - Return */}
+      {(txn.returnDriverName || txn.returnVehicleType || txn.returnVehiclePlateNo) && (
+        <div className="grid grid-cols-2 gap-4 mb-3">
+          <div>
+            <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide mb-1 border-b pb-0.5">Vehicle & Driver (Return)</h3>
+            <table className="w-full text-sm">
+              <tbody>
+                {[
+                  ['Return Driver', txn.returnDriverName],
+                  ['Return Vehicle Type', txn.returnVehicleType],
+                  ['Return Plate No.', txn.returnVehiclePlateNo],
+                ].map(([l, v]) => (
+                  <tr key={l}><td className="text-gray-500 pr-2 py-1 text-sm">{l}:</td><td className="font-medium text-sm">{v || '—'}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Crane */}
       <div className="mb-4">
@@ -222,6 +241,9 @@ export default function TransactionDetailPage() {
   const initialTxn = location.state?.txn || null;
   const [txn, setTxn] = useState(initialTxn);
   const [loading, setLoading] = useState(!initialTxn);
+  const [returning, setReturning] = useState(false);
+  const [returnSameDriver, setReturnSameDriver] = useState(true);
+  const [returnForm, setReturnForm] = useState({ returnDriverName: '', returnVehicleType: '', returnVehiclePlateNo: '' });
   const printRef = useRef();
 
   useEffect(() => {
@@ -238,16 +260,35 @@ export default function TransactionDetailPage() {
 
   const handlePrint = useReactToPrint({ content: () => printRef.current });
 
-  const handleReturn = async () => {
-    const ok = await confirm('Mark this transaction as returned?');
-    if (!ok) return;
-    try {
-      await api.put(`/transactions/${id}/return`);
-      toast.success('Marked as returned');
-      const { data } = await api.get(`/transactions/${id}`);
-      setTxn(data.data);
-    } catch { toast.error('Failed'); }
-  };
+const handleReturn = async () => {
+     setReturnForm({
+       returnDriverName: txn.driverName || '',
+       returnVehicleType: txn.vehicleType || '',
+       returnVehiclePlateNo: txn.vehiclePlateNo || '',
+     });
+     setReturnSameDriver(true);
+     setReturning(true);
+   };
+
+   const handleReturnConfirm = async () => {
+     setReturning(false);
+     try {
+       const payload = {};
+       if (!returnSameDriver) {
+         payload.returnDriverName = returnForm.returnDriverName || undefined;
+         payload.returnVehicleType = returnForm.returnVehicleType || undefined;
+         payload.returnVehiclePlateNo = returnForm.returnVehiclePlateNo || undefined;
+       }
+       await api.put(`/transactions/${id}/return`, payload);
+       toast.success('Marked as returned');
+       const { data } = await api.get(`/transactions/${id}`);
+       setTxn(data.data);
+     } catch { toast.error('Failed'); }
+   };
+
+   const handleReturnCancel = () => {
+     setReturning(false);
+   };
 
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
   if (!txn) return null;
@@ -277,6 +318,56 @@ export default function TransactionDetailPage() {
             <button onClick={handleReturn} className="btn-success flex items-center gap-2">
               <CheckCircleIcon className="w-4 h-4" /> Mark Returned
             </button>
+          )}
+          {returning && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden">
+                <div className="p-4 border-b dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Confirm Return</h3>
+                </div>
+                <div className="p-4 space-y-4">
+                  <p className="text-sm text-gray-700 dark:text-gray-200">
+                    Is the driver and vehicle for the return the same as the pickup?
+                  </p>
+                  <div className="flex gap-3">
+                    <button type="button" onClick={() => setReturnSameDriver(true)}
+                      className={`flex-1 py-2 rounded-lg text-sm font-semibold ${returnSameDriver ? 'bg-blue-600 text-white' : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
+                      Same Driver &amp; Vehicle
+                    </button>
+                    <button type="button" onClick={() => setReturnSameDriver(false)}
+                      className={`flex-1 py-2 rounded-lg text-sm font-semibold ${!returnSameDriver ? 'bg-blue-600 text-white' : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
+                      Different Driver &amp; Vehicle
+                    </button>
+                  </div>
+                  {!returnSameDriver && (
+                    <div className="space-y-3 pt-2 border-t dark:border-gray-700">
+                      <div>
+                        <label className="label">Return Driver Name</label>
+                        <input type="text" className="input-field"
+                          value={returnForm.returnDriverName}
+                          onChange={e => setReturnForm({ ...returnForm, returnDriverName: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="label">Return Vehicle Type</label>
+                        <input type="text" className="input-field"
+                          value={returnForm.returnVehicleType}
+                          onChange={e => setReturnForm({ ...returnForm, returnVehicleType: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="label">Return Plate Number</label>
+                        <input type="text" className="input-field"
+                          value={returnForm.returnVehiclePlateNo}
+                          onChange={e => setReturnForm({ ...returnForm, returnVehiclePlateNo: e.target.value })} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="p-3 border-t dark:border-gray-700 flex justify-end gap-3">
+                  <button onClick={handleReturnCancel} className="btn-secondary">Cancel</button>
+                  <button onClick={handleReturnConfirm} className="btn-primary">Return</button>
+                </div>
+              </div>
+            </div>
           )}
           <button onClick={handlePrint} className="btn-secondary flex items-center gap-2">
             <PrinterIcon className="w-4 h-4" /> Print

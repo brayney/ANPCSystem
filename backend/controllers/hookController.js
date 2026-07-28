@@ -4,7 +4,7 @@ const { equipmentStatusMap, firstFilled, normalizeImportRow, okUpperConditionMap
 
 exports.getHooks = async (req, res, next) => {
   try {
-    const { search, assignedCrane, condition, status, page = 1, limit = 20 } = req.query;
+    const { search, assignedCrane, condition, status, page = 1, limit = 15 } = req.query;
     const query = { isArchived: false };
     if (assignedCrane) query.assignedCrane = assignedCrane;
     if (condition) query.condition = condition;

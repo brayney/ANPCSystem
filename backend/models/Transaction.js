@@ -33,6 +33,11 @@ const transactionSchema = new mongoose.Schema({
   vehicleType: { type: String, trim: true },
   vehiclePlateNo: { type: String, trim: true },
 
+  // Return Driver & Vehicle (optional - different from pickup)
+  returnDriverName: { type: String, trim: true },
+  returnVehicleType: { type: String, trim: true },
+  returnVehiclePlateNo: { type: String, trim: true },
+
   // Location & Dates
   pullOutLocation: { type: String, trim: true },
   deliveryLocation: { type: String, trim: true },

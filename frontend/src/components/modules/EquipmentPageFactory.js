@@ -28,16 +28,31 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
     const fetchItems = useCallback(async () => {
       setLoading(true);
       try {
-        const params = buildQuery ? buildQuery({ page, search, filters: filterValues }) : { page, limit: 15, search: search || undefined };
-        if (!search) delete params.search;
+        const pageSize = 15;
+        const pageParams = buildQuery ? buildQuery({ page, search, filters: filterValues }) : { page, limit: pageSize, search: search || undefined };
+        const totalParams = buildQuery ? buildQuery({ page: 1, search, filters: filterValues }) : { page: 1, limit: 1000, search: search || undefined };
+        if (!search) {
+          delete pageParams.search;
+          delete totalParams.search;
+        }
         Object.entries(filterValues).forEach(([key, value]) => {
-          if (value) params[key] = value;
+          if (value) {
+            pageParams[key] = value;
+            totalParams[key] = value;
+          }
         });
-        const cached = await fetchWithCache(endpoint, params, {
-          onStale: (data) => { setItems(data?.data || []); setPages(data?.pages || 1); setTotal(data?.total || 0); },
-          shouldInflate: false
-        });
-        setItems(Array.isArray(cached) ? cached : (cached?.data || [])); setPages(Array.isArray(cached) ? 0 : (cached?.pages || 1)); setTotal(Array.isArray(cached) ? (cached?.length || 0) : (cached?.total || 0));
+        const [pageData, countData] = await Promise.all([
+          fetchWithCache(endpoint, pageParams, { shouldInflate: false }),
+          fetchWithCache(endpoint, totalParams, { force: true, shouldInflate: false })
+        ]);
+        const resolvedItems = Array.isArray(pageData) ? pageData : (pageData?.data || []);
+        const currentTotal = Array.isArray(pageData) ? (pageData?.length || 0) : (pageData?.total ?? resolvedItems.length);
+        const countTotal = Array.isArray(countData) ? (countData?.length || 0) : (countData?.total ?? 0);
+        const resolvedTotal = Math.max(currentTotal, countTotal, resolvedItems.length);
+        const resolvedPages = Math.max(1, Math.ceil((resolvedTotal || 0) / pageSize));
+        setItems(resolvedItems);
+        setPages(resolvedPages);
+        setTotal(resolvedTotal);
       } catch { toast.error(`Failed to load ${title}`); }
       finally { setLoading(false); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -67,7 +82,8 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
       } catch { toast.error('Bulk delete failed'); }
     };
 
-    const visibleIds = items.map(item => item._id);
+    const visibleItems = items;
+    const visibleIds = visibleItems.map(item => item._id);
     const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.includes(id));
     const toggleSelectAllVisible = () => {
       setSelectedIds(allVisibleSelected
@@ -156,7 +172,7 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map(item => (
+                    {visibleItems.map(item => (
                       <tr key={item._id} style={{ transition: 'background 0.1s' }}
                         onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>

@@ -19,7 +19,7 @@ const sharedAttachmentQuery = (equipmentNo) => ({
 // GET /api/cranes
 exports.getCranes = async (req, res, next) => {
   try {
-    const { search, status, page = 1, limit = 20 } = req.query;
+    const { search, status, page = 1, limit = 15 } = req.query;
     const query = { isArchived: false };
     if (status) query.status = status;
     if (search) {
