@@ -212,7 +212,7 @@ function DashboardPage() {
             <PartIcon style={{ width: '26px', height: '26px' }} />
           </div>
           <div style={{ minWidth: 0 }}>
-            <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 'clamp(22px, 2.6vw, 30px)', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1, margin: 0, letterSpacing: 0 }}>
+            <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 'clamp(22px, 2.6vw, 30px)', fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1.1, margin: 0, letterSpacing: 0, textShadow: '0 1px 2px rgba(0,0,0,0.08)' }}>
               {t(greetingKey)}, {firstName} <span style={{ display: 'inline-block', animation: 'msgIn 0.4s ease' }}>👋</span>
             </h1>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '5px', marginBottom: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

@@ -2,9 +2,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, startOfWeek, endOfWeek, addMonths, subMonths } from 'date-fns';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { PageHeader, Spinner } from '../components/common';
+import { PageHeader, TableSkeleton } from '../components/common';
+import { fetchWithCache } from '../utils/dataCache';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import api from '../utils/api';
 
 export default function TransactionCalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -14,8 +14,10 @@ export default function TransactionCalendarPage() {
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/transactions', { params: { limit: 1000 } });
-      setTransactions(data.data || []);
+      const cached = await fetchWithCache('/transactions', { limit: 500 }, {
+        onStale: (data) => setTransactions(data?.data || []),
+      });
+      setTransactions(Array.isArray(cached) ? cached : (cached?.data || []));
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to load transactions');
     } finally {
@@ -68,9 +70,9 @@ export default function TransactionCalendarPage() {
         subtitle={`View transactions for ${format(currentDate, 'MMMM yyyy')}`}
       />
 
-      {loading ? (
+      {loading && transactions.length === 0 ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 24px' }}>
-          <Spinner size="lg" />
+          <TableSkeleton rows={6} cols={7} />
         </div>
       ) : (
         <div className="card calendar-card" style={{ padding: '20px' }}>

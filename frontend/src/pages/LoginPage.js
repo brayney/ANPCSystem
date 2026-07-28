@@ -111,7 +111,7 @@ export default function LoginPage() {
   }, []);
 
   if (initializing) {
-    return <div />;
+    return <div style={{ background: 'var(--sidebar-bg, #0b1220)', minHeight: '100vh' }} />;
   }
 
   if (isSigningIn) {
@@ -318,7 +318,8 @@ export default function LoginPage() {
             style={{
               fontFamily: "'Fraunces', serif",
               fontSize: 'clamp(2.5rem, 5.5vw, 4.25rem)',
-              fontWeight: 700,
+               fontWeight: 900,
+               textShadow: '0 2px 4px rgba(0,0,0,0.25)',
               lineHeight: 1.05,
               letterSpacing: '-0.03em',
               color: '#f0f2ff',

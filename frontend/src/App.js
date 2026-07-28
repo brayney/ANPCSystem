@@ -1,27 +1,33 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import Layout from './components/layout/Layout';
 import OfflineBanner from './components/common/OfflineBanner';
+import { Spinner } from './components/common';
 
-// Pages
-import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import CranesPage from './pages/CranesPage';
-import CraneDetailPage from './pages/CraneDetailPage';
-import CounterweightsPage from './pages/CounterweightsPage';
-import BoomSectionsPage from './pages/BoomSectionsPage';
-import HooksPage from './pages/HooksPage';
-import TransactionsPage from './pages/TransactionsPage';
-import CreateTransactionPage from './pages/CreateTransactionPage';
-import TransactionDetailPage from './pages/TransactionDetailPage';
-import TransactionCalendarPage from './pages/TransactionCalendarPage';
-import PublicTransactionPage from './pages/PublicTransactionPage';
-import ReportsPage from './pages/ReportsPage';
-import SettingsPage from './pages/SettingsPage';
-import TutorialsPage from './pages/TutorialsPage';
-import MobileBlockedPage from './pages/MobileBlockedPage';
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const CranesPage = lazy(() => import('./pages/CranesPage'));
+const CraneDetailPage = lazy(() => import('./pages/CraneDetailPage'));
+const CounterweightsPage = lazy(() => import('./pages/CounterweightsPage'));
+const BoomSectionsPage = lazy(() => import('./pages/BoomSectionsPage'));
+const HooksPage = lazy(() => import('./pages/HooksPage'));
+const TransactionsPage = lazy(() => import('./pages/TransactionsPage'));
+const CreateTransactionPage = lazy(() => import('./pages/CreateTransactionPage'));
+const TransactionDetailPage = lazy(() => import('./pages/TransactionDetailPage'));
+const TransactionCalendarPage = lazy(() => import('./pages/TransactionCalendarPage'));
+const PublicTransactionPage = lazy(() => import('./pages/PublicTransactionPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const TutorialsPage = lazy(() => import('./pages/TutorialsPage'));
+const MobileBlockedPage = lazy(() => import('./pages/MobileBlockedPage'));
+
+const PageLoadingFallback = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '60px 24px', background: 'var(--sidebar-bg, #0b1220)', minHeight: '100vh' }}>
+    <Spinner size="lg" />
+  </div>
+);
 
 const isMobileBrowser = () => {
   if (typeof navigator === 'undefined' || typeof window === 'undefined') return false;
@@ -68,6 +74,7 @@ function App() {
       <BrowserRouter>
         <Toaster
           position="top-right"
+          containerStyle={{ marginTop: '70px' }}
           toastOptions={{
             duration: 4000,
             style: {
@@ -90,27 +97,27 @@ function App() {
         <OfflineBanner />
         <Routes>
           {/* Public Routes */}
-          <Route path="/public/transactions/:id" element={<PublicTransactionPage />} />
-           
+          <Route path="/public/transactions/:id" element={<Suspense fallback={<PageLoadingFallback />}><PublicTransactionPage /></Suspense>} />
+            
           {/* Auth */}
-          <Route path="/login" element={<MobileRestrictedRoute><LoginPage /></MobileRestrictedRoute>} />
-           
+          <Route path="/login" element={<Suspense fallback={<PageLoadingFallback />}><MobileRestrictedRoute><LoginPage /></MobileRestrictedRoute></Suspense>} />
+            
           {/* Private Routes */}
           <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="cranes" element={<CranesPage />} />
-            <Route path="cranes/:id" element={<CraneDetailPage />} />
-            <Route path="counterweights" element={<CounterweightsPage />} />
-            <Route path="boom-sections" element={<BoomSectionsPage />} />
-            <Route path="hooks" element={<HooksPage />} />
-            <Route path="transactions" element={<TransactionsPage />} />
-            <Route path="transactions/calendar" element={<TransactionCalendarPage />} />
-            <Route path="transactions/create" element={<CreateTransactionPage />} />
-            <Route path="transactions/:id" element={<TransactionDetailPage />} />
-            <Route path="tutorials" element={<TutorialsPage />} />
-            <Route path="reports" element={<ReportsPage />} />
-            <Route path="settings" element={<SettingsPage />} />
+            <Route path="dashboard" element={<Suspense fallback={<PageLoadingFallback />}><DashboardPage /></Suspense>} />
+            <Route path="cranes" element={<Suspense fallback={<PageLoadingFallback />}><CranesPage /></Suspense>} />
+            <Route path="cranes/:id" element={<Suspense fallback={<PageLoadingFallback />}><CraneDetailPage /></Suspense>} />
+            <Route path="counterweights" element={<Suspense fallback={<PageLoadingFallback />}><CounterweightsPage /></Suspense>} />
+            <Route path="boom-sections" element={<Suspense fallback={<PageLoadingFallback />}><BoomSectionsPage /></Suspense>} />
+            <Route path="hooks" element={<Suspense fallback={<PageLoadingFallback />}><HooksPage /></Suspense>} />
+            <Route path="transactions" element={<Suspense fallback={<PageLoadingFallback />}><TransactionsPage /></Suspense>} />
+            <Route path="transactions/calendar" element={<Suspense fallback={<PageLoadingFallback />}><TransactionCalendarPage /></Suspense>} />
+            <Route path="transactions/create" element={<Suspense fallback={<PageLoadingFallback />}><CreateTransactionPage /></Suspense>} />
+            <Route path="transactions/:id" element={<Suspense fallback={<PageLoadingFallback />}><TransactionDetailPage /></Suspense>} />
+            <Route path="tutorials" element={<Suspense fallback={<PageLoadingFallback />}><TutorialsPage /></Suspense>} />
+            <Route path="reports" element={<Suspense fallback={<PageLoadingFallback />}><ReportsPage /></Suspense>} />
+            <Route path="settings" element={<Suspense fallback={<PageLoadingFallback />}><SettingsPage /></Suspense>} />
           </Route>
         </Routes>
       </BrowserRouter>

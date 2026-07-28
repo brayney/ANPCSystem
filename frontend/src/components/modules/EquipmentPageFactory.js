@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { PageHeader, StatusBadge, Pagination, EmptyState, Modal, ConfirmDialog, TableSkeleton } from '../common';
 import CSVImport from '../common/CSVImport';
+import { fetchWithCache, invalidateCache } from '../../utils/dataCache';
 import api from '../../utils/api';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -32,10 +33,14 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
         Object.entries(filterValues).forEach(([key, value]) => {
           if (value) params[key] = value;
         });
-        const { data } = await api.get(endpoint, { params });
-        setItems(data.data); setPages(data.pages); setTotal(data.total);
+        const cached = await fetchWithCache(endpoint, params, {
+          onStale: (data) => { setItems(data?.data || []); setPages(data?.pages || 1); setTotal(data?.total || 0); },
+          shouldInflate: false
+        });
+        setItems(Array.isArray(cached) ? cached : (cached?.data || [])); setPages(Array.isArray(cached) ? 0 : (cached?.pages || 1)); setTotal(Array.isArray(cached) ? (cached?.length || 0) : (cached?.total || 0));
       } catch { toast.error(`Failed to load ${title}`); }
       finally { setLoading(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page, search, filterValues]);
 
     useEffect(() => { fetchItems(); }, [fetchItems]);
@@ -44,7 +49,9 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
       try {
         await api.delete(`${endpoint}/${deleteTarget._id}`);
         toast.success('Item deleted');
-        setDeleteTarget(null); fetchItems();
+        setDeleteTarget(null);
+        invalidateCache(endpoint);
+        fetchItems();
       } catch { toast.error('Delete failed'); }
     };
 
@@ -55,6 +62,7 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
         setBulkDeleteOpen(false);
         setSelectedIds([]);
         setSelectionMode(false);
+        invalidateCache(endpoint);
         fetchItems();
       } catch { toast.error('Bulk delete failed'); }
     };
@@ -128,7 +136,7 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
 
         {/* Table */}
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          {loading ? (
+          {loading && items.length === 0 ? (
             <TableSkeleton rows={8} cols={columns.length + (selectionMode && canEditOrDelete ? 2 : 1)} />
           ) : items.length === 0 ? (
             <EmptyState message={`No ${title.toLowerCase()} found`} />

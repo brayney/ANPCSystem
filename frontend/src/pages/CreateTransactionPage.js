@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ArrowLeftIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { Spinner, StatusBadge, Modal } from '../components/common';
+import { fetchWithCache, invalidateCache } from '../utils/dataCache';
 import api from '../utils/api';
 
 const renderDetailRow = (detail) => {
@@ -199,8 +200,8 @@ export default function CreateTransactionPage() {
   useEffect(() => {
     if (sourceTransactionId) {
       setLoadingCrane(true);
-      api.get(`/transactions/${sourceTransactionId}`)
-        .then(({ data }) => hydrateFromSourceTransaction(data.data))
+      fetchWithCache(`/transactions/${sourceTransactionId}`, {}, { ttl: 0 })
+        .then((data) => hydrateFromSourceTransaction(data?.data || data))
         .catch(() => {
           toast.error('Failed to load source transaction');
           navigate('/transactions');
@@ -220,10 +221,10 @@ export default function CreateTransactionPage() {
     if (!q || q.length < 2) { setCraneResults([]); return; }
     latestSearchRef.current = q;
     try {
-      const { data } = await api.get('/cranes', { params: { search: q, limit: 10 } });
+      const result = await fetchWithCache('/cranes', { search: q, limit: 10 });
       if (latestSearchRef.current !== q) return;
       const restrictedStatuses = ['Out of Yard', 'Under Maintenance', 'On Hire'];
-      const availableCranes = data.data.filter(c => !restrictedStatuses.includes(c.status));
+      const availableCranes = (Array.isArray(result) ? result : (result?.data || [])).filter(c => !restrictedStatuses.includes(c.status));
       setCraneResults(availableCranes);
     } catch {
       if (latestSearchRef.current === q) {
@@ -239,10 +240,9 @@ export default function CreateTransactionPage() {
   };
 
   const loadCraneWithAttachments = async (crane) => {
-    const { data } = await api.get(
-      crane._id ? `/cranes/${crane._id}?includeShared=true` : `/cranes/by-equipment/${crane.equipmentNo}`
-    );
-    return data.data;
+    const endpoint = crane._id ? `/cranes/${crane._id}?includeShared=true` : `/cranes/by-equipment/${crane.equipmentNo}`;
+    const data = await fetchWithCache(endpoint, {}, { ttl: 0 });
+    return data;
   };
 
   const reloadAttachmentsForCranes = async (cranes) => {
@@ -326,6 +326,7 @@ export default function CreateTransactionPage() {
       };
       const { data } = await api.post('/transactions', payload);
       toast.success(`Transaction ${data.data.transactionNo} created!`);
+      invalidateCache('/transactions');
       navigate(`/transactions/${data.data._id}`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to create transaction');
@@ -340,7 +341,7 @@ export default function CreateTransactionPage() {
         </button>
         <div>
           <div className="page-header-kicker" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.08)' }}>
             {sourceTransaction ? `New Transaction from ${sourceTransaction.transactionNo}` : 'New Transaction'}
           </h1>
           <p className="text-sm text-gray-500">

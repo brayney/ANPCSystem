@@ -112,11 +112,12 @@ export const PageHeader = ({ title, subtitle, actions }) => (
       <h1 style={{
         fontFamily: 'var(--font-sans)',
         fontSize: 'clamp(22px, 3vw, 30px)',
-        fontWeight: 800,
+        fontWeight: 900,
         color: 'var(--text-primary)',
         lineHeight: 1.1,
         margin: 0,
         letterSpacing: 0,
+        textShadow: '0 1px 2px rgba(0,0,0,0.08)',
       }}>{title}</h1>
       {subtitle && (
         <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '6px', maxWidth: '720px' }}>

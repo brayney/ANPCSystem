@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { PageHeader, Spinner, StatusBadge, EmptyState } from '../components/common';
-import api from '../utils/api';
+import { fetchWithCache } from '../utils/dataCache';
 import { format, subDays, startOfMonth } from 'date-fns';
 import { MagnifyingGlassIcon, ArrowDownTrayIcon, FunnelIcon } from '@heroicons/react/24/outline';
 
@@ -64,8 +64,10 @@ export default function ReportsPage() {
       if (filters.endDate) params.endDate = filters.endDate;
       if (filters.crane) params.crane = filters.crane;
       if (filters.company) params.company = filters.company;
-      const { data: res } = await api.get('/reports/rental-history', { params });
-      setData(res.data);
+      const cached = await fetchWithCache('/reports/rental-history', params, {
+        onStale: (data) => setData(data?.data || [])
+      });
+      setData(Array.isArray(cached) ? cached : (cached?.data || []));
     } catch { toast.error('Failed to load report'); }
     finally { setLoading(false); }
   };
@@ -73,8 +75,10 @@ export default function ReportsPage() {
   const fetchUtilization = async () => {
     setLoading(true);
     try {
-      const { data: res } = await api.get('/reports/crane-utilization');
-      setUtilData(res.data);
+      const cached = await fetchWithCache('/reports/crane-utilization', {}, {
+        onStale: (data) => setUtilData(data?.data || [])
+      });
+      setUtilData(Array.isArray(cached) ? cached : (cached?.data || []));
     } catch { toast.error('Failed to load utilization'); }
     finally { setLoading(false); }
   };
@@ -82,8 +86,10 @@ export default function ReportsPage() {
   const fetchInventoryReport = async () => {
     setLoading(true);
     try {
-      const { data: res } = await api.get('/reports/inventory');
-      setInventoryData(res.data);
+      const cached = await fetchWithCache('/reports/inventory', {}, {
+        onStale: (data) => setInventoryData(data?.data)
+      });
+      setInventoryData(Array.isArray(cached) ? cached : (cached?.data || null));
     } catch { toast.error('Failed to load inventory report'); }
     finally { setLoading(false); }
   };

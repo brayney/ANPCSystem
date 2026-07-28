@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { PlusIcon, MagnifyingGlassIcon, EyeIcon, ArrowPathIcon, PencilIcon, TrashIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import { PageHeader, StatusBadge, Spinner, Pagination, EmptyState, ConfirmDialog, Modal } from '../components/common';
+import { PageHeader, StatusBadge, Pagination, EmptyState, ConfirmDialog, Modal, TableSkeleton } from '../components/common';
+import { fetchWithCache, invalidateCache } from '../utils/dataCache';
 import api from '../utils/api';
 import { format } from 'date-fns';
 
@@ -45,8 +46,11 @@ export default function TransactionsPage() {
       const params = { page, limit: 15 };
       if (search) params.search = search;
       params.status = tab === 'active' ? 'Active' : 'Returned';
-      const { data } = await api.get('/transactions', { params });
-      setItems(data.data); setPages(data.pages); setTotal(data.total);
+      const cached = await fetchWithCache('/transactions', params, {
+        onStale: (data) => { setItems(data?.data || []); setPages(data?.pages || 1); setTotal(data?.total || 0); },
+        shouldInflate: false
+      });
+      setItems(Array.isArray(cached) ? cached : (cached?.data || [])); setPages(Array.isArray(cached) ? 0 : (cached?.pages || 1)); setTotal(Array.isArray(cached) ? (cached?.length || 0) : (cached?.total || 0));
     } catch { toast.error('Failed to load transactions'); }
     finally { setLoading(false); }
   }, [page, search, tab]);
@@ -59,6 +63,7 @@ export default function TransactionsPage() {
       toast.success(returnScope === 'linked' ? 'Linked transactions marked as returned' : 'Transaction marked as returned');
       setReturnTarget(null);
       setReturnScope('this');
+      invalidateCache('/transactions');
       fetchItems();
     } catch { toast.error('Failed to process return'); }
   };
@@ -92,6 +97,7 @@ export default function TransactionsPage() {
       toast.success('Transaction updated');
       setModal(null);
       setEditForm({});
+      invalidateCache('/transactions');
       fetchItems();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update transaction');
@@ -105,6 +111,7 @@ export default function TransactionsPage() {
       await api.delete(`/transactions/${deleteTarget._id}`);
       toast.success('Transaction deleted');
       setDeleteTarget(null);
+      invalidateCache('/transactions');
       fetchItems();
     } catch { toast.error('Failed to delete transaction'); }
   };
@@ -144,8 +151,8 @@ export default function TransactionsPage() {
 
       {/* Table */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}><Spinner size="lg" /></div>
+        {loading && items.length === 0 ? (
+          <TableSkeleton rows={8} cols={8} />
         ) : items.length === 0 ? (
           <EmptyState message="No transactions found" />
         ) : (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { fetchWithCache } from '../utils/dataCache';
 import api from '../utils/api';
 import { createEquipmentPage } from '../components/modules/EquipmentPageFactory';
 
@@ -28,8 +29,8 @@ const CounterweightForm = ({ initial, onSave, onClose, endpoint }) => {
 
   const fetchCranes = async () => {
     try {
-      const { data } = await api.get('/cranes?limit=1000');
-      setCranes(data.data || []);
+      const data = await fetchWithCache('/cranes', { limit: 1000 }, { ttl: 0 });
+      setCranes(Array.isArray(data) ? data : (data?.data || []));
     } catch (err) {
       console.error('Failed to fetch cranes', err);
     }

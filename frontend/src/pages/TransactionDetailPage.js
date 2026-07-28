@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import toast from 'react-hot-toast';
 import confirm from '../utils/confirm';
@@ -218,16 +218,23 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
 export default function TransactionDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [txn, setTxn] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const initialTxn = location.state?.txn || null;
+  const [txn, setTxn] = useState(initialTxn);
+  const [loading, setLoading] = useState(!initialTxn);
   const printRef = useRef();
 
   useEffect(() => {
+    if (initialTxn) {
+      setTxn(initialTxn);
+      setLoading(false);
+      return;
+    }
     api.get(`/transactions/${id}`)
       .then(r => setTxn(r.data.data))
       .catch(() => { toast.error('Transaction not found'); navigate('/transactions'); })
       .finally(() => setLoading(false));
-  }, [id, navigate]);
+  }, [id, navigate, initialTxn]);
 
   const handlePrint = useReactToPrint({ content: () => printRef.current });
 
@@ -259,7 +266,7 @@ export default function TransactionDetailPage() {
           <div>
             <div className="page-header-kicker" />
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white font-mono">{txn.transactionNo}</h1>
+              <h1 className="text-xl font-black text-gray-900 dark:text-white font-mono" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.08)' }}>{txn.transactionNo}</h1>
               <StatusBadge status={txn.status} />
             </div>
           </div>

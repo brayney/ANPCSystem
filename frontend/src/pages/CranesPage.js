@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, EyeIcon, TruckIcon } from '@heroicons/react/24/outline';
-import { PageHeader, StatusBadge, Spinner, Pagination, EmptyState, Modal, ConfirmDialog } from '../components/common';
+import { PageHeader, StatusBadge, Pagination, EmptyState, Modal, ConfirmDialog, TableSkeleton } from '../components/common';
 import CSVImport from '../components/common/CSVImport';
+import { fetchWithCache, invalidateCache } from '../utils/dataCache';
 import api from '../utils/api';
 import { useAuth } from '../hooks/useAuth';
 
@@ -140,8 +141,11 @@ export default function CranesPage() {
       const params = { page, limit: 15 };
       if (search) params.search = search;
       if (statusFilter) params.status = statusFilter;
-      const { data } = await api.get('/cranes', { params });
-      setCranes(data.data); setPages(data.pages); setTotal(data.total);
+      const cached = await fetchWithCache('/cranes', params, {
+        onStale: (data) => { setCranes(data?.data || []); setPages(data?.pages || 1); setTotal(data?.total || 0); },
+        shouldInflate: false
+      });
+      setCranes(Array.isArray(cached) ? cached : (cached?.data || [])); setPages(Array.isArray(cached) ? 0 : (cached?.pages || 1)); setTotal(Array.isArray(cached) ? (cached?.length || 0) : (cached?.total || 0));
     } catch { toast.error('Failed to load cranes'); }
     finally { setLoading(false); }
   }, [page, search, statusFilter]);
@@ -152,7 +156,9 @@ export default function CranesPage() {
     try {
       await api.delete(`/cranes/${deleteTarget._id}`);
       toast.success('Crane deleted');
-      setDeleteTarget(null); fetchCranes();
+      setDeleteTarget(null);
+      invalidateCache('/cranes');
+      fetchCranes();
     } catch { toast.error('Delete failed'); }
   };
 
@@ -163,6 +169,7 @@ export default function CranesPage() {
       setBulkDeleteOpen(false);
       setSelectedIds([]);
       setSelectionMode(false);
+      invalidateCache('/cranes');
       fetchCranes();
     } catch { toast.error('Bulk delete failed'); }
   };
@@ -220,8 +227,8 @@ export default function CranesPage() {
 
       {/* Table */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}><Spinner size="lg" /></div>
+        {loading && cranes.length === 0 ? (
+          <TableSkeleton rows={8} cols={8} />
         ) : cranes.length === 0 ? (
           <EmptyState message="No cranes found" icon={<TruckIcon style={{ width: '22px', height: '22px' }} />} />
         ) : (

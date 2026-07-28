@@ -230,9 +230,9 @@ export default function Layout() {
   const confirmLogout = async () => {
     setIsLoggingOut(true);
     await logout();
-    setIsLoggingOut(false);
     setShowLogoutConfirm(false);
     setSidebarOpen(false);
+    await new Promise(r => setTimeout(r, 300));
     navigate('/login');
   };
 

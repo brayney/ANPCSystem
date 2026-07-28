@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ArrowLeftIcon,
@@ -118,8 +118,10 @@ const AttachmentTable = ({ title, items, columns, emptyIcon, onDelete, isOpen, o
 export default function CraneDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [crane, setCrane] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const initialCrane = location.state?.crane || null;
+  const [crane, setCrane] = useState(initialCrane);
+  const [loading, setLoading] = useState(!initialCrane);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteType, setDeleteType] = useState(null);
   const [deleting, setDeleting] = useState(false);
@@ -130,11 +132,16 @@ export default function CraneDetailPage() {
   });
 
   useEffect(() => {
+    if (initialCrane) {
+      setCrane(initialCrane);
+      setLoading(false);
+      return;
+    }
     api.get(`/cranes/${id}`)
       .then(r => setCrane(r.data.data))
       .catch(() => { toast.error('Crane not found'); navigate('/cranes'); })
       .finally(() => setLoading(false));
-  }, [id, navigate]);
+  }, [id, navigate, initialCrane]);
 
   const handleDeleteAttachment = async (itemId, itemName, type) => {
     setDeleteTarget({ itemId, itemName });
@@ -217,7 +224,7 @@ export default function CraneDetailPage() {
           <div className="flex items-center gap-3 flex-wrap">
             <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1">
               <TruckIcon className="w-4 h-4 text-slate-700 dark:text-slate-200" />
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white font-mono">{crane.equipmentNo}</h1>
+              <h1 className="text-2xl font-black text-gray-900 dark:text-white font-mono" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.08)' }}>{crane.equipmentNo}</h1>
             </div>
             <StatusBadge status={crane.status} />
           </div>

@@ -212,7 +212,7 @@ export default function TutorialsPage() {
       <div className="instructions-topbar">
         <div className="instructions-topbar-copy">
           <span className="slideshow-pill accent">Full-page instructions</span>
-          <h1>Instructions</h1>
+           <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1.2, margin: '0 0 0.5rem', textShadow: '0 1px 2px rgba(0,0,0,0.08)' }}>Instructions</h1>
           <p>Follow the system step-by-step as a full-screen presentation deck.</p>
         </div>
 

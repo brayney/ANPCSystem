@@ -36,7 +36,7 @@ const MobileBlockedPage = () => {
         }}>
           !
         </div>
-        <h1 style={{ margin: '0 0 10px', fontSize: '24px', color: 'var(--text-primary)' }}>Mobile access is not allowed</h1>
+         <h1 style={{ margin: '0 0 10px', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 900, textShadow: '0 1px 2px rgba(0,0,0,0.08)' }}>Mobile access is not allowed</h1>
         <p style={{ margin: '0 0 18px', fontSize: '14px', lineHeight: '1.6', color: 'var(--text-secondary)' }}>
           This system is intended for desktop and laptop browsers only. If you are reviewing a printed transaction, please use the QR code link on your phone to open the public transaction page.
         </p>

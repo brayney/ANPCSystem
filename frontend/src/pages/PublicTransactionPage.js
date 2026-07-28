@@ -396,7 +396,7 @@ export default function PublicTransactionPage() {
       <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10 no-print">
         <div className="w-full px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex-1">
-            <h1 className="text-lg md:text-xl font-bold text-gray-900 font-mono">{txn.transactionNo}</h1>
+             <h1 className="text-lg md:text-xl font-black text-gray-900 font-mono" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.08)' }}>{txn.transactionNo}</h1>
             <p className="text-xs md:text-sm text-gray-500">{txn.companyName}</p>
           </div>
           <div className="flex items-center gap-2 md:gap-4 flex-wrap">
