@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { TruckIcon, Square3Stack3DIcon, DocumentTextIcon, ChartBarIcon, BoltIcon, LinkIcon, CheckCircleIcon, ExclamationCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, CartesianGrid } from 'recharts';
@@ -61,7 +61,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 function DashboardPage() {
   const location = useLocation();
-  const initialData = location.state?.dashboardData || readCachedDashboardData();
+  const initialData = useMemo(() => location.state?.dashboardData || readCachedDashboardData(), [location.state?.dashboardData]);
   const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState(!initialData);
   const [refreshing, setRefreshing] = useState(false);
