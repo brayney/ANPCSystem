@@ -4,9 +4,11 @@ const BoomSection = require('../models/BoomSection');
 const Hook = require('../models/Hook');
 const Transaction = require('../models/Transaction');
 const AuditLog = require('../models/AuditLog');
+const { branchFilter } = require('../utils/branchScope');
 
 exports.getDashboard = async (req, res, next) => {
   try {
+    const scope = branchFilter(req);
     const now = new Date();
     const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -21,28 +23,28 @@ exports.getDashboard = async (req, res, next) => {
       thisMonthTransactions, lastMonthTransactions,
       pendingReturnsTxns, avgRentalDurationResult
     ] = await Promise.all([
-      Crane.countDocuments({ isArchived: false }),
-      Counterweight.countDocuments({ isArchived: false }),
-      BoomSection.countDocuments({ isArchived: false }),
-      Hook.countDocuments({ isArchived: false }),
-      Transaction.countDocuments({ status: 'Active', isArchived: false }),
-      Crane.countDocuments({ status: 'Available', isArchived: false }),
-      Crane.countDocuments({ status: 'Under Maintenance', isArchived: false }),
-      Transaction.find({ isArchived: false }).sort({ createdAt: -1 }).limit(8)
+      Crane.countDocuments({ isArchived: false, ...scope }),
+      Counterweight.countDocuments({ isArchived: false, ...scope }),
+      BoomSection.countDocuments({ isArchived: false, ...scope }),
+      Hook.countDocuments({ isArchived: false, ...scope }),
+      Transaction.countDocuments({ status: 'Active', isArchived: false, ...scope }),
+      Crane.countDocuments({ status: 'Available', isArchived: false, ...scope }),
+      Crane.countDocuments({ status: 'Under Maintenance', isArchived: false, ...scope }),
+      Transaction.find({ isArchived: false, ...scope }).sort({ createdAt: -1 }).limit(8)
         .populate('createdBy', 'name')
         .lean(),
       AuditLog.find().sort({ createdAt: -1 }).limit(10).lean(),
       Crane.aggregate([
-        { $match: { isArchived: false } },
+        { $match: { isArchived: false, ...scope } },
         { $group: { _id: '$status', count: { $sum: 1 } } }
       ]),
       Transaction.aggregate([
-        { $match: { isArchived: false, createdAt: { $gte: sixMonthsAgo } } },
+        { $match: { isArchived: false, createdAt: { $gte: sixMonthsAgo }, ...scope } },
         { $group: { _id: { $month: '$createdAt' }, count: { $sum: 1 } } },
         { $sort: { '_id': 1 } }
       ]),
       Transaction.aggregate([
-        { $match: { isArchived: false, transactionDate: { $gte: oneWeekAgo } } },
+        { $match: { isArchived: false, transactionDate: { $gte: oneWeekAgo }, ...scope } },
         {
           $group: {
             _id: {
@@ -56,13 +58,13 @@ exports.getDashboard = async (req, res, next) => {
         },
         { $sort: { _id: 1 } }
       ]),
-      Transaction.countDocuments({ createdAt: { $gte: thisMonthStart }, isArchived: false }),
-      Transaction.countDocuments({ createdAt: { $gte: lastMonthStart, $lt: thisMonthStart }, isArchived: false }),
-      Transaction.countDocuments({ status: 'Active', expectedReturnDate: { $lt: now }, isArchived: false }),
+      Transaction.countDocuments({ createdAt: { $gte: thisMonthStart }, isArchived: false, ...scope }),
+      Transaction.countDocuments({ createdAt: { $gte: lastMonthStart, $lt: thisMonthStart }, isArchived: false, ...scope }),
+      Transaction.countDocuments({ status: 'Active', expectedReturnDate: { $lt: now }, isArchived: false, ...scope }),
       Transaction.aggregate([
         {
           $match: {
-            isArchived: false,
+            isArchived: false, ...scope,
             returnDate: { $exists: true }
           }
         },

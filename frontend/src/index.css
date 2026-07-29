@@ -416,6 +416,60 @@
     background-clip: content-box;
   }
 
+  /* Keep branch administration scrollable without showing the right-side rail. */
+  html.branch-admin-scroll-hidden,
+  body.branch-admin-scroll-hidden,
+  main.app-scrollbar.branch-admin-scroll-hidden {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  html.branch-admin-scroll-hidden::-webkit-scrollbar,
+  body.branch-admin-scroll-hidden::-webkit-scrollbar,
+  main.app-scrollbar.branch-admin-scroll-hidden::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  .branch-admin-page .card { box-shadow: var(--shadow-sm); }
+  .branch-admin-page .card > h2 { letter-spacing: -0.01em; }
+  .company-admin-logout { color: var(--danger); }
+  .company-admin-modal-backdrop,
+  .company-admin-loading {
+    position: fixed;
+    inset: 0;
+    z-index: 20000;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(4, 9, 18, 0.66);
+    backdrop-filter: blur(5px);
+  }
+  .company-admin-modal,
+  .company-admin-loading-card {
+    width: min(100%, 420px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface-raised);
+    box-shadow: var(--shadow-lg);
+  }
+  .company-admin-modal { padding: 24px; }
+  .company-admin-modal h2 { margin: 0; font-size: 18px; }
+  .company-admin-modal p { margin: 8px 0 22px; color: var(--text-secondary); font-size: 13px; }
+  .company-admin-modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+  .company-admin-loading-card { display: grid; justify-items: center; gap: 8px; padding: 30px; }
+  .company-admin-loading-card strong { font-size: 16px; }
+  .company-admin-loading-card span { color: var(--text-secondary); font-size: 13px; }
+
+  /* Branch administration remains a single clean vertical flow on narrower screens. */
+  @media (max-width: 1050px) {
+    .branch-admin-grid { grid-template-columns: 1fr !important; }
+  }
+  @media (max-width: 760px) {
+    .branch-admin-grid form[style*="repeat(3"] { grid-template-columns: 1fr !important; }
+    .branch-admin-grid > div > div > .card > div[style*="minmax(0, 1fr)"] { grid-template-columns: 1fr !important; }
+  }
+
   .toolbar {
     background: var(--surface-raised);
     border: 1px solid var(--border);

@@ -22,6 +22,7 @@ const ReportsPage = lazy(() => import('./pages/ReportsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const TutorialsPage = lazy(() => import('./pages/TutorialsPage'));
 const MobileBlockedPage = lazy(() => import('./pages/MobileBlockedPage'));
+const BranchAdministrationPage = lazy(() => import('./pages/BranchAdministrationPage'));
 
 const PageLoadingFallback = () => (
   <div style={{
@@ -76,6 +77,12 @@ const PrivateRoute = ({ children }) => {
   return user ? children : <Navigate to="/login" replace />;
 };
 
+const CompanyAdminRoute = ({ children }) => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/company-admin/login" replace />;
+  return user.role === 'super_admin' ? children : <Navigate to="/dashboard" replace />;
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -109,6 +116,8 @@ function App() {
             
           {/* Auth */}
           <Route path="/login" element={<Suspense fallback={<PageLoadingFallback />}><MobileRestrictedRoute><LoginPage /></MobileRestrictedRoute></Suspense>} />
+          <Route path="/company-admin/login" element={<Suspense fallback={<PageLoadingFallback />}><MobileRestrictedRoute><LoginPage loginType="super_admin" /></MobileRestrictedRoute></Suspense>} />
+          <Route path="/company-admin" element={<CompanyAdminRoute><Suspense fallback={<PageLoadingFallback />}><BranchAdministrationPage /></Suspense></CompanyAdminRoute>} />
             
           {/* Private Routes */}
           <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>

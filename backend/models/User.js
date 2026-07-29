@@ -5,7 +5,9 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true, minlength: 6 },
-  role: { type: String, enum: ['admin', 'manager', 'viewer'], default: 'viewer' },
+  // Company-level administrators manage branches; all other accounts belong to a branch.
+  role: { type: String, enum: ['super_admin', 'admin', 'manager', 'viewer'], default: 'viewer' },
+  branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', default: null, index: true },
   language: { type: String, enum: ['en', 'es', 'fr', 'de', 'pt', 'ar', 'zh', 'ja'], default: 'en' },
   isActive: { type: Boolean, default: true },
   isLoggedIn: { type: Boolean, default: false },

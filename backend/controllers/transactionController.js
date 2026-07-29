@@ -6,6 +6,7 @@ const Hook = require('../models/Hook');
 const AuditLog = require('../models/AuditLog');
 const { createNotification } = require('../utils/notificationHelper');
 const mongoose = require('mongoose');
+const { branchFilter, branchData } = require('../utils/branchScope');
 
 const craneLookup = (txn) => {
   if (txn.craneId && mongoose.Types.ObjectId.isValid(txn.craneId)) {
@@ -48,8 +49,8 @@ const craneUpdateQuery = (txn) => {
   return craneLookup(txn);
 };
 
-const findChildTransactions = (sourceId, publicOnly = false) => {
-  const query = Transaction.find({ isArchived: false, sourceTransactionId: sourceId });
+const findChildTransactions = (sourceId, branch, publicOnly = false) => {
+  const query = Transaction.find({ isArchived: false, sourceTransactionId: sourceId, ...(branch ? { branch } : {}) });
   if (publicOnly) {
     return query
       .populate('counterweights', 'itemName serialNo weightKg')
@@ -113,6 +114,7 @@ exports.getTransactions = async (req, res, next) => {
       ],
     };
     const query = {
+      ...branchFilter(req),
       isArchived: false,
       $and: [mainTransactionFilter],
     };
@@ -147,7 +149,7 @@ exports.getTransactions = async (req, res, next) => {
       .map(item => item.crane);
     
     if (craneEquipmentNos.length > 0) {
-      const cranes = await Crane.find({ equipmentNo: { $in: craneEquipmentNos } });
+      const cranes = await Crane.find({ equipmentNo: { $in: craneEquipmentNos }, ...branchFilter(req) });
       const craneMap = {};
       cranes.forEach(c => { craneMap[c.equipmentNo] = c; });
       
@@ -168,7 +170,7 @@ exports.getTransactions = async (req, res, next) => {
     const itemIds = itemObjects.map(item => item._id);
     let filteredItemObjects = itemObjects;
     if (itemIds.length > 0) {
-      const childTransactions = await Transaction.find({ isArchived: false, sourceTransactionId: { $in: itemIds } })
+      const childTransactions = await Transaction.find({ isArchived: false, sourceTransactionId: { $in: itemIds }, ...branchFilter(req) })
         .populate('counterweights', 'itemName serialNo weightKg capacity')
         .populate('boomSections', 'itemName boomCode length')
         .populate('hooks', 'itemName hookSerialNo capacity')
@@ -207,7 +209,7 @@ exports.getTransactions = async (req, res, next) => {
 
 exports.getTransaction = async (req, res, next) => {
   try {
-    let item = await Transaction.findById(req.params.id)
+    let item = await Transaction.findOne({ _id: req.params.id, ...branchFilter(req) })
       .populate('counterweights')
       .populate('boomSections')
       .populate('hooks')
@@ -216,7 +218,7 @@ exports.getTransaction = async (req, res, next) => {
     
     // Fetch crane details if capacity/weight are missing
     if (!item.capacity || !item.weightKg) {
-      const craneData = await Crane.findOne(craneLookup(item));
+      const craneData = await Crane.findOne({ ...craneLookup(item), ...branchFilter(req) });
       if (craneData) {
         item = item.toObject ? item.toObject() : item;
         item.capacity = item.capacity || craneData.capacity;
@@ -227,7 +229,7 @@ exports.getTransaction = async (req, res, next) => {
 
     const itemObject = item.toObject ? item.toObject() : item;
     const rootId = itemObject.sourceTransactionId || itemObject._id;
-    const childTransactions = await findChildTransactions(rootId);
+    const childTransactions = await findChildTransactions(rootId, req.user.branch);
     itemObject.childTransactions = childTransactions.map(child => child.toObject ? child.toObject() : child);
     
     res.json({ success: true, data: itemObject });
@@ -265,7 +267,7 @@ exports.getPublicTransaction = async (req, res, next) => {
     // Remove sensitive fields for public access
     const sanitized = item.toObject ? item.toObject() : item;
     const rootId = sanitized.sourceTransactionId || sanitized._id;
-    const childTransactions = await findChildTransactions(rootId, true);
+    const childTransactions = await findChildTransactions(rootId, null, true);
     sanitized.childTransactions = childTransactions.map(child => {
       const childObject = child.toObject ? child.toObject() : child;
       delete childObject.createdBy;
@@ -294,6 +296,7 @@ exports.createTransaction = async (req, res, next) => {
         _id: sourceTransactionId,
         status: 'Active',
         isArchived: false,
+        ...branchFilter(req),
       });
 
       if (!sourceTransaction) {
@@ -311,8 +314,8 @@ exports.createTransaction = async (req, res, next) => {
     const craneDocs = [];
     for (const requestedCrane of requestedCranes) {
       const craneData = requestedCrane.craneId && mongoose.Types.ObjectId.isValid(requestedCrane.craneId)
-        ? await Crane.findById(requestedCrane.craneId)
-        : await Crane.findOne({ equipmentNo: requestedCrane.equipmentNo || requestedCrane.crane || crane });
+        ? await Crane.findOne({ _id: requestedCrane.craneId, ...branchFilter(req) })
+        : await Crane.findOne({ equipmentNo: requestedCrane.equipmentNo || requestedCrane.crane || crane, ...branchFilter(req) });
 
       const craneLabel = requestedCrane.equipmentNo || requestedCrane.crane || crane;
       if (!craneData) return res.status(404).json({ success: false, message: `Crane ${craneLabel} not found` });
@@ -354,7 +357,7 @@ exports.createTransaction = async (req, res, next) => {
 
     // Validate counterweights status
     if (counterweights?.length) {
-      const cwData = await Counterweight.find({ _id: { $in: counterweights } });
+      const cwData = await Counterweight.find({ _id: { $in: counterweights }, ...branchFilter(req) });
       const sourceIds = new Set((sourceTransaction?.counterweights || []).map(id => String(id)));
       const allowedEquipmentNos = craneEquipmentNosFromTransaction(sourceTransaction || {});
       const invalid = sourceTransaction && cwData.find(cw => (
@@ -376,7 +379,7 @@ exports.createTransaction = async (req, res, next) => {
 
     // Validate boom sections status
     if (boomSections?.length) {
-      const bsData = await BoomSection.find({ _id: { $in: boomSections } });
+      const bsData = await BoomSection.find({ _id: { $in: boomSections }, ...branchFilter(req) });
       const sourceIds = new Set((sourceTransaction?.boomSections || []).map(id => String(id)));
       const allowedEquipmentNos = craneEquipmentNosFromTransaction(sourceTransaction || {});
       const invalid = sourceTransaction && bsData.find(bs => (
@@ -398,7 +401,7 @@ exports.createTransaction = async (req, res, next) => {
 
     // Validate hooks status
     if (hooks?.length) {
-      const hData = await Hook.find({ _id: { $in: hooks } });
+      const hData = await Hook.find({ _id: { $in: hooks }, ...branchFilter(req) });
       const sourceIds = new Set((sourceTransaction?.hooks || []).map(id => String(id)));
       const allowedEquipmentNos = craneEquipmentNosFromTransaction(sourceTransaction || {});
       const invalid = sourceTransaction && hData.find(h => (
@@ -419,7 +422,7 @@ exports.createTransaction = async (req, res, next) => {
     }
 
     // Capture crane capacity and weight from the primary crane for backward compatibility.
-    const txnData = {
+    const txnData = branchData(req, {
       ...req.body,
       craneId: primaryCrane._id,
       crane: primaryCrane.equipmentNo,
@@ -428,7 +431,7 @@ exports.createTransaction = async (req, res, next) => {
       weightKg: primaryCrane.weightKg,
       cranes: craneItems,
       createdBy: req.user._id,
-    };
+    });
     const txn = await Transaction.create(txnData);
 
     const newLocation = txn.deliveryLocation || txn.companyAddress || 'In Transit';
@@ -443,28 +446,28 @@ exports.createTransaction = async (req, res, next) => {
 
     // Mark crane and attachments as Out of Yard and update location and client to transaction details
     const craneUpdate = await Crane.updateMany(
-      craneUpdateQuery(txn),
+      { ...craneUpdateQuery(txn), ...branchFilter(req) },
       { $set: { status: 'Out of Yard', location: newLocation, client: clientName } }
     );
     console.log('  ✓ Cranes updated:', craneUpdate?.modifiedCount);
 
     if (txn.counterweights?.length) {
       const cwResult = await Counterweight.updateMany(
-        { _id: { $in: txn.counterweights } },
+        { _id: { $in: txn.counterweights }, ...branchFilter(req) },
         { $set: { status: 'Out of Yard', location: newLocation, client: clientName } }
       );
       console.log('  ✓ Counterweights updated:', cwResult.modifiedCount);
     }
     if (txn.boomSections?.length) {
       const bsResult = await BoomSection.updateMany(
-        { _id: { $in: txn.boomSections } },
+        { _id: { $in: txn.boomSections }, ...branchFilter(req) },
         { $set: { status: 'Out of Yard', location: newLocation, client: clientName } }
       );
       console.log('  ✓ Boom Sections updated:', bsResult.modifiedCount);
     }
     if (txn.hooks?.length) {
       const hResult = await Hook.updateMany(
-        { _id: { $in: txn.hooks } },
+        { _id: { $in: txn.hooks }, ...branchFilter(req) },
         { $set: { status: 'Out of Yard', location: newLocation, client: clientName } }
       );
       console.log('  ✓ Hooks updated:', hResult.modifiedCount);
@@ -485,7 +488,7 @@ exports.createTransaction = async (req, res, next) => {
 
 exports.updateTransaction = async (req, res, next) => {
   try {
-    const txn = await Transaction.findById(req.params.id);
+    const txn = await Transaction.findOne({ _id: req.params.id, ...branchFilter(req) });
     if (!txn) return res.status(404).json({ success: false, message: 'Not found' });
 
     const wasReturned = txn.status === 'Returned';
@@ -578,16 +581,16 @@ exports.returnTransaction = async (req, res, next) => {
    try {
      const scope = req.body?.scope === 'linked' ? 'linked' : 'this';
      const { returnDriverName, returnVehicleType, returnVehiclePlateNo } = req.body;
-     const txn = await Transaction.findById(req.params.id);
+     const txn = await Transaction.findOne({ _id: req.params.id, ...branchFilter(req) });
      if (!txn) return res.status(404).json({ success: false, message: 'Not found' });
 
      const transactionsToReturn = [txn];
      if (scope === 'linked') {
        if (txn.sourceTransactionId) {
-         const parentTxn = await Transaction.findOne({ _id: txn.sourceTransactionId, isArchived: false });
+         const parentTxn = await Transaction.findOne({ _id: txn.sourceTransactionId, isArchived: false, ...branchFilter(req) });
          if (parentTxn) transactionsToReturn.push(parentTxn);
        } else {
-         const childTransactions = await Transaction.find({ sourceTransactionId: txn._id, isArchived: false });
+         const childTransactions = await Transaction.find({ sourceTransactionId: txn._id, isArchived: false, ...branchFilter(req) });
          transactionsToReturn.push(...childTransactions);
        }
      }
@@ -640,7 +643,7 @@ exports.returnTransaction = async (req, res, next) => {
 
 exports.deleteTransaction = async (req, res, next) => {
   try {
-    const txn = await Transaction.findById(req.params.id);
+    const txn = await Transaction.findOne({ _id: req.params.id, ...branchFilter(req) });
     if (!txn) return res.status(404).json({ success: false, message: 'Not found' });
 
     const isAddedTransaction = !!txn.sourceTransactionId;
@@ -650,7 +653,7 @@ exports.deleteTransaction = async (req, res, next) => {
 
       await restoreEquipmentToDefaults(txn, false);
 
-      const sourceTxn = await Transaction.findOne({ _id: txn.sourceTransactionId, isArchived: false });
+      const sourceTxn = await Transaction.findOne({ _id: txn.sourceTransactionId, isArchived: false, ...branchFilter(req) });
       if (sourceTxn && sourceTxn.status === 'Active') {
         await Crane.updateMany(
           craneUpdateQuery(sourceTxn),
@@ -664,7 +667,7 @@ exports.deleteTransaction = async (req, res, next) => {
       return res.json({ success: true, message: 'Archived and equipment restored' });
     }
 
-    const childTransactions = await Transaction.find({ sourceTransactionId: txn._id, isArchived: false });
+    const childTransactions = await Transaction.find({ sourceTransactionId: txn._id, isArchived: false, ...branchFilter(req) });
     const relatedTransactions = [txn, ...childTransactions];
 
     await Transaction.updateMany(

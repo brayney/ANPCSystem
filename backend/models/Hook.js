@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const hookSchema = new mongoose.Schema({
+  branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true, index: true },
   itemName: { type: String, trim: true },
   hookSerialNo: { type: String, trim: true },
   capacity: { type: String, trim: true },

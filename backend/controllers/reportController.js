@@ -3,11 +3,12 @@ const Crane = require('../models/Crane');
 const Counterweight = require('../models/Counterweight');
 const BoomSection = require('../models/BoomSection');
 const Hook = require('../models/Hook');
+const { branchFilter } = require('../utils/branchScope');
 
 exports.getRentalHistory = async (req, res, next) => {
   try {
     const { startDate, endDate, crane, company } = req.query;
-    const query = { isArchived: false };
+    const query = { isArchived: false, ...branchFilter(req) };
     if (crane) query.crane = crane;
     if (company) query.companyName = { $regex: company, $options: 'i' };
     if (startDate || endDate) {
@@ -27,10 +28,10 @@ exports.getRentalHistory = async (req, res, next) => {
 exports.getInventoryReport = async (req, res, next) => {
   try {
     const [cranes, counterweights, boomSections, hooks] = await Promise.all([
-      Crane.find({ isArchived: false }),
-      Counterweight.find({ isArchived: false }),
-      BoomSection.find({ isArchived: false }),
-      Hook.find({ isArchived: false }),
+      Crane.find({ isArchived: false, ...branchFilter(req) }),
+      Counterweight.find({ isArchived: false, ...branchFilter(req) }),
+      BoomSection.find({ isArchived: false, ...branchFilter(req) }),
+      Hook.find({ isArchived: false, ...branchFilter(req) }),
     ]);
     res.json({ success: true, data: { cranes, counterweights, boomSections, hooks } });
   } catch (error) { next(error); }
@@ -39,7 +40,7 @@ exports.getInventoryReport = async (req, res, next) => {
 exports.getCraneUtilization = async (req, res, next) => {
   try {
     const utilization = await Transaction.aggregate([
-      { $match: { isArchived: false } },
+      { $match: { isArchived: false, ...branchFilter(req) } },
       { $group: { _id: '$crane', totalRentals: { $sum: 1 }, companies: { $addToSet: '$companyName' } } },
       { $sort: { totalRentals: -1 } },
       { $limit: 20 }

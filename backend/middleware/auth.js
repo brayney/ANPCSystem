@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { assignLegacyAccountToBranch } = require('../utils/legacyBranchMigration');
 
 const protect = async (req, res, next) => {
   try {
@@ -9,10 +10,11 @@ const protect = async (req, res, next) => {
     }
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select('-password');
+    let user = await User.findById(decoded.id).select('-password');
     if (!user || !user.isActive) {
       return res.status(401).json({ success: false, message: 'Not authorized, user not found' });
     }
+    user = await assignLegacyAccountToBranch(user);
     req.user = user;
     next();
   } catch (error) {
@@ -25,9 +27,14 @@ const adminOnly = (req, res, next) => {
   return res.status(403).json({ success: false, message: 'Admin access required' });
 };
 
+const superAdminOnly = (req, res, next) => {
+  if (req.user && req.user.role === 'super_admin') return next();
+  return res.status(403).json({ success: false, message: 'Company administrator access required' });
+};
+
 const adminOrManager = (req, res, next) => {
   if (req.user && (req.user.role === 'admin' || req.user.role === 'manager')) return next();
   return res.status(403).json({ success: false, message: 'Admin or manager access required' });
 };
 
-module.exports = { protect, adminOnly, adminOrManager };
+module.exports = { protect, adminOnly, adminOrManager, superAdminOnly };

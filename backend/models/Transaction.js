@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const transactionSchema = new mongoose.Schema({
+  branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true, index: true },
   transactionNo: { type: String, unique: true },
   type: { type: String, enum: ['Rental', 'Transfer', 'Return', 'Maintenance'], default: 'Rental' },
 
@@ -56,7 +57,7 @@ const transactionSchema = new mongoose.Schema({
 
 transactionSchema.pre('save', async function (next) {
   if (!this.transactionNo) {
-    const count = await mongoose.model('Transaction').countDocuments();
+    const count = await mongoose.model('Transaction').countDocuments({ branch: this.branch });
     const pad = String(count + 1).padStart(5, '0');
     this.transactionNo = `ANPC-TXN-${pad}-${new Date().getFullYear()}`;
   }

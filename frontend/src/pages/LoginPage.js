@@ -43,7 +43,7 @@ const ShieldIcon = () => (
   </svg>
 );
 
-export default function LoginPage() {
+export default function LoginPage({ loginType = 'branch' }) {
   const [open, setOpen] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -75,7 +75,7 @@ export default function LoginPage() {
         try {
           const { data } = await api.get('/auth/me');
           if (data?.user) {
-            navigate('/dashboard');
+            navigate(data.user.role === 'super_admin' ? '/company-admin' : '/dashboard');
             return;
           }
         } catch (err) {
@@ -155,7 +155,7 @@ export default function LoginPage() {
     e.preventDefault();
     setInvalidCredentials(false);
 
-    const result = await login(email, password);
+    const result = await login(email, password, loginType);
     setAttemptState({ attemptsRemaining: result.attemptsRemaining ?? null, lockUntil: result.lockUntil ?? null });
 
     if (result.success) {
@@ -163,15 +163,16 @@ export default function LoginPage() {
         setIsSigningIn(true);
         const { data } = await api.get('/dashboard');
         toast.success('Welcome back!');
-        navigate('/dashboard', { replace: true, state: { dashboardData: data?.data || null } });
+        navigate(loginType === 'super_admin' ? '/company-admin' : '/dashboard', { replace: true, state: { dashboardData: data?.data || null } });
       } catch (err) {
         toast.success('Welcome back!');
-        navigate('/dashboard', { replace: true });
+        navigate(loginType === 'super_admin' ? '/company-admin' : '/dashboard', { replace: true });
       }
       return;
     }
 
     if (result.status === 403) {
+      toast.error(result.message || 'This account cannot sign in here.');
       return;
     }
 
@@ -490,7 +491,7 @@ export default function LoginPage() {
             Welcome back
           </h2>
           <p style={{ fontSize: '0.9rem', color: 'rgba(232,234,246,0.4)', margin: 0, fontWeight: 300 }}>
-            Sign in to your command center.
+            {loginType === 'super_admin' ? 'Sign in to manage company branches.' : 'Sign in to your branch command center.'}
           </p>
         </div>
 

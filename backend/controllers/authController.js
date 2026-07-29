@@ -30,6 +30,18 @@ exports.login = async (req, res, next) => {
     if (!user)
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
 
+    // Upgrade the configured original administrator to the company-level role
+    // on first sign-in, so existing installations do not need a manual migration.
+    if (user.email === PRIMARY_ADMIN_EMAIL && user.role === 'admin' && !user.branch) {
+      user.role = 'super_admin';
+    }
+    if (req.body.loginType === 'super_admin' && user.role !== 'super_admin') {
+      return res.status(403).json({ success: false, message: 'Use the branch sign-in page for this account' });
+    }
+    if (req.body.loginType === 'branch' && user.role === 'super_admin') {
+      return res.status(403).json({ success: false, message: 'Use the company administrator sign-in page' });
+    }
+
     const stage = getLoginStage(user);
     const now = new Date();
 
@@ -112,7 +124,7 @@ exports.getUsers = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Admin access required to review accounts' });
     }
 
-    const users = await User.find()
+    const users = await User.find({ branch: req.user.branch })
       .select('-password')
       .sort({ createdAt: -1 });
 
@@ -181,7 +193,7 @@ exports.register = async (req, res, next) => {
     if (exists)
       return res.status(400).json({ success: false, message: 'Email already registered' });
 
-    const user = await User.create({ name, email, password, role: 'manager' });
+    const user = await User.create({ name, email, password, role: 'manager', branch: req.user.branch });
     res.status(201).json({ success: true, user });
   } catch (error) { next(error); }
 };

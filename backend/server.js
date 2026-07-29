@@ -15,6 +15,7 @@ const reportRoutes = require('./routes/reportRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const branchRoutes = require('./routes/branchRoutes');
 const repairEquipmentIndexes = require('./utils/repairEquipmentIndexes');
 
 const errorHandler = require('./middleware/errorHandler');
@@ -52,6 +53,7 @@ if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/branches', branchRoutes);
 app.use('/api/cranes', craneRoutes);
 app.use('/api/counterweights', counterweightRoutes);
 app.use('/api/boom-sections', boomSectionRoutes);

@@ -4,8 +4,10 @@ const BoomSection = require('../models/BoomSection');
 const Hook = require('../models/Hook');
 const AuditLog = require('../models/AuditLog');
 const { equipmentStatusMap, normalizeImportRow } = require('../utils/importNormalizer');
+const { branchFilter, branchData } = require('../utils/branchScope');
 
-const sharedAttachmentQuery = (equipmentNo) => ({
+const sharedAttachmentQuery = (equipmentNo, branch) => ({
+  branch,
   isArchived: false,
   $or: [
     { assignedCrane: equipmentNo },
@@ -20,7 +22,7 @@ const sharedAttachmentQuery = (equipmentNo) => ({
 exports.getCranes = async (req, res, next) => {
   try {
     const { search, status, page = 1, limit = 15 } = req.query;
-    const query = { isArchived: false };
+    const query = { ...branchFilter(req), isArchived: false };
     if (status) query.status = status;
     if (search) {
       query.$or = [
@@ -45,17 +47,17 @@ exports.getCranes = async (req, res, next) => {
 // GET /api/cranes/:id
 exports.getCrane = async (req, res, next) => {
   try {
-    const crane = await Crane.findById(req.params.id)
-      .populate({ path: 'counterweights', match: { isArchived: false } })
-      .populate({ path: 'boomSections', match: { isArchived: false } })
-      .populate({ path: 'hooks', match: { isArchived: false } });
+    const crane = await Crane.findOne({ _id: req.params.id, ...branchFilter(req) })
+      .populate({ path: 'counterweights', match: { isArchived: false, branch: req.user.branch } })
+      .populate({ path: 'boomSections', match: { isArchived: false, branch: req.user.branch } })
+      .populate({ path: 'hooks', match: { isArchived: false, branch: req.user.branch } });
     if (!crane) return res.status(404).json({ success: false, message: 'Crane not found' });
 
     if (req.query.includeShared === 'true') {
       const [counterweights, boomSections, hooks] = await Promise.all([
-        Counterweight.find(sharedAttachmentQuery(crane.equipmentNo)),
-        BoomSection.find(sharedAttachmentQuery(crane.equipmentNo)),
-        Hook.find(sharedAttachmentQuery(crane.equipmentNo)),
+        Counterweight.find(sharedAttachmentQuery(crane.equipmentNo, req.user.branch)),
+        BoomSection.find(sharedAttachmentQuery(crane.equipmentNo, req.user.branch)),
+        Hook.find(sharedAttachmentQuery(crane.equipmentNo, req.user.branch)),
       ]);
 
       return res.json({ success: true, data: { ...crane.toJSON(), counterweights, boomSections, hooks } });
@@ -68,13 +70,13 @@ exports.getCrane = async (req, res, next) => {
 // GET /api/cranes/by-equipment/:equipmentNo
 exports.getCraneByEquipmentNo = async (req, res, next) => {
   try {
-    const crane = await Crane.findOne({ equipmentNo: req.params.equipmentNo, isArchived: false });
+    const crane = await Crane.findOne({ equipmentNo: req.params.equipmentNo, isArchived: false, ...branchFilter(req) });
     if (!crane) return res.status(404).json({ success: false, message: 'Crane not found' });
 
     const [counterweights, boomSections, hooks] = await Promise.all([
-      Counterweight.find(sharedAttachmentQuery(crane.equipmentNo)),
-      BoomSection.find(sharedAttachmentQuery(crane.equipmentNo)),
-      Hook.find(sharedAttachmentQuery(crane.equipmentNo)),
+      Counterweight.find(sharedAttachmentQuery(crane.equipmentNo, req.user.branch)),
+      BoomSection.find(sharedAttachmentQuery(crane.equipmentNo, req.user.branch)),
+      Hook.find(sharedAttachmentQuery(crane.equipmentNo, req.user.branch)),
     ]);
 
     res.json({ success: true, data: { ...crane.toJSON(), counterweights, boomSections, hooks } });
@@ -84,7 +86,7 @@ exports.getCraneByEquipmentNo = async (req, res, next) => {
 // POST /api/cranes
 exports.createCrane = async (req, res, next) => {
   try {
-    const crane = await Crane.create(req.body);
+    const crane = await Crane.create(branchData(req, req.body));
     await AuditLog.create({ user: req.user._id, userName: req.user.name, action: 'CREATE', module: 'Crane', targetId: crane.equipmentNo, details: `Created crane ${crane.equipmentNo}` });
     res.status(201).json({ success: true, data: crane });
   } catch (error) { next(error); }
@@ -93,7 +95,7 @@ exports.createCrane = async (req, res, next) => {
 // PUT /api/cranes/:id
 exports.updateCrane = async (req, res, next) => {
   try {
-    const crane = await Crane.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const crane = await Crane.findOneAndUpdate({ _id: req.params.id, ...branchFilter(req) }, req.body, { new: true, runValidators: true });
     if (!crane) return res.status(404).json({ success: false, message: 'Crane not found' });
     await AuditLog.create({ user: req.user._id, userName: req.user.name, action: 'UPDATE', module: 'Crane', targetId: crane.equipmentNo, details: `Updated crane ${crane.equipmentNo}` });
     res.json({ success: true, data: crane });
@@ -103,7 +105,7 @@ exports.updateCrane = async (req, res, next) => {
 // DELETE /api/cranes/:id (soft delete)
 exports.deleteCrane = async (req, res, next) => {
   try {
-    const crane = await Crane.findByIdAndUpdate(req.params.id, { isArchived: true }, { new: true });
+    const crane = await Crane.findOneAndUpdate({ _id: req.params.id, ...branchFilter(req) }, { isArchived: true }, { new: true });
     if (!crane) return res.status(404).json({ success: false, message: 'Crane not found' });
     res.json({ success: true, message: 'Crane archived' });
   } catch (error) { next(error); }
@@ -114,9 +116,9 @@ exports.getCraneAttachments = async (req, res, next) => {
   try {
     const { equipmentNo } = req.params;
     const [counterweights, boomSections, hooks] = await Promise.all([
-      Counterweight.find(sharedAttachmentQuery(equipmentNo)),
-      BoomSection.find(sharedAttachmentQuery(equipmentNo)),
-      Hook.find(sharedAttachmentQuery(equipmentNo)),
+      Counterweight.find(sharedAttachmentQuery(equipmentNo, req.user.branch)),
+      BoomSection.find(sharedAttachmentQuery(equipmentNo, req.user.branch)),
+      Hook.find(sharedAttachmentQuery(equipmentNo, req.user.branch)),
     ]);
     res.json({ success: true, data: { counterweights, boomSections, hooks } });
   } catch (error) { next(error); }
@@ -146,7 +148,7 @@ exports.importCranes = async (req, res, next) => {
         });
         if (!row.equipmentNo || !String(row.equipmentNo).trim()) throw new Error('equipmentNo is required');
         
-        await Crane.create(row);
+        await Crane.create(branchData(req, row));
         results.success++;
       } catch (err) {
         results.failed++;

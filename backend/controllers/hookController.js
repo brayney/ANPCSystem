@@ -1,11 +1,12 @@
 const Hook = require('../models/Hook');
 const AuditLog = require('../models/AuditLog');
 const { equipmentStatusMap, firstFilled, normalizeImportRow, okUpperConditionMap } = require('../utils/importNormalizer');
+const { branchFilter, branchData } = require('../utils/branchScope');
 
 exports.getHooks = async (req, res, next) => {
   try {
     const { search, assignedCrane, condition, status, page = 1, limit = 15 } = req.query;
-    const query = { isArchived: false };
+    const query = { ...branchFilter(req), isArchived: false };
     if (assignedCrane) query.assignedCrane = assignedCrane;
     if (condition) query.condition = condition;
     if (status) query.status = status;
@@ -30,7 +31,7 @@ exports.getHooks = async (req, res, next) => {
 
 exports.getHook = async (req, res, next) => {
   try {
-    const item = await Hook.findById(req.params.id);
+    const item = await Hook.findOne({ _id: req.params.id, ...branchFilter(req) });
     if (!item) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, data: item });
   } catch (error) { next(error); }
@@ -38,7 +39,7 @@ exports.getHook = async (req, res, next) => {
 
 exports.createHook = async (req, res, next) => {
   try {
-    const item = await Hook.create(req.body);
+    const item = await Hook.create(branchData(req, req.body));
     await AuditLog.create({ user: req.user._id, userName: req.user.name, action: 'CREATE', module: 'Hook', targetId: item._id, details: `Created hook ${item.itemName}` });
     res.status(201).json({ success: true, data: item });
   } catch (error) { next(error); }
@@ -46,7 +47,7 @@ exports.createHook = async (req, res, next) => {
 
 exports.updateHook = async (req, res, next) => {
   try {
-    const item = await Hook.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const item = await Hook.findOneAndUpdate({ _id: req.params.id, ...branchFilter(req) }, req.body, { new: true, runValidators: true });
     if (!item) return res.status(404).json({ success: false, message: 'Not found' });
     await AuditLog.create({ user: req.user._id, userName: req.user.name, action: 'UPDATE', module: 'Hook', targetId: item._id, details: `Updated hook ${item.itemName}` });
     res.json({ success: true, data: item });
@@ -55,7 +56,7 @@ exports.updateHook = async (req, res, next) => {
 
 exports.deleteHook = async (req, res, next) => {
   try {
-    const item = await Hook.findByIdAndUpdate(req.params.id, { isArchived: true }, { new: true });
+    const item = await Hook.findOneAndUpdate({ _id: req.params.id, ...branchFilter(req) }, { isArchived: true }, { new: true });
     if (!item) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, message: 'Archived' });
   } catch (error) { next(error); }
@@ -87,7 +88,7 @@ exports.importHooks = async (req, res, next) => {
         });
         row.itemName = firstFilled(row.itemName, row.hookSerialNo, row.capacity, `Hook ${i + 1}`);
         
-        await Hook.create(row);
+        await Hook.create(branchData(req, row));
         results.success++;
       } catch (err) {
         results.failed++;

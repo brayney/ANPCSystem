@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const boomSectionSchema = new mongoose.Schema({
+  branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true, index: true },
   assignedCrane: { type: String, trim: true, index: true },
   boomCode: { type: String, trim: true },
   itemName: { type: String, trim: true },

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const counterweightSchema = new mongoose.Schema({
+  branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true, index: true },
   itemName: { type: String, trim: true },
   serialNo: { type: String, trim: true },
   assignedCrane: { type: String, trim: true, index: true },

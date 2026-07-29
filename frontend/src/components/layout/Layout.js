@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../i18n/useTranslation';
 import { format } from 'date-fns';
@@ -176,12 +176,24 @@ export default function Layout() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [now, setNow] = useState(new Date());
   const { user, logout } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    const hideBranchScrollbars = location.pathname === '/company-admin';
+    document.documentElement.classList.toggle('branch-admin-scroll-hidden', hideBranchScrollbars);
+    document.body.classList.toggle('branch-admin-scroll-hidden', hideBranchScrollbars);
+
+    return () => {
+      document.documentElement.classList.remove('branch-admin-scroll-hidden');
+      document.body.classList.remove('branch-admin-scroll-hidden');
+    };
+  }, [location.pathname]);
 
   // Global command palette shortcut (Ctrl/Cmd + K)
   useEffect(() => {
@@ -307,7 +319,7 @@ export default function Layout() {
         </header>
 
         {/* Page Content */}
-        <main className="app-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: 'clamp(16px, 2.4vw, 28px)' }}>
+        <main className={`app-scrollbar${location.pathname === '/company-admin' ? ' branch-admin-scroll-hidden' : ''}`} style={{ flex: 1, overflowY: 'auto', padding: 'clamp(16px, 2.4vw, 28px)' }}>
           <Outlet />
         </main>
       </div>
