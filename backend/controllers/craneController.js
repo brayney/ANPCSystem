@@ -30,11 +30,13 @@ exports.getCranes = async (req, res, next) => {
         { location: { $regex: search, $options: 'i' } },
       ];
     }
-    const total = await Crane.countDocuments(query);
-    const cranes = await Crane.find(query)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
+    const [total, cranes] = await Promise.all([
+      Crane.countDocuments(query),
+      Crane.find(query)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(Number(limit)),
+    ]);
 
     res.json({ success: true, data: cranes, total, page: Number(page), pages: Math.ceil(total / limit) });
   } catch (error) { next(error); }

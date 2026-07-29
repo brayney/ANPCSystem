@@ -17,11 +17,13 @@ exports.getBoomSections = async (req, res, next) => {
         { location: { $regex: search, $options: 'i' } },
       ];
     }
-    const total = await BoomSection.countDocuments(query);
-    const items = await BoomSection.find(query)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
+    const [total, items] = await Promise.all([
+      BoomSection.countDocuments(query),
+      BoomSection.find(query)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(Number(limit)),
+    ]);
     res.json({ success: true, data: items, total, page: Number(page), pages: Math.ceil(total / limit) });
   } catch (error) { next(error); }
 };

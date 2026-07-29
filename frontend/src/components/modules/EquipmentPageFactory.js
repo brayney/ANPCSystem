@@ -30,25 +30,18 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
       try {
         const pageSize = 15;
         const pageParams = buildQuery ? buildQuery({ page, search, filters: filterValues }) : { page, limit: pageSize, search: search || undefined };
-        const totalParams = buildQuery ? buildQuery({ page: 1, search, filters: filterValues }) : { page: 1, limit: 1000, search: search || undefined };
         if (!search) {
           delete pageParams.search;
-          delete totalParams.search;
         }
         Object.entries(filterValues).forEach(([key, value]) => {
           if (value) {
             pageParams[key] = value;
-            totalParams[key] = value;
           }
         });
-        const [pageData, countData] = await Promise.all([
-          fetchWithCache(endpoint, pageParams, { shouldInflate: false }),
-          fetchWithCache(endpoint, totalParams, { force: true, shouldInflate: false })
-        ]);
+        const pageData = await fetchWithCache(endpoint, pageParams, { inflate: false });
         const resolvedItems = Array.isArray(pageData) ? pageData : (pageData?.data || []);
         const currentTotal = Array.isArray(pageData) ? (pageData?.length || 0) : (pageData?.total ?? resolvedItems.length);
-        const countTotal = Array.isArray(countData) ? (countData?.length || 0) : (countData?.total ?? 0);
-        const resolvedTotal = Math.max(currentTotal, countTotal, resolvedItems.length);
+        const resolvedTotal = Math.max(currentTotal, resolvedItems.length);
         const resolvedPages = Math.max(1, Math.ceil((resolvedTotal || 0) / pageSize));
         setItems(resolvedItems);
         setPages(resolvedPages);

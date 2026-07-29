@@ -17,11 +17,13 @@ exports.getHooks = async (req, res, next) => {
         { location: { $regex: search, $options: 'i' } },
       ];
     }
-    const total = await Hook.countDocuments(query);
-    const items = await Hook.find(query)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
+    const [total, items] = await Promise.all([
+      Hook.countDocuments(query),
+      Hook.find(query)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(Number(limit)),
+    ]);
     res.json({ success: true, data: items, total, page: Number(page), pages: Math.ceil(total / limit) });
   } catch (error) { next(error); }
 };
