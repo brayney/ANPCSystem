@@ -114,13 +114,13 @@ function App() {
           <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Suspense fallback={<PageLoadingFallback />}><DashboardPage /></Suspense>} />
-            <Route path="cranes" element={<Suspense fallback={<PageLoadingFallback />}><CranesPage /></Suspense>} />
+            <Route path="cranes" element={<Suspense fallback={null}><CranesPage /></Suspense>} />
             <Route path="cranes/:id" element={<Suspense fallback={<PageLoadingFallback />}><CraneDetailPage /></Suspense>} />
-            <Route path="counterweights" element={<Suspense fallback={<PageLoadingFallback />}><CounterweightsPage /></Suspense>} />
-            <Route path="boom-sections" element={<Suspense fallback={<PageLoadingFallback />}><BoomSectionsPage /></Suspense>} />
-            <Route path="hooks" element={<Suspense fallback={<PageLoadingFallback />}><HooksPage /></Suspense>} />
-            <Route path="transactions" element={<Suspense fallback={<PageLoadingFallback />}><TransactionsPage /></Suspense>} />
-            <Route path="transactions/calendar" element={<Suspense fallback={<PageLoadingFallback />}><TransactionCalendarPage /></Suspense>} />
+            <Route path="counterweights" element={<Suspense fallback={null}><CounterweightsPage /></Suspense>} />
+            <Route path="boom-sections" element={<Suspense fallback={null}><BoomSectionsPage /></Suspense>} />
+            <Route path="hooks" element={<Suspense fallback={null}><HooksPage /></Suspense>} />
+            <Route path="transactions" element={<Suspense fallback={null}><TransactionsPage /></Suspense>} />
+            <Route path="transactions/calendar" element={<Suspense fallback={null}><TransactionCalendarPage /></Suspense>} />
             <Route path="transactions/create" element={<Suspense fallback={<PageLoadingFallback />}><CreateTransactionPage /></Suspense>} />
             <Route path="transactions/:id" element={<Suspense fallback={<PageLoadingFallback />}><TransactionDetailPage /></Suspense>} />
             <Route path="tutorials" element={<Suspense fallback={<PageLoadingFallback />}><TutorialsPage /></Suspense>} />
