@@ -4,68 +4,41 @@ const cloudinary = require('../config/cloudinary');
 // Upload login background image (admin only)
 const uploadLoginBackground = async (req, res) => {
   try {
-    const { file } = req;
+    const files = [...(req.files?.images || []), ...(req.files?.image || [])];
 
     // Debug logging
-    console.log('Upload attempt - File:', file?.originalname, 'User:', req.user?._id);
+    console.log('Upload attempt - Files:', files.length, 'User:', req.user?._id);
 
-    if (!file) {
+    if (!files.length) {
       return res.status(400).json({
         success: false,
         message: 'No image file provided',
       });
     }
 
-    // Try both authenticated and unsigned upload methods
-    let uploadResult;
-    
-    try {
-      // Method 1: Try authenticated upload (with API secret)
-      console.log('Attempting authenticated upload...');
+    const backgrounds = await Promise.all(files.map(async (file) => {
       const base64 = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
-      uploadResult = await cloudinary.uploader.upload(base64, {
-        folder: 'anpc-yard/login-backgrounds',
-        resource_type: 'auto',
-        quality: 'auto',
+      const uploadResult = await cloudinary.uploader.upload(base64, {
+        folder: 'anpc-yard/login-backgrounds', resource_type: 'auto', quality: 'auto',
       });
-      console.log('Authenticated upload successful:', uploadResult.public_id);
-    } catch (authError) {
-      console.log('Authenticated upload failed, trying unsigned upload...');
-      // Method 2: Fall back to unsigned upload (frontend should do this instead)
-      // For now, just re-throw the error
-      throw authError;
+      return LoginBackground.create({
+        cloudinaryPublicId: uploadResult.public_id,
+        cloudinaryUrl: uploadResult.secure_url,
+        fileName: file.originalname,
+        uploadedBy: req.user._id,
+      });
+    }));
+
+    if (req.body.replace === 'true') {
+      const previousBackgrounds = await LoginBackground.find({ _id: { $nin: backgrounds.map(background => background._id) } });
+      await Promise.all(previousBackgrounds.map(background => cloudinary.uploader.destroy(background.cloudinaryPublicId)));
+      await LoginBackground.deleteMany({ _id: { $in: previousBackgrounds.map(background => background._id) } });
     }
-
-    // Delete previous background if exists
-    const previousBg = await LoginBackground.findOne();
-    if (previousBg) {
-      try {
-        await cloudinary.uploader.destroy(previousBg.cloudinaryPublicId);
-        await LoginBackground.deleteOne({ _id: previousBg._id });
-      } catch (destroyError) {
-        console.error('Error deleting previous background:', destroyError);
-      }
-    }
-
-    // Create new background record
-    const background = new LoginBackground({
-      cloudinaryPublicId: uploadResult.public_id,
-      cloudinaryUrl: uploadResult.secure_url,
-      fileName: file.originalname,
-      uploadedBy: req.user._id,
-    });
-
-    await background.save();
 
     res.status(201).json({
       success: true,
-      message: 'Background image uploaded successfully',
-      data: {
-        id: background._id,
-        fileName: background.fileName,
-        imageUrl: background.cloudinaryUrl,
-        uploadedAt: background.uploadedAt,
-      },
+      message: `${backgrounds.length} background image${backgrounds.length === 1 ? '' : 's'} uploaded successfully`,
+      data: backgrounds.map(formatBackground),
     });
   } catch (error) {
     console.error('Error uploading background:', error.message || error);
@@ -87,9 +60,10 @@ const uploadLoginBackground = async (req, res) => {
 // Get login background image
 const getLoginBackground = async (req, res) => {
   try {
-    const background = await LoginBackground.findOne().sort({ createdAt: -1 });
+    const backgrounds = await LoginBackground.find().sort({ createdAt: -1 });
+    const images = backgrounds.map(formatBackground);
 
-    if (!background) {
+    if (!images.length) {
       return res.json({
         success: false,
         data: null,
@@ -98,12 +72,8 @@ const getLoginBackground = async (req, res) => {
 
     res.json({
       success: true,
-      data: {
-        id: background._id,
-        imageUrl: background.cloudinaryUrl,
-        fileName: background.fileName,
-        uploadedAt: background.uploadedAt,
-      },
+      data: images[0],
+      images,
     });
   } catch (error) {
     console.error('Error fetching background:', error.message || error);
@@ -118,20 +88,19 @@ const getLoginBackground = async (req, res) => {
 // Delete login background image (admin only)
 const deleteLoginBackground = async (req, res) => {
   try {
-    const background = await LoginBackground.findOne();
+    const backgrounds = req.params.id
+      ? await LoginBackground.find({ _id: req.params.id })
+      : await LoginBackground.find();
 
-    if (!background) {
+    if (!backgrounds.length) {
       return res.status(404).json({
         success: false,
         message: 'No background image found to delete',
       });
     }
 
-    // Delete from Cloudinary
-    await cloudinary.uploader.destroy(background.cloudinaryPublicId);
-
-    // Delete from database
-    await LoginBackground.deleteOne({ _id: background._id });
+    await Promise.all(backgrounds.map(background => cloudinary.uploader.destroy(background.cloudinaryPublicId)));
+    await LoginBackground.deleteMany({ _id: { $in: backgrounds.map(background => background._id) } });
 
     res.json({
       success: true,
@@ -146,6 +115,13 @@ const deleteLoginBackground = async (req, res) => {
     });
   }
 };
+
+const formatBackground = (background) => ({
+  id: background._id,
+  imageUrl: background.cloudinaryUrl,
+  fileName: background.fileName,
+  uploadedAt: background.uploadedAt,
+});
 
 // Update user language preference
 const updateLanguage = async (req, res, next) => {

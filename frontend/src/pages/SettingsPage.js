@@ -47,11 +47,12 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
   const [expandedAccountId, setExpandedAccountId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState({ open: false, account: null });
-  const [backgroundImage, setBackgroundImage] = useState(null);
+  const [backgroundImages, setBackgroundImages] = useState([]);
   const [uploadingBackground, setUploadingBackground] = useState(false);
   const [deletingBackground, setDeletingBackground] = useState(false);
   const [loadingBackground, setLoadingBackground] = useState(false);
-  const [pendingFile, setPendingFile] = useState(null);
+  const [pendingFiles, setPendingFiles] = useState([]);
+  const [replaceBackgrounds, setReplaceBackgrounds] = useState(false);
   const [avatar, setAvatar] = useState(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [deletingAvatar, setDeletingAvatar] = useState(false);
@@ -75,9 +76,9 @@ export default function SettingsPage() {
     setLoadingBackground(true);
     try {
       const { data } = await api.get('/settings/login-background');
-      setBackgroundImage(data.data || null);
+      setBackgroundImages(data.images || (data.data ? [data.data] : []));
     } catch (err) {
-      setBackgroundImage(null);
+      setBackgroundImages([]);
     } finally {
       setLoadingBackground(false);
     }
@@ -201,23 +202,27 @@ export default function SettingsPage() {
     }
   };
 
-  const handleBackgroundUpload = async (file) => {
-    if (!file) return;
-    if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
-    if (file.size > 5242880) { toast.error('Image is too large. Maximum size: 5MB'); return; }
-    setPendingFile(file);
+  const handleBackgroundUpload = async (files) => {
+    const selectedFiles = Array.from(files || []);
+    if (!selectedFiles.length) return;
+    if (selectedFiles.some(file => !file.type.startsWith('image/'))) { toast.error('Please select image files only'); return; }
+    if (selectedFiles.some(file => file.size > 5242880)) { toast.error('Each image must be 5MB or smaller'); return; }
+    if (selectedFiles.length > 10) { toast.error('You can upload up to 10 images at a time'); return; }
+    setPendingFiles(selectedFiles);
   };
 
   const confirmBackgroundUpload = async () => {
-    if (!pendingFile) return;
+    if (!pendingFiles.length) return;
     setUploadingBackground(true);
     try {
       const formData = new FormData();
-      formData.append('image', pendingFile);
+      pendingFiles.forEach(file => formData.append('images', file));
+      formData.append('replace', String(replaceBackgrounds));
       const { data } = await api.post('/settings/login-background', formData);
       if (data.success) {
-        toast.success('Background image uploaded successfully');
-        setPendingFile(null);
+        toast.success(`${pendingFiles.length} background image${pendingFiles.length === 1 ? '' : 's'} uploaded`);
+        setPendingFiles([]);
+        setReplaceBackgrounds(false);
         fetchBackgroundImage();
       }
     } catch (err) {
@@ -228,18 +233,20 @@ export default function SettingsPage() {
   };
 
   const cancelBackgroundUpload = () => {
-    setPendingFile(null);
+    setPendingFiles([]);
+    setReplaceBackgrounds(false);
     const input = document.getElementById('background-upload');
     if (input) input.value = '';
   };
 
-  const handleDeleteBackground = async () => {
+  const handleDeleteBackground = async (id) => {
     setDeletingBackground(true);
     try {
-      const { data } = await api.delete('/settings/login-background');
+      const { data } = await api.delete(id ? `/settings/login-background/${id}` : '/settings/login-background');
       if (data.success) {
-        toast.success('Background image deleted');
-        setBackgroundImage(null);
+        toast.success(id ? 'Background image deleted' : 'All background images removed');
+        if (id) setBackgroundImages(images => images.filter(image => image.id !== id));
+        else setBackgroundImages([]);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to delete background image');
@@ -734,7 +741,7 @@ export default function SettingsPage() {
             <div className="card animate-fade-in">
               <div style={{ marginBottom: '20px' }}>
                 <h2 style={sectionHeaderStyle}>Login Page Background</h2>
-                <p style={sectionSubtitleStyle}>Upload an image to customize the background of the login page. Supported formats: JPEG, PNG, GIF, WebP. Maximum size: 5MB.</p>
+                <p style={sectionSubtitleStyle}>Upload up to 10 images at a time to create the login-page slideshow. Images fade smoothly every 8 seconds. Supported formats: JPEG, PNG, GIF, WebP. Maximum size: 5MB per image.</p>
               </div>
 
               {loadingBackground ? (
@@ -743,21 +750,21 @@ export default function SettingsPage() {
                 </div>
               ) : (
                 <>
-                  {pendingFile ? (
+                  {pendingFiles.length > 0 ? (
                     <div style={{ marginBottom: '20px' }}>
                       <div style={{ marginBottom: '10px' }}>
-                        <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px' }}>Preview - New Image</p>
+                        <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px' }}>Preview - {pendingFiles.length} New Image{pendingFiles.length === 1 ? '' : 's'}</p>
                       </div>
                       <div style={{ borderRadius: '14px', overflow: 'hidden', border: '2px solid var(--accent)', maxHeight: '320px', background: 'var(--surface-2)' }}>
                         <img
-                          src={URL.createObjectURL(pendingFile)}
+                          src={URL.createObjectURL(pendingFiles[0])}
                           alt="Pending login background"
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                          style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', background: 'var(--surface-2)' }}
                         />
                       </div>
                       <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '10px', display: 'flex', gap: '16px' }}>
-                        <span><strong>File:</strong> {pendingFile.name}</span>
-                        <span><strong>Size:</strong> {(pendingFile.size / 1024 / 1024).toFixed(2)} MB</span>
+                        <span><strong>Images selected:</strong> {pendingFiles.length}</span>
+                        <span><strong>First file:</strong> {pendingFiles[0].name}</span>
                       </div>
                       <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
                         <button
@@ -780,40 +787,54 @@ export default function SettingsPage() {
                         </button>
                       </div>
                     </div>
-                  ) : backgroundImage ? (
+                  ) : backgroundImages.length > 0 ? (
                     <div style={{ marginBottom: '20px' }}>
                       <div style={{ marginBottom: '10px' }}>
-                        <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px' }}>Current Background</p>
+                        <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px' }}>Login Slideshow ({backgroundImages.length} images)</p>
                       </div>
-                      <div style={{ borderRadius: '14px', overflow: 'hidden', border: '1px solid var(--border)', maxHeight: '320px', background: 'var(--surface-2)' }}>
-                        <img
-                          src={backgroundImage.imageUrl}
-                          alt="Current login background"
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                        />
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
+                        {backgroundImages.map((image, index) => (
+                          <div key={image.id} style={{ position: 'relative', border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden', background: 'var(--surface-2)' }}>
+                            <img src={image.imageUrl} alt={image.fileName} style={{ width: '100%', height: '120px', objectFit: 'contain', display: 'block', background: 'var(--surface-2)' }} />
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteBackground(image.id)}
+                              disabled={deletingBackground}
+                              title={`Remove ${image.fileName}`}
+                              aria-label={`Remove ${image.fileName}`}
+                              style={{ position: 'absolute', top: '7px', right: '7px', width: '25px', height: '25px', border: 'none', borderRadius: '50%', background: 'rgba(185, 28, 28, 0.92)', color: '#fff', fontSize: '18px', lineHeight: 1, cursor: deletingBackground ? 'not-allowed' : 'pointer', display: 'grid', placeItems: 'center' }}
+                            >
+                              ×
+                            </button>
+                            <div style={{ padding: '7px 9px', fontSize: '11px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Image {index + 1}: {image.fileName}</div>
+                          </div>
+                        ))}
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '10px', display: 'flex', gap: '16px' }}>
-                        <span><strong>File:</strong> {backgroundImage.fileName}</span>
-                        <span><strong>Uploaded:</strong> {new Intl.DateTimeFormat('en', {
-                          year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
-                        }).format(new Date(backgroundImage.uploadedAt))}</span>
-                      </div>
-                      <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
+                      <div style={{ marginTop: '16px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                         <button
                           type="button"
-                          onClick={() => document.getElementById('background-upload').click()}
+                          onClick={() => { setReplaceBackgrounds(false); document.getElementById('background-upload').click(); }}
                           disabled={uploadingBackground}
                           className="btn-primary"
-                          style={{ flex: 1 }}
+                          style={{ flex: 1, minWidth: '140px' }}
                         >
-                          Change Image
+                          Add Images
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setReplaceBackgrounds(true); document.getElementById('background-upload').click(); }}
+                          disabled={uploadingBackground}
+                          className="btn-secondary"
+                          style={{ flex: 1, minWidth: '140px' }}
+                        >
+                          Change Images
                         </button>
                         <button
                           type="button"
                           onClick={handleDeleteBackground}
                           disabled={deletingBackground}
                           className="btn-danger"
-                          style={{ flex: 1 }}
+                          style={{ flex: 1, minWidth: '140px' }}
                         >
                           {deletingBackground ? <><Spinner size="sm" /> Deleting...</> : 'Set to Default'}
                         </button>
@@ -838,15 +859,15 @@ export default function SettingsPage() {
                         e.preventDefault();
                         e.currentTarget.style.background = 'transparent';
                         e.currentTarget.style.borderColor = 'var(--border)';
-                        if (e.dataTransfer.files[0]) {
-                          handleBackgroundUpload(e.dataTransfer.files[0]);
+                        if (e.dataTransfer.files.length) {
+                          handleBackgroundUpload(e.dataTransfer.files);
                         }
                       }}
                     >
                       <PhotoIcon style={{ width: '48px', height: '48px', color: 'var(--accent)', margin: '0 auto 12px', opacity: 0.7 }} />
-                      <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 4px' }}>Upload Login Background</p>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 4px' }}>Upload Login Background Images</p>
                       <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
-                        Drag and drop an image here or click to browse
+                        Drag and drop images here or click to browse
                       </p>
                     </div>
                   )}
@@ -855,9 +876,10 @@ export default function SettingsPage() {
                     id="background-upload"
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={(e) => {
-                      if (e.target.files[0]) {
-                        handleBackgroundUpload(e.target.files[0]);
+                      if (e.target.files.length) {
+                        handleBackgroundUpload(e.target.files);
                       }
                     }}
                     style={{ display: 'none' }}

@@ -29,7 +29,7 @@ const upload = multer({
 
 // Upload login background (admin only)
 router.post('/login-background', protect, adminOnly, (req, res, next) => {
-  upload.single('image')(req, res, (err) => {
+  upload.fields([{ name: 'images', maxCount: 10 }, { name: 'image', maxCount: 10 }])(req, res, (err) => {
     if (err) {
       return res.status(400).json({
         success: false,
@@ -45,6 +45,7 @@ router.get('/login-background', getLoginBackground);
 
 // Delete login background (admin only)
 router.delete('/login-background', protect, adminOnly, deleteLoginBackground);
+router.delete('/login-background/:id', protect, adminOnly, deleteLoginBackground);
 
 // Update user language preference (protected)
 router.put('/language', protect, updateLanguage);

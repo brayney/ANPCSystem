@@ -51,7 +51,13 @@ export default function LoginPage() {
   const [mounted, setMounted] = useState(false);
   const [invalidCredentials, setInvalidCredentials] = useState(false);
   const [attemptState, setAttemptState] = useState({ attemptsRemaining: null, lockUntil: null });
-  const [backgroundImage, setBackgroundImage] = useState(() => localStorage.getItem('loginBgImage') || null);
+  const [backgroundImages, setBackgroundImages] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('loginBgImages') || '[]');
+      return Array.isArray(saved) && saved.length ? saved : (localStorage.getItem('loginBgImage') ? [localStorage.getItem('loginBgImage')] : []);
+    } catch { return []; }
+  });
+  const [backgroundIndex, setBackgroundIndex] = useState(0);
   const [initializing, setInitializing] = useState(true);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const { login, loading } = useAuth();
@@ -85,10 +91,15 @@ export default function LoginPage() {
     const fetchBackground = async () => {
       try {
         const { data } = await api.get('/settings/login-background');
-        if (data.success && data.data?.imageUrl) {
-          setBackgroundImage(data.data.imageUrl);
-          localStorage.setItem('loginBgImage', data.data.imageUrl);
+        const images = data.images?.map(image => image.imageUrl) || (data.data?.imageUrl ? [data.data.imageUrl] : []);
+        if (data.success && images.length) {
+          setBackgroundImages(images);
+          setBackgroundIndex(0);
+          localStorage.setItem('loginBgImages', JSON.stringify(images));
+          localStorage.removeItem('loginBgImage');
         } else {
+          setBackgroundImages([]);
+          localStorage.removeItem('loginBgImages');
           localStorage.removeItem('loginBgImage');
         }
       } catch (err) {
@@ -97,6 +108,12 @@ export default function LoginPage() {
     };
     fetchBackground();
   }, []);
+
+  useEffect(() => {
+    if (backgroundImages.length < 2) return undefined;
+    const timer = setInterval(() => setBackgroundIndex(index => (index + 1) % backgroundImages.length), 8000);
+    return () => clearInterval(timer);
+  }, [backgroundImages.length]);
 
   useEffect(() => {
     document.documentElement.style.overflow = 'hidden';
@@ -118,9 +135,9 @@ export default function LoginPage() {
     return <LogoSplash label="Signing you in..." />;
   }
 
-  const backgroundStyle = backgroundImage
-    ? `url(${backgroundImage})`
-    : 'url(https://images.unsplash.com/photo-1659952801569-a8aebf1eef22?w=1800&h=900&fit=crop&auto=format)';
+  const slideshowImages = backgroundImages.length
+    ? backgroundImages
+    : ['https://images.unsplash.com/photo-1659952801569-a8aebf1eef22?w=1800&h=900&fit=crop&auto=format'];
   const lockedUntilDate = attemptState.lockUntil ? new Date(attemptState.lockUntil) : null;
   const isLocked = lockedUntilDate ? lockedUntilDate > Date.now() : false;
 
@@ -174,19 +191,20 @@ export default function LoginPage() {
         fontFamily: "'Inter', system-ui, sans-serif",
       }}
     >
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          backgroundImage: backgroundStyle,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          filter: 'brightness(0.45) saturate(0.8)',
-          transform: open ? 'scale(1.03)' : 'scale(1)',
-          transition: 'transform 0.9s cubic-bezier(0.16,1,0.3,1), filter 0.9s ease',
-          willChange: 'transform',
-        }}
-      />
+      {slideshowImages.map((imageUrl, index) => (
+        <div
+          key={imageUrl}
+          style={{
+            position: 'absolute', inset: 0,
+            backgroundImage: `url(${imageUrl})`, backgroundSize: 'cover', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', backgroundColor: '#0b1220',
+            filter: 'brightness(0.45) saturate(0.8)',
+            opacity: index === backgroundIndex ? 1 : 0,
+            transform: index === backgroundIndex && open ? 'scale(1.03)' : 'scale(1)',
+            transition: 'opacity 1.4s ease-in-out, transform 8s ease-out, filter 0.9s ease',
+            willChange: 'opacity, transform',
+          }}
+        />
+      ))}
 
       <div
         style={{
