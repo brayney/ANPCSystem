@@ -321,7 +321,7 @@ export default function LoginPage() {
             />
             <span
               style={{
-                fontSize: '0.58rem',
+                fontSize: '0.72rem',
                 letterSpacing: '0.05em',
                 color: '#c4b5fd',
                 fontWeight: 600,
@@ -335,7 +335,7 @@ export default function LoginPage() {
           <h1
             style={{
               fontFamily: "'Fraunces', serif",
-              fontSize: 'clamp(2.5rem, 5.5vw, 4.25rem)',
+              fontSize: 'clamp(3.1rem, 6.8vw, 5.25rem)',
                fontWeight: 900,
                textShadow: '0 2px 4px rgba(0,0,0,0.25)',
               lineHeight: 1.05,
