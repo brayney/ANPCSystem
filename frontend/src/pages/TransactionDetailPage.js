@@ -262,9 +262,9 @@ export default function TransactionDetailPage() {
 
 const handleReturn = async () => {
      setReturnForm({
-       returnDriverName: txn.driverName || '',
-       returnVehicleType: txn.vehicleType || '',
-       returnVehiclePlateNo: txn.vehiclePlateNo || '',
+       returnDriverName: '',
+       returnVehicleType: '',
+       returnVehiclePlateNo: '',
      });
      setReturnSameDriver(true);
      setReturning(true);
@@ -344,18 +344,21 @@ const handleReturn = async () => {
                       <div>
                         <label className="label">Return Driver Name</label>
                         <input type="text" className="input-field"
+                          placeholder="Enter return driver name"
                           value={returnForm.returnDriverName}
                           onChange={e => setReturnForm({ ...returnForm, returnDriverName: e.target.value })} />
                       </div>
                       <div>
                         <label className="label">Return Vehicle Type</label>
                         <input type="text" className="input-field"
+                          placeholder="Enter return vehicle type"
                           value={returnForm.returnVehicleType}
                           onChange={e => setReturnForm({ ...returnForm, returnVehicleType: e.target.value })} />
                       </div>
                       <div>
                         <label className="label">Return Plate Number</label>
                         <input type="text" className="input-field"
+                          placeholder="Enter return plate number"
                           value={returnForm.returnVehiclePlateNo}
                           onChange={e => setReturnForm({ ...returnForm, returnVehiclePlateNo: e.target.value })} />
                       </div>
