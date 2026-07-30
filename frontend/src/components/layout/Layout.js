@@ -26,7 +26,6 @@ const navItems = [
 ];
 
 const SidebarContent = ({ setSidebarOpen, onLogoutClick, collapsed = false }) => {
-  const { user } = useAuth();
   const { t } = useTranslation();
 
   // Hidden label used when the sidebar is collapsed (keeps width animation smooth)
@@ -133,35 +132,7 @@ const SidebarContent = ({ setSidebarOpen, onLogoutClick, collapsed = false }) =>
         </NavLink>
       </div>
 
-      {/* User footer */}
-      <div style={{ padding: collapsed ? '10px 0' : '10px', borderTop: '1px solid var(--sidebar-border)', flexShrink: 0 }}>
-        {collapsed ? (
-          <button onClick={onLogoutClick} title="Logout" style={{ width: '100%', display: 'flex', justifyContent: 'center', padding: '8px', borderRadius: '7px', border: '1px solid var(--sidebar-border)', background: 'transparent', cursor: 'pointer', color: '#3d444d', transition: 'all 0.15s' }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#f85149'; e.currentTarget.style.borderColor = '#f85149'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#3d444d'; e.currentTarget.style.borderColor = 'var(--sidebar-border)'; }}>
-            <ArrowRightOnRectangleIcon style={{ width: '16px', height: '16px' }} />
-          </button>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '7px', background: 'rgba(255,255,255,0.04)' }}>
-            {user?.avatar?.cloudinaryUrl ? (
-              <img src={user.avatar.cloudinaryUrl} alt="Profile" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-            ) : (
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-                {user?.name?.[0]?.toUpperCase() || '?'}
-              </div>
-            )}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: '12px', fontWeight: 600, color: '#e6edf3', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name || 'Admin'}</p>
-              <p style={{ fontSize: '10px', color: '#3d444d', textTransform: 'capitalize' }}>{user?.role || 'user'}</p>
-            </div>
-            <button onClick={onLogoutClick} title="Logout" style={{ padding: '4px', borderRadius: '5px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#3d444d', transition: 'color 0.15s' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#f85149'}
-              onMouseLeave={e => e.currentTarget.style.color = '#3d444d'}>
-              <ArrowRightOnRectangleIcon style={{ width: '15px', height: '15px' }} />
-            </button>
-          </div>
-        )}
-      </div>
+
     </div>
   );
 };
@@ -174,6 +145,7 @@ export default function Layout() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [now, setNow] = useState(new Date());
   const { user, logout } = useAuth();
   const location = useLocation();
@@ -206,6 +178,18 @@ export default function Layout() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+
+    const handleClick = (event) => {
+      if (event.target instanceof Element && event.target.closest('[data-profile-menu-root]')) return;
+      setProfileMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [profileMenuOpen]);
 
   // Allow command palette to trigger logout
   useEffect(() => {
@@ -308,13 +292,48 @@ export default function Layout() {
             <div className="hidden md:flex items-center" style={{ gap: '8px' }}>
               <ConnectionStatus />
             </div>
-            <button onClick={toggleDark} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '7px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text-secondary)', transition: 'background 0.15s' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-3)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'var(--surface-2)'}>
-              {dark
-                ? <SunIcon style={{ width: '15px', height: '15px' }} />
-                : <MoonIcon style={{ width: '15px', height: '15px' }} />}
-            </button>
+            <div data-profile-menu-root style={{ position: 'relative' }}>
+              <button
+                type="button"
+                onClick={() => setProfileMenuOpen(prev => !prev)}
+                aria-haspopup="menu"
+                aria-expanded={profileMenuOpen}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                {user?.avatar?.cloudinaryUrl ? (
+                  <img src={user.avatar.cloudinaryUrl} alt="Profile" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                    {user?.name?.[0]?.toUpperCase() || 'A'}
+                  </div>
+                )}
+                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{user?.name || 'Admin'}</span>
+              </button>
+              {profileMenuOpen && (
+                <div role="menu" style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', minWidth: '180px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', boxShadow: 'var(--shadow-lg)', padding: '8px', zIndex: 12000 }}>
+                  <button
+                    type="button"
+                    onClick={() => { toggleDark(); setProfileMenuOpen(false); }}
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '7px', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 500, textAlign: 'left' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    {dark ? <SunIcon style={{ width: '15px', height: '15px' }} /> : <MoonIcon style={{ width: '15px', height: '15px' }} />}
+                    <span>{dark ? 'Light mode' : 'Dark mode'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setProfileMenuOpen(false); handleLogout(); }}
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '7px', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--danger)', fontSize: '13px', fontWeight: 500, textAlign: 'left' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <ArrowRightOnRectangleIcon style={{ width: '15px', height: '15px' }} />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

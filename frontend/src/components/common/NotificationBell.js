@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { BellIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { BellAlertIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import api from '../../utils/api';
 
 const formatTime = (dateString) => {
@@ -77,20 +77,20 @@ export default function NotificationBell({ user }) {
         onClick={() => setOpen((prev) => !prev)}
         title="Notifications"
         style={{
-          width: '34px',
-          height: '34px',
-          borderRadius: '10px',
-          border: '1px solid var(--border)',
-          background: 'var(--surface)',
+          width: '24px',
+          height: '24px',
+          border: 'none',
+          background: 'transparent',
           color: 'var(--text-secondary)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
           position: 'relative',
+          padding: 0,
         }}
       >
-        <BellIcon style={{ width: '18px', height: '18px' }} />
+        <BellAlertIcon style={{ width: '20px', height: '20px' }} />
         {unreadCount > 0 && (
           <span style={{
             position: 'absolute',
