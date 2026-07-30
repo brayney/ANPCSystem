@@ -43,8 +43,25 @@ const ShieldIcon = () => (
   </svg>
 );
 
-export default function LoginPage({ loginType = 'branch' }) {
+const PersonIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="7" r="3.25" />
+    <path d="M5.5 21a6.5 6.5 0 0113 0" />
+  </svg>
+);
+
+const GroupIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="7" r="3" />
+    <circle cx="5" cy="10" r="2.5" />
+    <circle cx="19" cy="10" r="2.5" />
+    <path d="M6.5 21a5.5 5.5 0 0111 0M1.5 21a4.5 4.5 0 014-4.4M22.5 21a4.5 4.5 0 00-4-4.4" />
+  </svg>
+);
+
+export default function LoginPage() {
   const [open, setOpen] = useState(true);
+  const [loginType, setLoginType] = useState(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -179,6 +196,20 @@ export default function LoginPage({ loginType = 'branch' }) {
     if (result.status === 401) {
       setInvalidCredentials(true);
     }
+  };
+
+  const chooseLoginType = (type) => {
+    setLoginType(type);
+    setInvalidCredentials(false);
+    setAttemptState({ attemptsRemaining: null, lockUntil: null });
+  };
+
+  const returnToLoginTypeSelection = () => {
+    setLoginType(null);
+    setPassword('');
+    setShowPw(false);
+    setInvalidCredentials(false);
+    setAttemptState({ attemptsRemaining: null, lockUntil: null });
   };
 
   return (
@@ -488,21 +519,33 @@ export default function LoginPage({ loginType = 'branch' }) {
               margin: '1.25rem 0 0.375rem',
             }}
           >
-            Welcome back
+            {loginType ? 'Welcome back' : 'Choose your sign-in'}
           </h2>
           <p style={{ fontSize: '0.9rem', color: 'rgba(232,234,246,0.4)', margin: 0, fontWeight: 300 }}>
-            {loginType === 'super_admin' ? 'Sign in to manage company branches.' : 'Sign in to your branch command center.'}
+            {loginType === 'super_admin'
+              ? 'Sign in to manage company branches.'
+              : loginType === 'branch'
+                ? 'Sign in to your branch command center.'
+                : 'Select your administrator access before entering your credentials.'}
           </p>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
+        {loginType ? (
+          <form
+            onSubmit={handleSubmit}
           style={{
             opacity: open ? 1 : 0,
             transform: open ? 'translateX(0)' : 'translateX(24px)',
             transition: 'opacity 0.5s ease 0.3s, transform 0.5s cubic-bezier(0.16,1,0.3,1) 0.3s',
           }}
         >
+          <button
+            type="button"
+            onClick={returnToLoginTypeSelection}
+            style={{ background: 'none', border: 'none', padding: 0, margin: '0 0 1.25rem', color: '#c4b5fd', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+          >
+            ← Change administrator type
+          </button>
           <div style={{ marginBottom: '1rem' }}>
             <label
               style={{
@@ -614,7 +657,44 @@ export default function LoginPage({ loginType = 'branch' }) {
               'Sign in to Command Center'
             )}
           </button>
-        </form>
+          </form>
+        ) : (
+          <div
+            style={{
+              opacity: open ? 1 : 0,
+              transform: open ? 'translateX(0)' : 'translateX(24px)',
+              transition: 'opacity 0.5s ease 0.3s, transform 0.5s cubic-bezier(0.16,1,0.3,1) 0.3s',
+              display: 'grid',
+              gap: '0.85rem',
+            }}
+          >
+            {[
+              { type: 'super_admin', title: 'Company Admin', description: 'Manage branches and company-level administration.', icon: <PersonIcon /> },
+              { type: 'branch', title: 'Branch Admin', description: 'Access your branch operations command center.', icon: <GroupIcon /> },
+            ].map((option) => (
+              <button
+                key={option.type}
+                type="button"
+                onClick={() => chooseLoginType(option.type)}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '1rem', cursor: 'pointer',
+                  background: 'rgba(124,110,247,0.1)', border: '1px solid rgba(124,110,247,0.3)',
+                  borderRadius: 12, color: '#f0f2ff', transition: 'background 0.2s ease, border-color 0.2s ease, transform 0.2s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(124,110,247,0.22)'; e.currentTarget.style.borderColor = 'rgba(196,181,253,0.75)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(124,110,247,0.1)'; e.currentTarget.style.borderColor = 'rgba(124,110,247,0.3)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: 10, color: '#c4b5fd', background: 'rgba(124,110,247,0.18)' }}>
+                    {option.icon}
+                  </span>
+                  <span style={{ fontSize: '1rem', fontWeight: 700 }}>{option.title}</span>
+                </span>
+                <span style={{ display: 'block', fontSize: '0.8rem', lineHeight: 1.45, color: 'rgba(232,234,246,0.58)' }}>{option.description}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         <div style={{ marginTop: '1.5rem', textAlign: 'center', opacity: open ? 1 : 0, transition: 'opacity 0.5s ease 0.4s' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: '0.75rem', color: 'rgba(232,234,246,0.28)' }}>

@@ -116,7 +116,7 @@ function App() {
             
           {/* Auth */}
           <Route path="/login" element={<Suspense fallback={<PageLoadingFallback />}><MobileRestrictedRoute><LoginPage /></MobileRestrictedRoute></Suspense>} />
-          <Route path="/company-admin/login" element={<Suspense fallback={<PageLoadingFallback />}><MobileRestrictedRoute><LoginPage loginType="super_admin" /></MobileRestrictedRoute></Suspense>} />
+          <Route path="/company-admin/login" element={<Navigate to="/login" replace />} />
           <Route path="/company-admin" element={<CompanyAdminRoute><Suspense fallback={<PageLoadingFallback />}><BranchAdministrationPage /></Suspense></CompanyAdminRoute>} />
             
           {/* Private Routes */}
