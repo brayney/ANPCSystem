@@ -320,6 +320,81 @@
   .login-input::placeholder {
     color: rgba(248, 250, 252, 0.55);
   }
+  .login-branch-select-shell {
+    position: relative;
+  }
+  .login-branch-select {
+    min-height: 52px;
+    padding: 0.8rem 3.2rem 0.8rem 3rem;
+    border-color: rgba(196, 181, 253, 0.34);
+    background: rgba(10, 12, 29, 0.64);
+    color: #f0f2ff;
+    font-weight: 600;
+    appearance: none;
+    cursor: pointer;
+  }
+  .login-branch-select:hover:not(:disabled) {
+    border-color: rgba(196, 181, 253, 0.64);
+    background: rgba(22, 18, 51, 0.72);
+  }
+  .login-branch-select:focus {
+    border-color: #c4b5fd;
+    background: rgba(22, 18, 51, 0.8);
+    box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.16), inset 0 1px 2px rgba(0, 0, 0, 0.12);
+  }
+  .login-branch-select:disabled { cursor: wait; opacity: 0.7; }
+  .login-branch-select option { background: #16122f; color: #f0f2ff; }
+  .login-branch-select-icon,
+  .login-branch-select-chevron {
+    position: absolute;
+    top: 50%;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+  .login-branch-select-icon {
+    left: 14px;
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    background: rgba(196, 181, 253, 0.14);
+    color: #c4b5fd;
+  }
+  .login-branch-select-icon svg { width: 14px; height: 14px; }
+  .login-branch-select-chevron { right: 14px; color: #c4b5fd; }
+  .login-branch-select-chevron svg { width: 17px; height: 17px; }
+  .saved-login-accounts { margin: 0 0 1.1rem; }
+  .saved-login-accounts-title { margin: 0 0 0.55rem; color: rgba(232,234,246,0.48); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+  .saved-login-accounts-list { display: flex; gap: 10px; overflow-x: auto; padding: 2px; }
+  .saved-login-account { width: 92px; min-width: 92px; padding: 4px; border: 0; border-radius: 12px; background: transparent; color: #f0f2ff; cursor: pointer; text-align: center; transition: .18s ease; }
+  .saved-login-account:hover, .saved-login-account.selected { background: rgba(124,110,247,0.14); transform: translateY(-2px); }
+  .saved-login-account:focus-visible { outline: 3px solid rgba(196,181,253,0.45); outline-offset: 2px; }
+  .saved-login-account-avatar, .save-login-prompt-avatar { display: block; object-fit: cover; border-radius: 50%; }
+  .saved-login-account-avatar { width: 54px; height: 54px; margin: 0 auto 7px; border: 2px solid rgba(196,181,253,0.55); box-shadow: 0 5px 14px rgba(0,0,0,.2); }
+  .saved-login-account-initial, .save-login-prompt-initial { display: grid; place-items: center; background: linear-gradient(135deg, #8b5cf6, #4f46e5); color: white; font-weight: 800; }
+  .saved-login-account-name, .saved-login-account-email { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .saved-login-account-name { font-size: 0.74rem; font-weight: 700; }
+  .saved-login-account-email { margin-top: 2px; color: rgba(232,234,246,0.5); font-size: 0.64rem; }
+  .save-login-prompt-backdrop { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 20px; background: rgba(5,7,19,0.72); backdrop-filter: blur(8px); }
+  .save-login-prompt { width: min(100%, 390px); padding: 28px; border: 1px solid rgba(196,181,253,0.3); border-radius: 20px; background: linear-gradient(145deg, #1e1a40, #111329); color: #f0f2ff; box-shadow: 0 24px 70px rgba(0,0,0,.45); text-align: center; }
+  .save-login-prompt-avatar { width: 62px; height: 62px; margin: 0 auto 14px; border: 3px solid rgba(196,181,253,0.6); }
+  .save-login-prompt h2 { margin: 0; color: #f8fafc; font-size: 1.12rem; }
+  .save-login-prompt p { margin: 10px 0 22px; color: rgba(232,234,246,0.65); font-size: .84rem; line-height: 1.55; }
+  .save-login-prompt-actions { display: flex; gap: 10px; }
+  .save-login-prompt-actions button { flex: 1; }
+  .selected-login-account { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; padding: 10px 12px; border: 1px solid rgba(196,181,253,.3); border-radius: 12px; background: rgba(124,110,247,.14); color: #f0f2ff; }
+  .selected-login-account-avatar { width: 34px; height: 34px; border: 2px solid rgba(196,181,253,.6); border-radius: 50%; object-fit: cover; flex: 0 0 auto; }
+  .selected-login-account-initial { display: grid; place-items: center; background: linear-gradient(135deg, #8b5cf6, #4f46e5); color: white; font-weight: 800; }
+  .selected-login-account div { display: grid; min-width: 0; flex: 1; }
+  .selected-login-account span { color: rgba(232,234,246,.58); font-size: .68rem; }
+  .selected-login-account strong { overflow: hidden; color: #f8fafc; font-size: .82rem; text-overflow: ellipsis; white-space: nowrap; }
+  .selected-login-account button { padding: 4px; border: 0; background: transparent; color: #c4b5fd; cursor: pointer; font-size: .72rem; font-weight: 700; }
+  .settings-toggle { position: relative; width: 44px; height: 25px; flex: 0 0 auto; padding: 2px; border: 0; border-radius: 999px; background: var(--border); cursor: pointer; transition: background .18s ease; }
+  .settings-toggle span { display: block; width: 21px; height: 21px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.24); transition: transform .18s ease; }
+  .settings-toggle.enabled { background: var(--accent); }
+  .settings-toggle.enabled span { transform: translateX(19px); }
+  .settings-toggle:focus-visible { outline: 3px solid var(--accent-subtle); outline-offset: 3px; }
 
   .login-btn {
     display: inline-flex;

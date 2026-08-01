@@ -19,10 +19,10 @@ export const AuthProvider = ({ children }) => {
   });
   const [loading, setLoading] = useState(false);
 
-  const login = async (email, password, loginType) => {
+  const login = async (email, password, loginType, branchId) => {
     setLoading(true);
     try {
-      const { data } = await api.post('/auth/login', { email, password, loginType });
+      const { data } = await api.post('/auth/login', { email, password, loginType, branchId });
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       applySystemLanguage(data.user?.language);

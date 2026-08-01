@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Branch = require('../models/Branch');
 
 const LOGIN_TIERS = {
   standard: { attempts: 5, lockMs: 60 * 1000, nextStage: 'reduced' },
@@ -17,6 +18,14 @@ const resetLoginState = (user, stage = 'standard') => {
 };
 
 const PRIMARY_ADMIN_EMAIL = (process.env.PRIMARY_ADMIN_EMAIL || 'admin@anpc.com').toLowerCase();
+
+// GET /api/auth/login-branches
+exports.getLoginBranches = async (req, res, next) => {
+  try {
+    const branches = await Branch.find({ isActive: true }).select('name code').sort({ name: 1 }).lean();
+    res.json({ success: true, branches });
+  } catch (error) { next(error); }
+};
 
 // POST /api/auth/login
 exports.login = async (req, res, next) => {
@@ -40,6 +49,14 @@ exports.login = async (req, res, next) => {
     }
     if (req.body.loginType === 'branch' && user.role === 'super_admin') {
       return res.status(403).json({ success: false, message: 'Use the company administrator sign-in page' });
+    }
+    if (req.body.loginType === 'branch') {
+      if (!req.body.branchId) {
+        return res.status(400).json({ success: false, message: 'Select your branch before signing in' });
+      }
+      if (!user.branch || user.branch.toString() !== req.body.branchId) {
+        return res.status(403).json({ success: false, message: 'This account does not belong to the selected branch' });
+      }
     }
 
     const stage = getLoginStage(user);

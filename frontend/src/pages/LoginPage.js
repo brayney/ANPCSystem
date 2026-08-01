@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import LogoSplash from '../components/common/LogoSplash';
+import { clearPendingDeviceAccount, getPendingDeviceAccount, getSavedDeviceAccounts, saveDeviceAccount, setPendingDeviceAccount } from '../utils/deviceAccounts';
 
 const LogoMark = () => (
   <img src="/logo.png" alt="ANPC Logo" style={{ height: 52, objectFit: 'contain' }} />
@@ -62,6 +63,9 @@ const GroupIcon = () => (
 export default function LoginPage() {
   const [open, setOpen] = useState(true);
   const [loginType, setLoginType] = useState(null);
+  const [loginBranchId, setLoginBranchId] = useState('');
+  const [loginBranches, setLoginBranches] = useState([]);
+  const [loadingBranches, setLoadingBranches] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -77,6 +81,12 @@ export default function LoginPage() {
   const [backgroundIndex, setBackgroundIndex] = useState(0);
   const [initializing, setInitializing] = useState(true);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [savedAccounts, setSavedAccounts] = useState(getSavedDeviceAccounts);
+  const [savePrompt, setSavePrompt] = useState(() => {
+    const pending = getPendingDeviceAccount();
+    return pending?.user && !getSavedDeviceAccounts().some(account => account.id === pending.user._id) ? pending : null;
+  });
+  const passwordInputRef = useRef(null);
   const { login, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -133,6 +143,25 @@ export default function LoginPage() {
   }, [backgroundImages.length]);
 
   useEffect(() => {
+    if (loginType !== 'branch') return;
+
+    const loadLoginBranches = async () => {
+      setLoadingBranches(true);
+      try {
+        const { data } = await api.get('/auth/login-branches');
+        setLoginBranches(data.branches || []);
+      } catch {
+        toast.error('Unable to load branches. Please try again.');
+        setLoginBranches([]);
+      } finally {
+        setLoadingBranches(false);
+      }
+    };
+
+    loadLoginBranches();
+  }, [loginType]);
+
+  useEffect(() => {
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     document.body.style.height = '100%';
@@ -157,6 +186,21 @@ export default function LoginPage() {
     : ['https://images.unsplash.com/photo-1659952801569-a8aebf1eef22?w=1800&h=900&fit=crop&auto=format'];
   const lockedUntilDate = attemptState.lockUntil ? new Date(attemptState.lockUntil) : null;
   const isLocked = lockedUntilDate ? lockedUntilDate > Date.now() : false;
+  const selectedLoginBranch = loginBranches.find(branch => branch._id === loginBranchId);
+  const branchSavedAccounts = savedAccounts.filter(account => account.branchId === loginBranchId);
+  const selectedSavedAccount = branchSavedAccounts.find(account => account.email === email);
+
+  const completeLogin = async () => {
+    try {
+      setIsSigningIn(true);
+      const { data } = await api.get('/dashboard');
+      toast.success('Welcome back!');
+      navigate(loginType === 'super_admin' ? '/company-admin' : '/dashboard', { replace: true, state: { dashboardData: data?.data || null } });
+    } catch (err) {
+      toast.success('Welcome back!');
+      navigate(loginType === 'super_admin' ? '/company-admin' : '/dashboard', { replace: true });
+    }
+  };
 
   const fetchAttempts = async (value) => {
     if (!value) return;
@@ -172,19 +216,19 @@ export default function LoginPage() {
     e.preventDefault();
     setInvalidCredentials(false);
 
-    const result = await login(email, password, loginType);
+    const result = await login(email, password, loginType, loginBranchId);
     setAttemptState({ attemptsRemaining: result.attemptsRemaining ?? null, lockUntil: result.lockUntil ?? null });
 
     if (result.success) {
-      try {
-        setIsSigningIn(true);
-        const { data } = await api.get('/dashboard');
-        toast.success('Welcome back!');
-        navigate(loginType === 'super_admin' ? '/company-admin' : '/dashboard', { replace: true, state: { dashboardData: data?.data || null } });
-      } catch (err) {
-        toast.success('Welcome back!');
-        navigate(loginType === 'super_admin' ? '/company-admin' : '/dashboard', { replace: true });
+      const isAlreadySaved = getSavedDeviceAccounts().some(account => account.id === result.user?._id);
+      if (!isAlreadySaved) {
+        setPendingDeviceAccount(result.user, { branchId: loginBranchId, branchName: selectedLoginBranch?.name || '' });
       }
+      if (isAlreadySaved) {
+        saveDeviceAccount(result.user, { branchId: loginBranchId, branchName: selectedLoginBranch?.name || '' });
+        setSavedAccounts(getSavedDeviceAccounts());
+      }
+      completeLogin();
       return;
     }
 
@@ -200,6 +244,7 @@ export default function LoginPage() {
 
   const chooseLoginType = (type) => {
     setLoginType(type);
+    setLoginBranchId('');
     setEmail('');
     setPassword('');
     setShowPw(false);
@@ -209,11 +254,35 @@ export default function LoginPage() {
 
   const returnToLoginTypeSelection = () => {
     setLoginType(null);
+    setLoginBranchId('');
     setEmail('');
     setPassword('');
     setShowPw(false);
     setInvalidCredentials(false);
     setAttemptState({ attemptsRemaining: null, lockUntil: null });
+  };
+
+  const selectSavedAccount = (account) => {
+    setEmail(account.email);
+    setPassword('');
+    setInvalidCredentials(false);
+    setAttemptState({ attemptsRemaining: null, lockUntil: null });
+    window.setTimeout(() => passwordInputRef.current?.focus(), 0);
+  };
+
+  const changeSavedAccount = () => {
+    setEmail('');
+    setPassword('');
+    setInvalidCredentials(false);
+  };
+
+  const handleSaveAccountChoice = (shouldSave) => {
+    if (shouldSave && savePrompt?.user) {
+      saveDeviceAccount(savePrompt.user, savePrompt.branch);
+      setSavedAccounts(getSavedDeviceAccounts());
+    }
+    clearPendingDeviceAccount();
+    setSavePrompt(null);
   };
 
   return (
@@ -550,6 +619,81 @@ export default function LoginPage() {
           >
             ← Change administrator type
           </button>
+          {loginType === 'branch' && !loginBranchId && (
+            <div style={{ marginBottom: '1.25rem', padding: '14px', border: '1px solid rgba(196,181,253,0.28)', borderRadius: 12, background: 'linear-gradient(135deg, rgba(124,110,247,0.16), rgba(124,110,247,0.05))', boxShadow: 'inset 0 1px rgba(255,255,255,0.06)' }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: 'rgba(232,234,246,0.45)',
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  marginBottom: '0.5rem',
+                }}
+              >
+                Your Branch
+              </label>
+              <div className="login-branch-select-shell">
+                <span className="login-branch-select-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 21h18M5 21V5l7-3v19M19 21V9l-7-2M8 7h1M8 11h1M8 15h1M15 12h1M15 16h1" />
+                  </svg>
+                </span>
+                <select
+                  className="login-input login-branch-select"
+                  value={loginBranchId}
+                  onChange={(event) => setLoginBranchId(event.target.value)}
+                  required
+                  disabled={loadingBranches}
+                  aria-label="Your branch"
+                >
+                  <option value="">{loadingBranches ? 'Loading branches...' : 'Select your branch'}</option>
+                  {loginBranches.map(branch => (
+                    <option key={branch._id} value={branch._id}>
+                      {branch.name}{branch.code ? ` (${branch.code})` : ''}
+                    </option>
+                  ))}
+                </select>
+                <span className="login-branch-select-chevron" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="m7 10 5 5 5-5" /></svg>
+                </span>
+              </div>
+              <p style={{ margin: '9px 0 0', color: 'rgba(232,234,246,0.5)', fontSize: '0.76rem', lineHeight: 1.45 }}>
+                Choose the branch you belong to before entering your credentials.
+              </p>
+            </div>
+          )}
+          {((loginType === 'branch' && loginBranchId) || loginType === 'super_admin') && branchSavedAccounts.length > 0 && !selectedSavedAccount && (
+            <div className="saved-login-accounts">
+              <p className="saved-login-accounts-title">Continue as</p>
+              <div className="saved-login-accounts-list">
+                {branchSavedAccounts.map(account => (
+                  <button type="button" className={`saved-login-account${email === account.email ? ' selected' : ''}`} key={account.id} onClick={() => selectSavedAccount(account)}>
+                    {account.avatarUrl ? <img src={account.avatarUrl} alt="" className="saved-login-account-avatar" /> : <span className="saved-login-account-avatar saved-login-account-initial">{account.name?.[0]?.toUpperCase() || '?'}</span>}
+                    <span className="saved-login-account-name">{account.name}</span>
+                    <span className="saved-login-account-email">{account.email}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {loginType === 'branch' && loginBranchId && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1.1rem', padding: '10px 12px', border: '1px solid rgba(167,243,208,0.2)', borderRadius: 10, background: 'rgba(16,185,129,0.09)' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#6ee7b7', boxShadow: '0 0 0 4px rgba(110,231,183,0.1)' }} />
+              <span style={{ minWidth: 0, color: 'rgba(232,234,246,0.62)', fontSize: '0.76rem' }}>Signing in to</span>
+              <strong style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#d1fae5', fontSize: '0.85rem' }}>
+                {selectedLoginBranch?.name || 'Selected branch'}{selectedLoginBranch?.code ? ` (${selectedLoginBranch.code})` : ''}
+              </strong>
+            </div>
+          )}
+          {(loginType === 'super_admin' || loginBranchId) && <>
+          {selectedSavedAccount ? (
+            <div className="selected-login-account" aria-live="polite">
+              <div><span>Signing in as</span><strong>{selectedSavedAccount.name}</strong></div>
+              <button type="button" onClick={changeSavedAccount}>Change</button>
+            </div>
+          ) : (
           <div style={{ marginBottom: '1rem' }}>
             <label
               style={{
@@ -575,6 +719,7 @@ export default function LoginPage() {
               autoComplete="email"
             />
           </div>
+          )}
 
           <div style={{ marginBottom: '0.75rem' }}>
             <div style={{ marginBottom: '0.5rem' }}>
@@ -592,6 +737,7 @@ export default function LoginPage() {
             </div>
             <div style={{ position: 'relative' }}>
               <input
+                ref={passwordInputRef}
                 className="login-input"
                 type={showPw ? 'text' : 'password'}
                 placeholder="Enter your password"
@@ -661,6 +807,7 @@ export default function LoginPage() {
               'Sign in to Command Center'
             )}
           </button>
+          </>}
           </form>
         ) : (
           <div
@@ -718,6 +865,19 @@ export default function LoginPage() {
           }}
         />
       </div>
+      {savePrompt && (
+        <div className="save-login-prompt-backdrop" role="dialog" aria-modal="true" aria-labelledby="save-login-prompt-title">
+          <div className="save-login-prompt">
+            {savePrompt.user.avatar?.cloudinaryUrl ? <img src={savePrompt.user.avatar.cloudinaryUrl} alt="" className="save-login-prompt-avatar" /> : <span className="save-login-prompt-avatar save-login-prompt-initial">{savePrompt.user.name?.[0]?.toUpperCase() || '?'}</span>}
+            <h2 id="save-login-prompt-title">Save this account on this device?</h2>
+            <p>Next time, select your avatar and enter only your password. Do not enable this on a shared device.</p>
+            <div className="save-login-prompt-actions">
+              <button type="button" className="btn-secondary" onClick={() => handleSaveAccountChoice(false)}>Not now</button>
+              <button type="button" className="btn-primary" onClick={() => handleSaveAccountChoice(true)}>Save account</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

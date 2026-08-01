@@ -4,7 +4,8 @@ import { PageHeader, Spinner, ConfirmDialog } from '../components/common';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../i18n/useTranslation';
 import api from '../utils/api';
-import { UserCircleIcon, UsersIcon, UserPlusIcon, KeyIcon, InformationCircleIcon, ChevronDownIcon, ChevronUpIcon, PhotoIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
+import { getNotificationsEnabled, getSavedDeviceAccounts, removeDeviceAccount, saveDeviceAccount, setNotificationsEnabled } from '../utils/deviceAccounts';
+import { UserCircleIcon, UsersIcon, UserPlusIcon, KeyIcon, InformationCircleIcon, ChevronDownIcon, ChevronUpIcon, PhotoIcon, GlobeAltIcon, BellAlertIcon, DevicePhoneMobileIcon } from '@heroicons/react/24/outline';
 
 const PRIMARY_ADMIN_EMAIL = 'admin@anpc.com';
 
@@ -58,6 +59,8 @@ export default function SettingsPage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [deletingAvatar, setDeletingAvatar] = useState(false);
   const [pendingAvatarFile, setPendingAvatarFile] = useState(null);
+  const [deviceAccountSaved, setDeviceAccountSaved] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabledState] = useState(true);
   const selectedLanguage = currentLanguage?.split('-')[0] || 'en';
 
   const fetchAccounts = useCallback(async () => {
@@ -337,10 +340,37 @@ export default function SettingsPage() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (!user?._id) return;
+    setDeviceAccountSaved(getSavedDeviceAccounts().some(account => account.id === user._id));
+    setNotificationsEnabledState(getNotificationsEnabled(user._id));
+  }, [user]);
+
+  const toggleDeviceAccount = () => {
+    if (!user?._id) return;
+    if (deviceAccountSaved) {
+      removeDeviceAccount(user._id);
+      setDeviceAccountSaved(false);
+      toast.success('Saved sign-in removed from this device');
+    } else {
+      saveDeviceAccount(user);
+      setDeviceAccountSaved(true);
+      toast.success('Account saved on this device');
+    }
+  };
+
+  const toggleNotifications = () => {
+    if (!user?._id) return;
+    const next = !notificationsEnabled;
+    setNotificationsEnabled(user._id, next);
+    setNotificationsEnabledState(next);
+    toast.success(next ? 'In-app notifications enabled' : 'In-app notifications disabled');
+  };
+
   const tabs = [
     { key: 'profile', label: 'Profile', icon: UserCircleIcon },
     { key: 'language', label: 'Language', icon: GlobeAltIcon },
-    ...(user?.role === 'admin' ? [{ key: 'accounts', label: 'Accounts', icon: UsersIcon }] : []),
+    { key: 'accounts', label: 'Accounts', icon: UsersIcon },
     ...(user?.role === 'admin' ? [{ key: 'create', label: 'Create Account', icon: UserPlusIcon }] : []),
     ...(user?.role === 'admin' ? [{ key: 'login-background', label: 'Login Background', icon: PhotoIcon }] : []),
     { key: 'password', label: 'Change Password', icon: KeyIcon },
@@ -588,8 +618,26 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {user?.role === 'admin' && activeTab === 'accounts' && (
+          {activeTab === 'accounts' && (
             <div className="animate-fade-in">
+              <div className="card" style={{ marginBottom: user?.role === 'admin' ? '20px' : 0 }}>
+                <div style={{ marginBottom: '18px' }}>
+                  <h2 style={sectionHeaderStyle}>Account preferences</h2>
+                  <p style={sectionSubtitleStyle}>Control what is saved on this device and how in-app alerts appear.</p>
+                </div>
+                {[
+                  { icon: DevicePhoneMobileIcon, title: 'Save account on this device', description: 'Show your avatar at the selected branch so you only need to enter your password.', enabled: deviceAccountSaved, onChange: toggleDeviceAccount },
+                  { icon: BellAlertIcon, title: 'In-app notifications', description: 'Show the notifications bell and alerts while you are signed in on this device.', enabled: notificationsEnabled, onChange: toggleNotifications },
+                ].map(({ icon: Icon, title, description, enabled, onChange }, index) => (
+                  <div key={title} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: index ? '18px 0 0' : 0, marginTop: index ? '18px' : 0, borderTop: index ? '1px solid var(--border-muted)' : 'none' }}>
+                    <div style={{ width: 38, height: 38, borderRadius: '10px', background: 'var(--accent-subtle)', color: 'var(--accent-text)', display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon style={{ width: 19, height: 19 }} /></div>
+                    <div style={{ minWidth: 0, flex: 1 }}><strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{title}</strong><p style={{ margin: '3px 0 0', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>{description}</p></div>
+                    <button type="button" role="switch" aria-checked={enabled} aria-label={title} onClick={onChange} className={`settings-toggle${enabled ? ' enabled' : ''}`}><span /></button>
+                  </div>
+                ))}
+              </div>
+              {user?.role === 'admin' && (
+                <>
               <div style={{ marginBottom: '18px' }}>
                 <h2 style={sectionHeaderStyle}>Created Accounts</h2>
                 <p style={sectionSubtitleStyle}>{accounts.length} account{accounts.length === 1 ? '' : 's'} registered</p>
@@ -719,6 +767,8 @@ export default function SettingsPage() {
                     );
                   })}
                 </div>
+              )}
+                </>
               )}
             </div>
           )}

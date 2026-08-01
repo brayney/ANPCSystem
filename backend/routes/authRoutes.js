@@ -1,8 +1,9 @@
 const router = require('express').Router();
-const { login, logout, getMe, getUsers, deleteUser, register, updatePassword, getAttemptState, toggleUserStatus, updateProfile } = require('../controllers/authController');
+const { login, logout, getMe, getUsers, deleteUser, register, updatePassword, getAttemptState, toggleUserStatus, updateProfile, getLoginBranches } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 
 router.post('/login', login);
+router.get('/login-branches', getLoginBranches);
 router.get('/attempts', getAttemptState);
 router.post('/logout', protect, logout);
 router.post('/register', protect, register);

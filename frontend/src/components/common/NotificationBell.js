@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { BellAlertIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import api from '../../utils/api';
+import { getNotificationsEnabled } from '../../utils/deviceAccounts';
 
 const formatTime = (dateString) => {
   try {
@@ -19,6 +20,7 @@ export default function NotificationBell({ user }) {
   const [markingRead, setMarkingRead] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState(null);
+  const [notificationsAllowed, setNotificationsAllowed] = useState(() => getNotificationsEnabled(user?._id));
   const menuRef = useRef(null);
 
   const loadNotifications = useCallback(async () => {
@@ -58,6 +60,13 @@ export default function NotificationBell({ user }) {
   }, [user, loadNotifications]);
 
   useEffect(() => {
+    const updatePreference = () => setNotificationsAllowed(getNotificationsEnabled(user?._id));
+    updatePreference();
+    window.addEventListener('anpc-notification-preference-change', updatePreference);
+    return () => window.removeEventListener('anpc-notification-preference-change', updatePreference);
+  }, [user?._id]);
+
+  useEffect(() => {
     if (!open) return undefined;
     const closeOnOutsideClick = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -68,7 +77,7 @@ export default function NotificationBell({ user }) {
     return () => document.removeEventListener('mousedown', closeOnOutsideClick);
   }, [open]);
 
-  if (!user) return null;
+  if (!user || !notificationsAllowed) return null;
 
   return (
     <div ref={menuRef} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', overflow: 'visible', zIndex: 9999 }}>
