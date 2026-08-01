@@ -200,12 +200,16 @@ export default function LoginPage() {
 
   const chooseLoginType = (type) => {
     setLoginType(type);
+    setEmail('');
+    setPassword('');
+    setShowPw(false);
     setInvalidCredentials(false);
     setAttemptState({ attemptsRemaining: null, lockUntil: null });
   };
 
   const returnToLoginTypeSelection = () => {
     setLoginType(null);
+    setEmail('');
     setPassword('');
     setShowPw(false);
     setInvalidCredentials(false);

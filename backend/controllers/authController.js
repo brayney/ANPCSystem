@@ -82,8 +82,15 @@ exports.login = async (req, res, next) => {
       });
     }
 
-    if (!user.isActive)
-      return res.status(401).json({ success: false, message: 'Account deactivated' });
+    if (!user.isActive) {
+      return res.status(403).json({
+        success: false,
+        code: 'ACCOUNT_DEACTIVATED',
+        message: user.branch
+          ? 'This account has been deactivated by the company administrator.'
+          : 'This account has been deactivated.',
+      });
+    }
 
     user.lastLogin = new Date();
     user.isLoggedIn = true;
