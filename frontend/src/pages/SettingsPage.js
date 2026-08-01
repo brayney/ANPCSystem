@@ -186,6 +186,9 @@ export default function SettingsPage() {
   };
 
   const handleToggleAccountStatus = async (account) => {
+    const action = account.isActive ? 'deactivate' : 'activate';
+    if (!window.confirm(`Are you sure you want to ${action} the account for ${account.name || account.email}?`)) return;
+
     setTogglingStatusId(account._id);
     try {
       const { data } = await api.put(`/auth/users/${account._id}/toggle-status`);

@@ -187,6 +187,10 @@ export default function BranchAdministrationPage() {
   };
 
   const toggle = async (branch) => {
+    const action = branch.isActive ? 'deactivate' : 'activate';
+    const impact = branch.isActive ? ' This will also deactivate all accounts assigned to this branch.' : '';
+    if (!window.confirm(`Are you sure you want to ${action} ${branch.name}?${impact}`)) return;
+
     try {
       await api.put(`/branches/${branch._id}/toggle-status`);
       toast.success(`Branch ${branch.isActive ? 'deactivated' : 'activated'}`);
