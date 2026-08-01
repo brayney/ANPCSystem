@@ -47,6 +47,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
   const [expandedAccountId, setExpandedAccountId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState({ open: false, account: null });
+  const [confirmStatusChange, setConfirmStatusChange] = useState(null);
   const [backgroundImages, setBackgroundImages] = useState([]);
   const [uploadingBackground, setUploadingBackground] = useState(false);
   const [deletingBackground, setDeletingBackground] = useState(false);
@@ -186,8 +187,13 @@ export default function SettingsPage() {
   };
 
   const handleToggleAccountStatus = async (account) => {
-    const action = account.isActive ? 'deactivate' : 'activate';
-    if (!window.confirm(`Are you sure you want to ${action} the account for ${account.name || account.email}?`)) return;
+    setConfirmStatusChange(account);
+  };
+
+  const confirmAccountStatusChange = async () => {
+    const account = confirmStatusChange;
+    if (!account) return;
+    setConfirmStatusChange(null);
 
     setTogglingStatusId(account._id);
     try {
@@ -956,6 +962,16 @@ export default function SettingsPage() {
         title="Delete Account"
         message={`Delete ${confirmDelete.account?.name || confirmDelete.account?.email}? This account will no longer be able to sign in.`}
         danger
+      />
+      <ConfirmDialog
+        open={Boolean(confirmStatusChange)}
+        onClose={() => setConfirmStatusChange(null)}
+        onConfirm={confirmAccountStatusChange}
+        title={confirmStatusChange?.isActive ? 'Deactivate account?' : 'Activate account?'}
+        message={confirmStatusChange?.isActive
+          ? `${confirmStatusChange.name || confirmStatusChange.email} will no longer be able to sign in.`
+          : `${confirmStatusChange?.name || confirmStatusChange?.email} will be able to sign in again.`}
+        danger={confirmStatusChange?.isActive}
       />
     </div>
   );

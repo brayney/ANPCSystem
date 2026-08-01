@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { UserIcon, HomeIcon, BuildingOffice2Icon, Bars3Icon, MapPinIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { Spinner } from '../components/common';
+import { Spinner, ConfirmDialog } from '../components/common';
 import LogoSplash from '../components/common/LogoSplash';
 import { useAuth } from '../hooks/useAuth';
 import api from '../utils/api';
@@ -38,6 +38,7 @@ export default function BranchAdministrationPage() {
   const [editCities, setEditCities] = useState([]);
   const [countries, setCountries] = useState([]);
   const [locatingBranches, setLocatingBranches] = useState(false);
+  const [pendingBranchStatusChange, setPendingBranchStatusChange] = useState(null);
   const autoLocationAttempted = useRef(false);
   const mapRef = useRef(null);
 
@@ -186,10 +187,14 @@ export default function BranchAdministrationPage() {
     }
   };
 
-  const toggle = async (branch) => {
-    const action = branch.isActive ? 'deactivate' : 'activate';
-    const impact = branch.isActive ? ' This will also deactivate all accounts assigned to this branch.' : '';
-    if (!window.confirm(`Are you sure you want to ${action} ${branch.name}?${impact}`)) return;
+  const toggle = (branch) => {
+    setPendingBranchStatusChange(branch);
+  };
+
+  const confirmBranchStatusChange = async () => {
+    const branch = pendingBranchStatusChange;
+    if (!branch) return;
+    setPendingBranchStatusChange(null);
 
     try {
       await api.put(`/branches/${branch._id}/toggle-status`);
@@ -571,6 +576,16 @@ export default function BranchAdministrationPage() {
           </div>
         </div>
       </header>
+      <ConfirmDialog
+        open={Boolean(pendingBranchStatusChange)}
+        onClose={() => setPendingBranchStatusChange(null)}
+        onConfirm={confirmBranchStatusChange}
+        title={pendingBranchStatusChange?.isActive ? 'Deactivate branch?' : 'Activate branch?'}
+        message={pendingBranchStatusChange?.isActive
+          ? `${pendingBranchStatusChange.name} and its assigned accounts will no longer be able to sign in.`
+          : `${pendingBranchStatusChange?.name} and its assigned accounts will be able to sign in again.`}
+        danger={pendingBranchStatusChange?.isActive}
+      />
       {showLogoutConfirm && (
         <div className="company-admin-modal-backdrop" role="presentation" onClick={() => setShowLogoutConfirm(false)}>
           <div className="company-admin-modal" role="dialog" aria-modal="true" aria-labelledby="logout-confirmation-title" onClick={event => event.stopPropagation()}>
