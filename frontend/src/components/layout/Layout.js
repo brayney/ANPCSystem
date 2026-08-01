@@ -12,7 +12,7 @@ import {
   HomeIcon, TruckIcon, ScaleIcon, LinkIcon,
   DocumentTextIcon, ChartBarIcon, Cog6ToothIcon, Bars3Icon, XMarkIcon,
   ArrowRightOnRectangleIcon, MoonIcon, SunIcon, BoltIcon, CalendarIcon, BookOpenIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon, UserIcon
 } from '@heroicons/react/24/outline';
 
 const navItems = [
@@ -298,16 +298,18 @@ export default function Layout() {
                 onClick={() => setProfileMenuOpen(prev => !prev)}
                 aria-haspopup="menu"
                 aria-expanded={profileMenuOpen}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                className="company-admin-profile-trigger app-header-profile-trigger"
               >
                 {user?.avatar?.cloudinaryUrl ? (
-                  <img src={user.avatar.cloudinaryUrl} alt="Profile" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                  <img src={user.avatar.cloudinaryUrl} alt="Profile" className="company-admin-profile-avatar" />
                 ) : (
-                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-                    {user?.name?.[0]?.toUpperCase() || 'A'}
+                  <div className="company-admin-profile-avatar">
+                    <UserIcon style={{ width: '20px', height: '20px' }} aria-hidden="true" />
                   </div>
                 )}
-                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{user?.name || 'Admin'}</span>
+                <div className="company-admin-profile-copy">
+                  <strong>{user?.name || 'Admin'}</strong>
+                </div>
               </button>
               {profileMenuOpen && (
                 <div role="menu" style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', minWidth: '180px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', boxShadow: 'var(--shadow-lg)', padding: '8px', zIndex: 12000 }}>

@@ -6,6 +6,14 @@ const BoomSection = require('../models/BoomSection');
 const Hook = require('../models/Hook');
 const Transaction = require('../models/Transaction');
 
+const geocodeAddress = async (address) => {
+  const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(address)}`, { headers: { 'User-Agent': 'ANPC-Yard-Branch-Map/1.0' } });
+  if (!response.ok) throw new Error('Location lookup failed');
+  const [location] = await response.json();
+  if (!location) throw new Error('Location was not found on the map');
+  return { latitude: Number(location.lat), longitude: Number(location.lon) };
+};
+
 exports.getBranches = async (req, res, next) => {
   try {
     const branches = await Branch.find().sort({ name: 1 }).populate('createdBy', 'name email');
@@ -19,11 +27,47 @@ exports.getBranches = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+exports.geocodeMissingBranches = async (req, res, next) => {
+  try {
+    const branches = await Branch.find({
+      $or: [
+        { latitude: { $exists: false } },
+        { longitude: { $exists: false } },
+        { latitude: null },
+        { longitude: null },
+      ],
+    });
+    let updated = 0;
+    let skipped = 0;
+
+    for (const branch of branches) {
+      const address = branch.address || [branch.city, branch.province, branch.region, branch.country].filter(Boolean).join(', ');
+      if (!address) {
+        skipped += 1;
+        continue;
+      }
+
+      try {
+        const coordinates = await geocodeAddress(address);
+        branch.address = address;
+        branch.latitude = coordinates.latitude;
+        branch.longitude = coordinates.longitude;
+        await branch.save();
+        updated += 1;
+      } catch {
+        skipped += 1;
+      }
+    }
+
+    res.json({ success: true, updated, skipped, message: `${updated} branch location${updated === 1 ? '' : 's'} updated` });
+  } catch (error) { next(error); }
+};
+
 exports.createBranchAdmin = async (req, res, next) => {
   try {
-    const { branchName, branchCode, branchAddress, name, email, password } = req.body;
-    if (![branchName, branchCode, name, email, password].every(Boolean)) {
-      return res.status(400).json({ success: false, message: 'Branch name, branch code, administrator name, email, and password are required' });
+    const { branchName, branchCode, country, region, province, city, name, email, password } = req.body;
+    if (![branchName, branchCode, country, region, city, name, email, password].every(Boolean)) {
+      return res.status(400).json({ success: false, message: 'Complete branch address and administrator details are required' });
     }
     if (password.length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
     const normalizedEmail = email.toLowerCase().trim();
@@ -35,7 +79,10 @@ exports.createBranchAdmin = async (req, res, next) => {
     if (existingBranch) return res.status(400).json({ success: false, message: 'That branch name or code already exists' });
     if (existingUser) return res.status(400).json({ success: false, message: 'Email already registered' });
 
-    const branch = await Branch.create({ name: branchName.trim(), code, address: branchAddress?.trim(), createdBy: req.user._id });
+    const address = [city, province, region, country].filter(Boolean).map(value => value.trim()).join(', ');
+    let coordinates;
+    try { coordinates = await geocodeAddress(address); } catch (error) { return res.status(400).json({ success: false, message: error.message || 'Unable to locate the branch address' }); }
+    const branch = await Branch.create({ name: branchName.trim(), code, address, country: country.trim(), region: region.trim(), province: province?.trim(), city: city.trim(), ...coordinates, createdBy: req.user._id });
     const user = await User.create({ name: name.trim(), email: normalizedEmail, password, role: 'admin', branch: branch._id });
     res.status(201).json({ success: true, branch, user, message: 'Branch and its independent administrator account created' });
   } catch (error) { next(error); }
@@ -54,14 +101,36 @@ exports.toggleBranch = async (req, res, next) => {
 
 exports.updateBranch = async (req, res, next) => {
   try {
-    const { name, code, address } = req.body;
-    if (!name || !code) return res.status(400).json({ success: false, message: 'Branch name and code are required' });
+    const { name, code, country, region, province, city } = req.body;
+    if (![name, code, country, region, city].every(Boolean)) return res.status(400).json({ success: false, message: 'Complete branch details and address are required' });
     const normalizedCode = code.trim().toUpperCase();
     const duplicate = await Branch.findOne({ _id: { $ne: req.params.id }, $or: [{ name: name.trim() }, { code: normalizedCode }] });
     if (duplicate) return res.status(400).json({ success: false, message: 'That branch name or code already exists' });
-    const branch = await Branch.findByIdAndUpdate(req.params.id, { name: name.trim(), code: normalizedCode, address: address?.trim() }, { new: true, runValidators: true });
+    const address = [city, province, region, country].filter(Boolean).map(value => value.trim()).join(', ');
+    let coordinates;
+    try { coordinates = await geocodeAddress(address); } catch (error) { return res.status(400).json({ success: false, message: error.message || 'Unable to locate the branch address' }); }
+    const branch = await Branch.findByIdAndUpdate(req.params.id, { name: name.trim(), code: normalizedCode, address, country: country.trim(), region: region.trim(), province: province?.trim(), city: city.trim(), ...coordinates }, { new: true, runValidators: true });
     if (!branch) return res.status(404).json({ success: false, message: 'Branch not found' });
     res.json({ success: true, branch, message: 'Branch details updated' });
+  } catch (error) { next(error); }
+};
+
+exports.deleteBranch = async (req, res, next) => {
+  try {
+    const branch = await Branch.findById(req.params.id);
+    if (!branch) return res.status(404).json({ success: false, message: 'Branch not found' });
+
+    const [users, cranes, counterweights, boomSections, hooks, transactions] = await Promise.all([
+      User.countDocuments({ branch: branch._id }), Crane.countDocuments({ branch: branch._id }),
+      Counterweight.countDocuments({ branch: branch._id }), BoomSection.countDocuments({ branch: branch._id }),
+      Hook.countDocuments({ branch: branch._id }), Transaction.countDocuments({ branch: branch._id }),
+    ]);
+    if (users + cranes + counterweights + boomSections + hooks + transactions > 0) {
+      return res.status(400).json({ success: false, message: 'A branch with accounts or operational records cannot be deleted. Deactivate it instead.' });
+    }
+
+    await branch.deleteOne();
+    res.json({ success: true, message: 'Branch deleted' });
   } catch (error) { next(error); }
 };
 

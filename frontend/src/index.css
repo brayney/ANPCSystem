@@ -421,7 +421,6 @@
   body.branch-admin-scroll-hidden,
   main.app-scrollbar.branch-admin-scroll-hidden {
     -ms-overflow-style: none;
-    scrollbar-width: none;
   }
   html.branch-admin-scroll-hidden::-webkit-scrollbar,
   body.branch-admin-scroll-hidden::-webkit-scrollbar,
@@ -431,8 +430,127 @@
     height: 0;
   }
 
-  .branch-admin-page .card { box-shadow: var(--shadow-sm); }
+  .branch-admin-page .card, .company-admin-main .card { box-shadow: var(--shadow-sm); }
   .branch-admin-page .card > h2 { letter-spacing: -0.01em; }
+  .company-admin-shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; background: var(--surface-2); transition: grid-template-columns .25s ease; }
+  .company-admin-shell.sidebar-collapsed { grid-template-columns: 64px minmax(0, 1fr); }
+  .company-admin-sidebar { display: flex; flex-direction: column; min-height: 100vh; overflow: hidden; background: var(--sidebar-bg); border-right: 1px solid var(--sidebar-border); color: var(--sidebar-text); }
+  .company-admin-sidebar-brand { display: flex; align-items: center; gap: 10px; min-height: 72px; padding: 16px 18px; border-bottom: 1px solid var(--sidebar-border); }
+  .company-admin-sidebar-brand img { width: 38px; height: 38px; object-fit: contain; flex-shrink: 0; }
+  .company-admin-sidebar-brand div { display: grid; gap: 2px; min-width: 0; white-space: nowrap; }
+  .company-admin-sidebar-brand strong { color: #f0f6fc; font-size: 15px; letter-spacing: .04em; }
+  .company-admin-sidebar-brand span { color: var(--sidebar-text); font-size: 11px; }
+  .company-admin-sidebar-label { min-height: 43px; padding: 17px 20px 8px; color: #687386; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+  .company-admin-sidebar-nav { display: grid; gap: 3px; padding: 0 10px; }
+  .company-admin-sidebar-nav button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px; border: 0; border-radius: 7px; background: transparent; color: var(--sidebar-text); font-size: 13px; text-align: left; cursor: pointer; white-space: nowrap; }
+  .company-admin-sidebar-nav button svg, .company-admin-sidebar-toggle svg { width: 17px; height: 17px; flex-shrink: 0; }
+  .company-admin-sidebar-nav button:hover { background: var(--sidebar-hover); color: #f0f6fc; }
+  .company-admin-sidebar-nav button.active { background: var(--sidebar-active); color: #f0f6fc; box-shadow: 0 2px 8px rgba(31,107,235,.3); }
+  .sidebar-collapsed .company-admin-sidebar-brand, .sidebar-collapsed .company-admin-sidebar-nav { padding-left: 10px; padding-right: 10px; }
+  .sidebar-collapsed .company-admin-sidebar-brand { justify-content: center; }
+  .sidebar-collapsed .company-admin-sidebar-nav button { justify-content: center; }
+  .company-admin-sidebar-footer { margin-top: auto; min-height: 48px; padding: 14px 18px; border-top: 1px solid var(--sidebar-border); color: #687386; font-size: 11px; white-space: nowrap; }
+  .company-admin-main { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+  .company-admin-main .branch-admin-grid { flex: 1; overflow-y: auto; padding: clamp(16px, 2.4vw, 28px); }
+  .company-admin-sidebar-toggle { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-2); color: var(--text-secondary); cursor: pointer; }
+  .company-admin-sidebar-toggle:hover { border-color: var(--accent); color: var(--text-primary); }
+  .company-admin-topbar { position: relative; z-index: 100; min-height: 56px; margin: 0; padding: 0 18px; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: var(--surface-raised); box-shadow: var(--shadow-sm); }
+  .company-admin-topbar-actions > .company-admin-theme-toggle { display: none; }
+  .company-admin-nav {
+    display: flex;
+    gap: 6px;
+    margin: -8px 0 20px;
+    padding: 5px;
+    width: fit-content;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-raised);
+  }
+  .company-admin-nav button {
+    border: 0;
+    border-radius: 7px;
+    padding: 8px 12px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .company-admin-nav button:hover { color: var(--text-primary); }
+  .company-admin-nav button.active { background: var(--accent); color: #fff; }
+  .company-admin-dashboard { display: grid; gap: 20px; }
+  .company-admin-dashboard-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 26px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: linear-gradient(120deg, var(--surface-raised), rgba(79, 140, 255, 0.13));
+    box-shadow: var(--shadow-sm);
+  }
+  .company-admin-dashboard-eyebrow { color: var(--accent-text); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+  .company-admin-dashboard-hero h2 { margin: 7px 0 5px; font-size: 24px; }
+  .company-admin-dashboard-hero p, .company-admin-section-heading p { margin: 0; color: var(--text-secondary); font-size: 13px; }
+  .company-admin-stat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .company-admin-stat-card { display: grid; gap: 6px; padding: 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-raised); box-shadow: var(--shadow-sm); }
+  .company-admin-stat-card span, .company-admin-stat-card small { color: var(--text-secondary); font-size: 12px; }
+  .company-admin-stat-card strong { font-size: 28px; line-height: 1; }
+  .company-admin-dashboard-branches { padding: 20px; }
+  .company-admin-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 14px; }
+  .company-admin-section-heading h3 { margin: 0 0 4px; font-size: 16px; }
+  .company-admin-dashboard-list { display: grid; gap: 8px; }
+  .company-admin-dashboard-branch { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); color: var(--text-primary); text-align: left; cursor: pointer; }
+  .company-admin-dashboard-branch:hover { border-color: var(--accent); }
+  .company-admin-dashboard-branch > span:first-child { display: grid; gap: 3px; }
+  .company-admin-dashboard-branch small, .company-admin-empty-state { color: var(--text-secondary); font-size: 13px; }
+  .company-admin-view-branches { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, .75fr); gap: 20px; align-items: start; }
+  .company-admin-map-card, .company-admin-view-list { padding: 20px; }
+  .company-admin-map-card h2, .company-admin-view-list h2 { margin: 0 0 4px; font-size: 16px; }
+  .company-admin-global-map { position: relative; height: 520px; overflow: hidden; border: 1px solid #a8bfd8; border-radius: 16px; background: linear-gradient(145deg, #dbeafe 0%, #b8d9ed 100%); box-shadow: inset 0 0 0 1px rgba(255,255,255,.58), 0 12px 28px rgba(15, 23, 42, .08); }
+  .company-admin-map-surface { width: 100%; height: 100%; }
+  .company-admin-map-surface .leaflet-container { width: 100%; height: 100%; background: transparent; font-family: inherit; }
+  .company-admin-map-surface .leaflet-tile { filter: saturate(.82) contrast(.97) brightness(1.025); }
+  .company-admin-map-surface .leaflet-control-attribution { padding: 3px 7px; border-radius: 7px 0 0; background: rgba(255,255,255,.86); color: #64748b; font-size: 9px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  .company-admin-map-surface .leaflet-control-attribution a { color: #475569; }
+  .company-admin-map-marker-pin { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border: 2px solid #fff; border-radius: 999px 999px 999px 4px; background: #fff; color: #dc2626; box-shadow: 0 8px 18px rgba(15, 23, 42, .2); font: 800 12px/1 Inter, sans-serif; white-space: nowrap; }
+  .company-admin-map-marker-pin::after { content: ''; position: absolute; left: 18px; bottom: -8px; width: 12px; height: 12px; transform: rotate(45deg); border-right: 2px solid #fff; border-bottom: 2px solid #fff; background: #fff; }
+  .company-admin-map-marker-pin.inactive { background: #f8fafc; }
+  .company-admin-map-marker-pin.inactive::after { background: #f8fafc; }
+  .company-admin-map-marker-icon { display: inline-flex; width: 16px; height: 16px; color: #dc2626; }
+  .company-admin-map-marker-icon svg { width: 16px; height: 16px; }
+  .company-admin-map-marker-text { color: #dc2626; }
+  .company-admin-map-marker-pin.inactive .company-admin-map-marker-text, .company-admin-map-marker-pin.inactive .company-admin-map-marker-icon { color: #64748b; }
+  .instagram-branch-marker { position: relative; display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 3px solid #fff; border-radius: 50%; background: linear-gradient(135deg, #ffdc80 0%, #f77737 30%, #e1306c 60%, #833ab4 100%); color: #fff; font: 800 14px/1 Inter, sans-serif; box-shadow: 0 5px 16px rgba(131, 58, 180, .38); cursor: pointer; }
+  .instagram-branch-marker::after { content: ''; position: absolute; z-index: -1; bottom: -7px; width: 13px; height: 13px; transform: rotate(45deg); border-radius: 2px; background: #c13584; }
+  .instagram-branch-marker.inactive { background: #94a3b8; box-shadow: 0 5px 16px rgba(71, 85, 105, .28); }
+  .instagram-branch-marker.inactive::after { background: #94a3b8; }
+  .instagram-branch-marker:hover { transform: scale(1.1); }
+  .instagram-map-popup .maplibregl-popup-content { min-width: 180px; border: 0; border-radius: 14px; background: rgba(255,255,255,.96); color: #1f2937; }
+  .instagram-map-popup .maplibregl-popup-tip { border-top-color: rgba(255,255,255,.96); }
+  .company-admin-global-map iframe { width: 100%; height: 100%; border: 0; filter: saturate(.9) contrast(.98); }
+  .company-admin-map-locate { position: absolute; z-index: 3; top: 14px; right: 14px; border: 0; border-radius: 8px; background: #fff; box-shadow: 0 5px 12px rgba(15,23,42,.14); color: #2563eb; font: 800 11px Inter, sans-serif; padding: 8px 10px; cursor: pointer; }
+  .company-admin-map-locate:disabled { opacity: .65; cursor: wait; }
+  .company-admin-map-markers { position: absolute; z-index: 2; inset: 0; pointer-events: none; }
+  .company-admin-map-marker-pin { position: absolute; display: inline-flex; align-items: center; gap: 6px; max-width: 220px; transform: translate(-50%, -100%); padding: 0; border: 0; background: transparent; color: #0f5ec7; font: 800 12px/1 Inter, sans-serif; white-space: nowrap; pointer-events: auto; cursor: pointer; transition: transform 160ms ease, filter 160ms ease; }
+  .company-admin-map-marker-pin::after { display: none; }
+  .company-admin-map-marker-icon { display: grid; place-items: center; width: 28px; height: 28px; flex: 0 0 auto; padding: 6px; border: 2px solid #fff; border-radius: 50% 50% 50% 0; background: #1670d2; color: #fff; box-shadow: 0 5px 12px rgba(15, 23, 42, .3); transform: rotate(-45deg); }
+  .company-admin-map-marker-icon svg { display: none; }
+  .company-admin-map-marker-text { color: #0f345f; text-shadow: 0 1px 2px rgba(255,255,255,.92), 1px 0 2px rgba(255,255,255,.92), -1px 0 2px rgba(255,255,255,.92); }
+  .company-admin-map-marker-pin.inactive { background: transparent; box-shadow: none; }
+  .company-admin-map-marker-pin.inactive .company-admin-map-marker-icon { background: #7c8ba1; }
+  .company-admin-map-marker-pin.inactive .company-admin-map-marker-icon,
+  .company-admin-map-marker-pin.inactive .company-admin-map-marker-text { color: #64748b; }
+  .company-admin-map-marker-pin:hover { transform: translate(-50%, -100%) scale(1.06); filter: brightness(1.03); }
+  .company-admin-map-summary { position: absolute; z-index: 500; right: 14px; bottom: 18px; display: flex; align-items: center; gap: 5px; padding: 8px 10px; border: 1px solid rgba(255,255,255,.86); border-radius: 999px; background: rgba(15, 23, 42, .82); box-shadow: 0 6px 18px rgba(15,23,42,.18); color: #e2e8f0; font-size: 11px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  .company-admin-map-summary strong { color: #fff; font-size: 12px; }
+  .company-admin-map-summary-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 3px rgba(74, 222, 128, .16); }
+  .company-admin-map-empty { display: grid; place-items: center; align-content: center; gap: 12px; height: 100%; margin: 0; color: var(--text-secondary); text-align: center; }
+  .company-admin-map-empty p { margin: 0; }
+  .company-admin-map-pin { position: absolute; z-index: 2; width: 28px; height: 28px; transform: translate(-50%, -100%); padding: 5px; border: 2px solid #fff; border-radius: 50% 50% 50% 0; background: var(--danger); color: #fff; box-shadow: 0 3px 8px rgba(0,0,0,.35); cursor: pointer; }
+  .company-admin-map-pin svg { width: 14px; height: 14px; }
+  .company-admin-view-list { display: grid; align-content: start; gap: 8px; }
   .branch-admin-action-cards {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -503,9 +621,15 @@
   .branch-admin-card-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 8px;
   }
+  .branch-admin-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .branch-admin-card-title strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .branch-admin-card-meta {
     color: var(--text-secondary);
     font-size: 13px;
@@ -513,10 +637,24 @@
   .branch-admin-card-footer {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 6px;
     font-size: 12px;
     color: var(--accent-text);
   }
+  .branch-admin-text-action {
+    justify-self: start;
+    padding: 5px 2px;
+    border: 0;
+    background: transparent;
+    color: var(--accent-text);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.3;
+    cursor: pointer;
+  }
+  .branch-admin-text-action:hover { color: var(--accent-hover); text-decoration: underline; text-underline-offset: 3px; }
   .branch-admin-card-arrow {
     font-weight: 700;
   }
@@ -540,7 +678,9 @@
     color: var(--danger);
   }
   .branch-admin-toggle-btn {
-    min-width: 110px;
+    align-self: center;
+    min-width: 0;
+    padding: 7px 10px;
   }
   .company-admin-topbar {
     display: flex;
@@ -624,6 +764,17 @@
     color: #fff;
     font-weight: 700;
     flex-shrink: 0;
+    object-fit: cover;
+  }
+  .app-header-profile-trigger .company-admin-profile-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 11px;
+  }
+  .app-header-profile-trigger {
+    gap: 6px;
+    padding: 3px 7px 3px 3px;
+    border-radius: 999px;
   }
   .company-admin-profile-copy {
     display: grid;
@@ -672,6 +823,7 @@
     place-items: center;
     padding: 20px;
     background: rgba(4, 9, 18, 0.66);
+    -webkit-backdrop-filter: blur(5px);
     backdrop-filter: blur(5px);
   }
   .company-admin-modal,
@@ -695,11 +847,23 @@
     .branch-admin-grid { grid-template-columns: 1fr !important; }
   }
   @media (max-width: 760px) {
+    .company-admin-shell, .company-admin-shell.sidebar-collapsed { grid-template-columns: 64px minmax(0, 1fr); }
+    .company-admin-shell:not(.sidebar-collapsed) .company-admin-sidebar-brand { padding-left: 10px; padding-right: 10px; justify-content: center; }
+    .company-admin-shell:not(.sidebar-collapsed) .company-admin-sidebar-brand div, .company-admin-shell:not(.sidebar-collapsed) .company-admin-sidebar-label, .company-admin-shell:not(.sidebar-collapsed) .company-admin-sidebar-nav span, .company-admin-shell:not(.sidebar-collapsed) .company-admin-sidebar-footer span { display: none; }
+    .company-admin-shell:not(.sidebar-collapsed) .company-admin-sidebar-nav { padding-left: 10px; padding-right: 10px; }
+    .company-admin-shell:not(.sidebar-collapsed) .company-admin-sidebar-nav button { justify-content: center; }
+    .company-admin-main { padding: 12px; }
+    .company-admin-topbar-brand p { display: none; }
+    .company-admin-dashboard-hero, .company-admin-section-heading { align-items: flex-start; flex-direction: column; }
+    .company-admin-stat-grid { grid-template-columns: 1fr; }
+    .company-admin-view-branches { grid-template-columns: 1fr; }
+    .company-admin-global-map { height: 360px; }
+    .company-admin-dashboard-hero .btn-primary { width: 100%; }
     .branch-admin-action-cards { grid-template-columns: 1fr; }
     .branch-admin-grid form[style*="repeat(3"] { grid-template-columns: 1fr !important; }
     .branch-admin-grid > div > div > .card > div[style*="minmax(0, 1fr)"] { grid-template-columns: 1fr !important; }
     .branch-admin-card-item { flex-direction: column; }
-    .branch-admin-toggle-btn { width: 100%; }
+    .branch-admin-toggle-btn { width: fit-content; }
     .company-admin-topbar {
       flex-direction: column;
       align-items: flex-start;
