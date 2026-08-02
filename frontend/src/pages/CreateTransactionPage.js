@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ArrowLeftIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { Spinner, StatusBadge, Modal } from '../components/common';
+import { Spinner, StatusBadge, TableSkeleton, Modal } from '../components/common';
 import { fetchWithCache, invalidateCache } from '../utils/dataCache';
 import api from '../utils/api';
 
@@ -393,7 +393,7 @@ const [form, setForm] = useState({
               ))}
             </div>
           )}
-          {loadingCrane && <div className="flex items-center gap-2 mt-3 text-sm text-gray-500"><Spinner size="sm" /> Loading attachments...</div>}
+          {loadingCrane && <TableSkeleton rows={4} cols={6} />}
           {selectedCranes.length > 0 && !loadingCrane && (
             <div className="mt-4 space-y-2">
               {selectedCranes.map(crane => (

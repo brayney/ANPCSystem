@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import toast from 'react-hot-toast';
 import { PrinterIcon } from '@heroicons/react/24/outline';
-import { StatusBadge, Spinner } from '../components/common';
+import { StatusBadge, TableSkeleton } from '../components/common';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '../utils/api';
 import { format } from 'date-fns';
@@ -379,11 +379,7 @@ export default function PublicTransactionPage() {
     content: () => printRef.current,
   });
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <Spinner size="lg" />
-    </div>
-  );
+  if (loading) return <TableSkeleton rows={8} cols={8} />;
   
   if (!txn) return null;
   const cranes = getTransactionCranes(txn);

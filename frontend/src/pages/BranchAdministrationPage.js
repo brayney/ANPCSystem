@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { UserIcon, HomeIcon, BuildingOffice2Icon, Bars3Icon, MapPinIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { Spinner, ConfirmDialog } from '../components/common';
+import { TableSkeleton, Spinner, ConfirmDialog } from '../components/common';
 import LogoSplash from '../components/common/LogoSplash';
 import { useAuth } from '../hooks/useAuth';
 import api from '../utils/api';
@@ -39,6 +39,7 @@ export default function BranchAdministrationPage() {
   const [countries, setCountries] = useState([]);
   const [locatingBranches, setLocatingBranches] = useState(false);
   const [pendingBranchStatusChange, setPendingBranchStatusChange] = useState(null);
+  const [branchStep, setBranchStep] = useState(1);
   const autoLocationAttempted = useRef(false);
   const mapRef = useRef(null);
 
@@ -165,6 +166,7 @@ export default function BranchAdministrationPage() {
       await api.post('/branches', form);
       toast.success('Branch and administrator created');
       setForm({ branchName: '', branchCode: '', country: 'Philippines', region: '', province: '', city: '', name: '', email: '', password: '' });
+      setBranchStep(1);
       load();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Unable to create branch');
@@ -267,7 +269,7 @@ export default function BranchAdministrationPage() {
             </div>
           </section>
 
-          {loading ? <div className="card"><Spinner size="sm" /></div> : (
+          {loading ? <TableSkeleton rows={8} cols={6} /> : (
             <>
               <section className="company-admin-stat-grid" aria-label="Company summary">
                 <div className="company-admin-stat-card"><span>Total branches</span><strong>{number(branches.length)}</strong><small>All company locations</small></div>
@@ -344,7 +346,7 @@ export default function BranchAdministrationPage() {
           </section>
           <section className="card company-admin-view-list">
             <div className="company-admin-section-heading"><div><h2>Find a branch</h2><p>Select a branch to center the map on its saved address.</p></div></div>
-            {loading ? <Spinner size="sm" /> : branches.length === 0 ? <p className="company-admin-empty-state">No branches yet.</p> : branches.map(branch => (
+            {loading ? <TableSkeleton rows={8} cols={6} /> : branches.length === 0 ? <p className="company-admin-empty-state">No branches yet.</p> : branches.map(branch => (
               <button type="button" className="company-admin-dashboard-branch" key={branch._id} onClick={() => focusBranchOnMap(branch)}>
                 <span><strong>{branch.name}</strong><small>{branch.address || 'No address added'} · {branch.accountCount || 0} accounts</small></span>
                 <span className={`branch-admin-status-pill ${branch.isActive ? 'active' : 'inactive'}`}>{branch.isActive ? 'Active' : 'Inactive'}</span>
@@ -356,24 +358,110 @@ export default function BranchAdministrationPage() {
     }
 
     if (activeView === 'add') {
+      const branchSteps = [
+        { title: 'Branch details', description: 'Enter the branch identity and address.' },
+        { title: 'Administrator', description: 'Create the branch admin account.' },
+        { title: 'Review', description: 'Confirm everything before creating the branch.' }
+      ];
+
       return (
         <div style={{ display: 'grid', gap: 16 }}>
           <button type="button" className="branch-admin-text-action" onClick={goBackToCards}>← Back</button>
           <form id="new-branch-form" className="card" onSubmit={submit} style={{ display: 'grid', gap: 14, gridColumn: '1 / -1' }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 16 }}>New branch</h2>
-            <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: 13 }}>Complete the address below and the branch will be located automatically on the map.</p>
-          </div>
-          {[['Branch name', 'branchName', 'text'], ['Branch code', 'branchCode', 'text'], ['Country', 'country', 'text'], ['State / province / region', 'region', 'text'], ['City', 'city', 'text'], ['Administrator name', 'name', 'text'], ['Administrator email', 'email', 'email'], ['Temporary password', 'password', 'password']].map(([label, key, type]) => (
-            <div key={key}>
-              <label className="label">{label} *</label>
-              {key === 'country' ? <select required className="input-field" value={form.country} onChange={e => setForm({ ...form, country: e.target.value, region: '', city: '' })}>{countries.map(item => <option key={item.iso3} value={item.name}>{item.name}</option>)}</select>
-                : key === 'region' ? <select required className="input-field" value={form.region} onChange={e => setForm({ ...form, region: e.target.value, province: '', city: '' })}><option value="">Select region</option>{regions.map(item => <option key={item.code} value={item.name}>{item.name}</option>)}</select>
-                : key === 'city' ? <select required disabled={!form.country} className="input-field" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })}><option value="">Select city</option>{cities.map(item => <option key={typeof item === 'string' ? item : item.code} value={typeof item === 'string' ? item : item.name}>{typeof item === 'string' ? item : item.name}</option>)}</select>
-                : <input required className="input-field" type={type} value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} />}
+            <div className="wizard-shell">
+              <div className="wizard-header">
+                <div className="wizard-title-block">
+                  <div className="wizard-kicker">Step {branchStep} of {branchSteps.length}</div>
+                  <div className="wizard-title">{branchSteps[branchStep - 1].title}</div>
+                </div>
+                <div className="wizard-description">{branchSteps[branchStep - 1].description}</div>
+              </div>
+              <div className="wizard-progress-track">
+                <div className="wizard-progress-fill" style={{ width: `${(branchStep / branchSteps.length) * 100}%` }} />
+              </div>
             </div>
-          ))}
-          <button className="btn-primary" disabled={saving}>{saving ? <><Spinner size="sm" /> Creating...</> : 'Create branch administrator'}</button>
+
+            <div className="wizard-form-body">
+            {branchStep === 1 && (
+              <div style={{ display: 'grid', gap: 12 }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: 16 }}>New branch</h2>
+                  <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: 13 }}>Complete the address and the branch will be located automatically on the map.</p>
+                </div>
+                {[
+                  ['Branch name', 'branchName', 'text'],
+                  ['Branch code', 'branchCode', 'text'],
+                  ['Country', 'country', 'select'],
+                  ['State / province / region', 'region', 'select'],
+                  ['City', 'city', 'select']
+                ].map(([label, key, type]) => (
+                  <div key={key}>
+                    <label className="label">{label} *</label>
+                    {type === 'select' && key === 'country' ? (
+                      <select required className="input-field" value={form.country} onChange={e => setForm({ ...form, country: e.target.value, region: '', city: '' })}>
+                        {countries.map(item => <option key={item.iso3} value={item.name}>{item.name}</option>)}
+                      </select>
+                    ) : type === 'select' && key === 'region' ? (
+                      <select required className="input-field" value={form.region} onChange={e => setForm({ ...form, region: e.target.value, province: '', city: '' })}>
+                        <option value="">Select region</option>
+                        {regions.map(item => <option key={item.code} value={item.name}>{item.name}</option>)}
+                      </select>
+                    ) : type === 'select' && key === 'city' ? (
+                      <select required disabled={!form.country} className="input-field" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })}>
+                        <option value="">Select city</option>
+                        {cities.map(item => <option key={typeof item === 'string' ? item : item.code} value={typeof item === 'string' ? item : item.name}>{typeof item === 'string' ? item : item.name}</option>)}
+                      </select>
+                    ) : (
+                      <input required className="input-field" type={type} value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {branchStep === 2 && (
+              <div style={{ display: 'grid', gap: 12 }}>
+                {[
+                  ['Administrator name', 'name', 'text'],
+                  ['Administrator email', 'email', 'email'],
+                  ['Temporary password', 'password', 'password']
+                ].map(([label, key, type]) => (
+                  <div key={key}>
+                    <label className="label">{label} *</label>
+                    <input required className="input-field" type={type} value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {branchStep === 3 && (
+              <div style={{ display: 'grid', gap: 12 }}>
+                <div className="wizard-section-card wizard-summary-card">
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Quick review</div>
+                  <div style={{ display: 'grid', gap: '6px', fontSize: '13px', color: 'var(--text-primary)' }}>
+                    <div><strong>Branch:</strong> {form.branchName || '—'}</div>
+                    <div><strong>Code:</strong> {form.branchCode || '—'}</div>
+                    <div><strong>Location:</strong> {`${form.city || ''}${form.city && form.region ? ', ' : ''}${form.region || ''}`.trim() || '—'}</div>
+                    <div><strong>Admin:</strong> {form.name || '—'}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            </div>
+            <div className="wizard-actions" style={{ marginTop: 4 }}>
+              <button type="button" className="btn-secondary" onClick={goBackToCards}>Cancel</button>
+              {branchStep > 1 && (
+                <button type="button" className="btn-secondary" onClick={() => setBranchStep(prev => Math.max(prev - 1, 1))}>Back</button>
+              )}
+              {branchStep < branchSteps.length ? (
+                <button type="button" className="btn-primary" onClick={() => setBranchStep(prev => Math.min(prev + 1, branchSteps.length))}>Next</button>
+              ) : (
+                <button className="btn-primary" disabled={saving}>
+                  {saving ? <><Spinner size="sm" /> Creating...</> : 'Create branch administrator'}
+                </button>
+              )}
+            </div>
           </form>
         </div>
       );
@@ -391,7 +479,7 @@ export default function BranchAdministrationPage() {
                 </div>
                 <button type="button" className="btn-primary" onClick={openAddBranch}>Add branch</button>
               </div>
-              {loading ? <Spinner size="sm" /> : branches.length === 0 ? <p style={{ color: 'var(--text-secondary)' }}>No branches yet.</p> : (
+              {loading ? <TableSkeleton rows={8} cols={6} /> : branches.length === 0 ? <p style={{ color: 'var(--text-secondary)' }}>No branches yet.</p> : (
                 <div style={{ display: 'grid', gap: 10 }}>
                   {branches.map(branch => (
                     <div key={branch._id} className="branch-admin-card-item">
@@ -427,7 +515,7 @@ export default function BranchAdministrationPage() {
           </div>
         ) : (
           <div className="card" style={{ width: '100%', padding: '24px', borderRadius: '18px' }}>
-            {loadingDetails ? <Spinner size="sm" /> : details && (
+            {loadingDetails ? <TableSkeleton rows={4} cols={6} /> : details && (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
                   <div>

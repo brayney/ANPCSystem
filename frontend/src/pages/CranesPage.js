@@ -16,6 +16,12 @@ const CraneForm = ({ initial, onSave, onClose }) => {
     client: '', status: 'Available', supervisor: '', division: '', comments: ''
   });
   const [saving, setSaving] = useState(false);
+  const [step, setStep] = useState(1);
+  const steps = [
+    { title: 'Basic info', description: 'Capture the crane identity and specs.' },
+    { title: 'Assignment', description: 'Add location, client, and operational status.' },
+    { title: 'Review', description: 'Confirm everything before saving.' }
+  ];
 
   useEffect(() => {
     if (initial) {
@@ -48,71 +54,105 @@ const CraneForm = ({ initial, onSave, onClose }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="label">Equipment No. *</label>
-          <input type="text" className="input-field" required
-            value={form.equipmentNo || ''} onChange={e => handleChange('equipmentNo', e.target.value)} />
+    <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '14px' }}>
+      <div className="wizard-shell" style={{ marginBottom: '0px' }}>
+        <div className="wizard-header">
+          <div className="wizard-title-block">
+            <div className="wizard-kicker">Step {step} of {steps.length}</div>
+            <div className="wizard-title">{steps[step - 1].title}</div>
+          </div>
+          <div className="wizard-description">{steps[step - 1].description}</div>
         </div>
-        <div>
-          <label className="label">Crane Model</label>
-          <input type="text" className="input-field"
-            value={form.craneModel || ''} onChange={e => handleChange('craneModel', e.target.value)} />
-        </div>
-        <div>
-          <label className="label">Year Model</label>
-          <input type="text" className="input-field"
-            value={form.yearModel || ''} onChange={e => handleChange('yearModel', e.target.value)} />
-        </div>
-        <div>
-          <label className="label">Capacity</label>
-          <input type="text" className="input-field"
-            value={form.capacity || ''} onChange={e => handleChange('capacity', e.target.value)} />
-        </div>
-        <div>
-          <label className="label">Weight (KG)</label>
-          <input type="text" className="input-field"
-            value={form.weightKg || ''} onChange={e => handleChange('weightKg', e.target.value)} />
-        </div>
-        <div>
-          <label className="label">Location</label>
-          <input type="text" className="input-field" value={form.location || ''} disabled
-            style={{ backgroundColor: 'var(--bg-muted)', cursor: 'not-allowed' }} />
-        </div>
-        <div>
-          <label className="label">Client</label>
-          <input type="text" className="input-field"
-            value={form.client || ''} onChange={e => handleChange('client', e.target.value)} />
-        </div>
-        <div>
-          <label className="label">Status</label>
-          <select className="input-field" value={form.status || ''} onChange={e => handleChange('status', e.target.value)}>
-            <option value="">Select...</option>
-            {STATUS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="label">Supervisor</label>
-          <input type="text" className="input-field"
-            value={form.supervisor || ''} onChange={e => handleChange('supervisor', e.target.value)} />
-        </div>
-        <div>
-          <label className="label">Division</label>
-          <input type="text" className="input-field"
-            value={form.division || ''} onChange={e => handleChange('division', e.target.value)} />
+        <div className="wizard-progress-track">
+          <div className="wizard-progress-fill" style={{ width: `${(step / steps.length) * 100}%` }} />
         </div>
       </div>
-      <div style={{ marginTop: '16px' }}>
-        <label className="label">Comments</label>
-        <textarea className="input-field" rows={2} value={form.comments || ''}
-          onChange={e => handleChange('comments', e.target.value)} style={{ resize: 'vertical' }} />
+
+      <div className="wizard-form-body">
+      {step === 1 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="label">Equipment No. *</label>
+            <input type="text" className="input-field" required value={form.equipmentNo || ''} onChange={e => handleChange('equipmentNo', e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Crane Model</label>
+            <input type="text" className="input-field" value={form.craneModel || ''} onChange={e => handleChange('craneModel', e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Year Model</label>
+            <input type="text" className="input-field" value={form.yearModel || ''} onChange={e => handleChange('yearModel', e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Capacity</label>
+            <input type="text" className="input-field" value={form.capacity || ''} onChange={e => handleChange('capacity', e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Weight (KG)</label>
+            <input type="text" className="input-field" value={form.weightKg || ''} onChange={e => handleChange('weightKg', e.target.value)} />
+          </div>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="label">Location</label>
+            <input type="text" className="input-field" value={form.location || ''} disabled style={{ backgroundColor: 'var(--bg-muted)', cursor: 'not-allowed' }} />
+          </div>
+          <div>
+            <label className="label">Client</label>
+            <input type="text" className="input-field" value={form.client || ''} onChange={e => handleChange('client', e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Status</label>
+            <select className="input-field" value={form.status || ''} onChange={e => handleChange('status', e.target.value)}>
+              <option value="">Select...</option>
+              {STATUS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Supervisor</label>
+            <input type="text" className="input-field" value={form.supervisor || ''} onChange={e => handleChange('supervisor', e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Division</label>
+            <input type="text" className="input-field" value={form.division || ''} onChange={e => handleChange('division', e.target.value)} />
+          </div>
+        </div>
+      )}
+
+      {step === 3 && (
+        <div style={{ display: 'grid', gap: '12px' }}>
+          <div>
+            <label className="label">Comments</label>
+            <textarea className="input-field" rows={3} value={form.comments || ''} onChange={e => handleChange('comments', e.target.value)} style={{ resize: 'vertical' }} />
+          </div>
+          <div className="wizard-section-card wizard-summary-card">
+            <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Quick review</div>
+            <div style={{ display: 'grid', gap: '6px', fontSize: '13px', color: 'var(--text-primary)' }}>
+              <div><strong>Equipment:</strong> {form.equipmentNo || '—'}</div>
+              <div><strong>Model:</strong> {form.craneModel || '—'}</div>
+              <div><strong>Status:</strong> {form.status || '—'}</div>
+              <div><strong>Client:</strong> {form.client || '—'}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       </div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border-muted)' }}>
+      <div className="wizard-actions">
         <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
-        <button type="submit" disabled={saving} className="btn-primary">
-          {saving ? 'Saving...' : (initial ? 'Update Crane' : 'Create Crane')}
-        </button>
+        {step > 1 && (
+          <button type="button" onClick={() => setStep(prev => Math.max(prev - 1, 1))} className="btn-secondary">Back</button>
+        )}
+        {step < steps.length ? (
+          <button type="button" onClick={() => setStep(prev => Math.min(prev + 1, steps.length))} className="btn-primary">Next</button>
+        ) : (
+          <button type="submit" disabled={saving} className="btn-primary">
+            {saving ? 'Saving...' : (initial ? 'Update Crane' : 'Create Crane')}
+          </button>
+        )}
       </div>
     </form>
   );
@@ -156,7 +196,7 @@ export default function CranesPage() {
       setTotal(resolvedTotal);
     } catch { toast.error('Failed to load cranes'); }
     finally { setLoading(false); }
-  }, [page, search, statusFilter]);
+}, [page, search, statusFilter]);
 
   useEffect(() => { fetchCranes(); }, [fetchCranes]);
 
@@ -207,6 +247,51 @@ export default function CranesPage() {
           </div>
         )}
       />
+
+      {/* All Status Cards */}
+      {(() => {
+        const allCounts = {};
+        cranes.forEach(c => {
+          const s = c.status || 'Unknown';
+          allCounts[s] = (allCounts[s] || 0) + 1;
+        });
+        const allStatuses = ['Available', 'On Hire', 'Standby', 'Under Maintenance', 'Out of Yard', 'Reserved'];
+        const statusColors = {
+          'Available': { bar: 'var(--success)' },
+          'On Hire': { bar: 'var(--accent)' },
+          'Standby': { bar: 'var(--warning)' },
+          'Under Maintenance': { bar: 'var(--orange)' },
+          'Out of Yard': { bar: 'var(--danger)' },
+          'Reserved': { bar: 'var(--purple)' },
+        };
+        return (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+            {allStatuses.map(status => {
+              const count = allCounts[status] || 0;
+              const colorConfig = statusColors[status] || { bar: 'var(--text-muted)' };
+              return (
+                <div key={status} className="card" style={{ padding: '12px 14px', textAlign: 'center', borderTop: `3px solid ${colorConfig.bar}` }}>
+                  <p style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>{status}</p>
+                  <p style={{ fontSize: '28px', fontWeight: 900, color: 'var(--text-primary)', margin: '6px 0 0' }}>{count}</p>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {/* Selection Info Card */}
+      {selectionMode && selectedIds.length > 0 && (
+        <div className="card" style={{ padding: '10px 16px', marginBottom: '16px', background: 'var(--accent-subtle)', border: '1px solid var(--accent)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--accent-text)' }}>{selectedIds.length} crane(s) selected</span>
+          {canEditOrDelete && (
+            <button type="button" onClick={() => setBulkDeleteOpen(true)} className="btn-danger" style={{ fontSize: '12px', padding: '4px 10px' }}>
+              <TrashIcon style={{ width: '12px', height: '12px', display: 'inline', marginRight: '4px' }} />Delete Selected
+            </button>
+          )}
+          <button type="button" onClick={() => { setSelectionMode(false); setSelectedIds([]); }} className="btn-secondary" style={{ fontSize: '12px', padding: '4px 10px' }}>Clear</button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="card" style={{ padding: '14px 16px', marginBottom: '16px' }}>

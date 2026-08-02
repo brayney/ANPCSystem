@@ -13,6 +13,12 @@ const CounterweightForm = ({ initial, onSave, onClose, endpoint }) => {
     location: '', condition: 'OK', status: 'Available', comments: ''
   });
   const [saving, setSaving] = useState(false);
+  const [step, setStep] = useState(1);
+  const steps = [
+    { title: 'Basic details', description: 'Enter the counterweight identity and capacity.' },
+    { title: 'Assignment', description: 'Choose the crane and current condition.' },
+    { title: 'Review', description: 'Confirm before adding it to the inventory.' }
+  ];
   const [cranes, setCranes] = useState([]);
   const [craneSearch, setCraneSearch] = useState('');
   const [showCraneDropdown, setShowCraneDropdown] = useState(false);
@@ -61,120 +67,124 @@ const CounterweightForm = ({ initial, onSave, onClose, endpoint }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="label">Item Name</label>
-          <input type="text" className="input-field" value={form.itemName || ''}
-            onChange={e => handleChange('itemName', e.target.value)} />
+    <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '14px' }}>
+      <div className="wizard-shell" style={{ marginBottom: '0px' }}>
+        <div className="wizard-header">
+          <div className="wizard-title-block">
+            <div className="wizard-kicker">Step {step} of {steps.length}</div>
+            <div className="wizard-title">{steps[step - 1].title}</div>
+          </div>
+          <div className="wizard-description">{steps[step - 1].description}</div>
         </div>
-        <div>
-          <label className="label">Serial No.</label>
-          <input type="text" className="input-field" value={form.serialNo || ''}
-            onChange={e => handleChange('serialNo', e.target.value)} />
+        <div className="wizard-progress-track">
+          <div className="wizard-progress-fill" style={{ width: `${(step / steps.length) * 100}%` }} />
         </div>
-        <div>
-          <label className="label">Weight (kg)</label>
-          <input type="text" className="input-field" value={form.weightKg || ''}
-            onChange={e => handleChange('weightKg', e.target.value)} />
+      </div>
+
+      <div className="wizard-form-body">
+      {step === 1 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="label">Item Name</label>
+            <input type="text" className="input-field" value={form.itemName || ''} onChange={e => handleChange('itemName', e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Serial No.</label>
+            <input type="text" className="input-field" value={form.serialNo || ''} onChange={e => handleChange('serialNo', e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Weight (kg)</label>
+            <input type="text" className="input-field" value={form.weightKg || ''} onChange={e => handleChange('weightKg', e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Capacity</label>
+            <input type="text" className="input-field" value={form.capacity || ''} onChange={e => handleChange('capacity', e.target.value)} />
+          </div>
         </div>
-        <div>
-          <label className="label">Capacity</label>
-          <input type="text" className="input-field" value={form.capacity || ''}
-            onChange={e => handleChange('capacity', e.target.value)} />
+      )}
+
+      {step === 2 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="label">Location</label>
+            <input type="text" className="input-field" value={form.location || ''} onChange={e => handleChange('location', e.target.value)} />
+          </div>
+          <div style={{ position: 'relative' }}>
+            <label className="label">Assigned Crane</label>
+            <input
+              type="text"
+              className="input-field"
+              placeholder="Leave blank for all cranes"
+              value={form.assignedCrane || ''}
+              onChange={e => {
+                handleChange('assignedCrane', e.target.value);
+                setCraneSearch(e.target.value);
+                setShowCraneDropdown(true);
+              }}
+              onFocus={() => setShowCraneDropdown(true)}
+              autoComplete="off"
+            />
+            <p style={{ margin: '5px 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>
+              Leave blank to make this counterweight available to all cranes.
+            </p>
+            {showCraneDropdown && (filteredCranes.length > 0 || craneSearch) && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'white', border: '1px solid var(--border-color)', borderRadius: '4px', marginTop: '4px', maxHeight: '200px', overflowY: 'auto', zIndex: 10, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                {filteredCranes.length > 0 ? (
+                  filteredCranes.map(crane => (
+                    <div key={crane._id} onClick={() => { handleChange('assignedCrane', crane.equipmentNo); setShowCraneDropdown(false); setCraneSearch(''); }} style={{ padding: '8px 12px', cursor: 'pointer', backgroundColor: form.assignedCrane === crane.equipmentNo ? '#f0f0f0' : 'white', borderBottom: '1px solid var(--border-muted)', transition: 'background-color 0.2s' }} onMouseEnter={e => e.target.style.backgroundColor = '#f5f5f5'} onMouseLeave={e => e.target.style.backgroundColor = form.assignedCrane === crane.equipmentNo ? '#f0f0f0' : 'white'}>
+                      {crane.equipmentNo}
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ padding: '8px 12px', color: 'var(--text-muted)', textAlign: 'center' }}>No cranes found</div>
+                )}
+              </div>
+            )}
+          </div>
+          <div>
+            <label className="label">Condition</label>
+            <select className="input-field" value={form.condition} onChange={e => handleChange('condition', e.target.value)}>
+              {CONDITION_OPTIONS.map(o => <option key={o}>{o}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Status</label>
+            <select className="input-field" value={form.status} onChange={e => handleChange('status', e.target.value)}>
+              {STATUS_OPTIONS.map(o => <option key={o}>{o}</option>)}
+            </select>
+          </div>
         </div>
-        <div>
-          <label className="label">Location</label>
-          <input type="text" className="input-field" value={form.location || ''}
-            onChange={e => handleChange('location', e.target.value)} />
-        </div>
-        <div style={{ position: 'relative' }}>
-          <label className="label">Assigned Crane</label>
-          <input
-            type="text"
-            className="input-field"
-            placeholder="Leave blank for all cranes"
-            value={form.assignedCrane || ''}
-            onChange={e => {
-              handleChange('assignedCrane', e.target.value);
-              setCraneSearch(e.target.value);
-              setShowCraneDropdown(true);
-            }}
-            onFocus={() => setShowCraneDropdown(true)}
-            autoComplete="off"
-          />
-          <p style={{ margin: '5px 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>
-            Leave blank to make this counterweight available to all cranes.
-          </p>
-          {showCraneDropdown && (filteredCranes.length > 0 || craneSearch) && (
-            <div style={{
-              position: 'absolute',
-              top: '100%',
-              left: 0,
-              right: 0,
-              backgroundColor: 'white',
-              border: '1px solid var(--border-color)',
-              borderRadius: '4px',
-              marginTop: '4px',
-              maxHeight: '200px',
-              overflowY: 'auto',
-              zIndex: 10,
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}>
-              {filteredCranes.length > 0 ? (
-                filteredCranes.map(crane => (
-                  <div
-                    key={crane._id}
-                    onClick={() => {
-                      handleChange('assignedCrane', crane.equipmentNo);
-                      setShowCraneDropdown(false);
-                      setCraneSearch('');
-                    }}
-                    style={{
-                      padding: '8px 12px',
-                      cursor: 'pointer',
-                      backgroundColor: form.assignedCrane === crane.equipmentNo ? '#f0f0f0' : 'white',
-                      borderBottom: '1px solid var(--border-muted)',
-                      transition: 'background-color 0.2s'
-                    }}
-                    onMouseEnter={e => e.target.style.backgroundColor = '#f5f5f5'}
-                    onMouseLeave={e => e.target.style.backgroundColor = form.assignedCrane === crane.equipmentNo ? '#f0f0f0' : 'white'
-                    }
-                  >
-                    {crane.equipmentNo}
-                  </div>
-                ))
-              ) : (
-                <div style={{ padding: '8px 12px', color: 'var(--text-muted)', textAlign: 'center' }}>
-                  No cranes found
-                </div>
-              )}
+      )}
+
+      {step === 3 && (
+        <div style={{ display: 'grid', gap: '12px' }}>
+          <div>
+            <label className="label">Comments</label>
+            <textarea className="input-field" rows={3} value={form.comments || ''} onChange={e => handleChange('comments', e.target.value)} />
+          </div>
+          <div className="wizard-section-card wizard-summary-card">
+            <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Quick review</div>
+            <div style={{ display: 'grid', gap: '6px', fontSize: '13px', color: 'var(--text-primary)' }}>
+              <div><strong>Item:</strong> {form.itemName || '—'}</div>
+              <div><strong>Assigned crane:</strong> {form.assignedCrane || '—'}</div>
+              <div><strong>Status:</strong> {form.status || '—'}</div>
+              <div><strong>Condition:</strong> {form.condition || '—'}</div>
             </div>
-          )}
+          </div>
         </div>
-        <div>
-          <label className="label">Condition</label>
-          <select className="input-field" value={form.condition} onChange={e => handleChange('condition', e.target.value)}>
-            {CONDITION_OPTIONS.map(o => <option key={o}>{o}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="label">Status</label>
-          <select className="input-field" value={form.status} onChange={e => handleChange('status', e.target.value)}>
-            {STATUS_OPTIONS.map(o => <option key={o}>{o}</option>)}
-          </select>
-        </div>
+      )}
+
       </div>
-      <div className="mt-4">
-        <label className="label">Comments</label>
-        <textarea className="input-field" rows={2} value={form.comments || ''}
-          onChange={e => handleChange('comments', e.target.value)} />
-      </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "20px", paddingTop: "16px", borderTop: "1px solid var(--border-muted)" }}>
+      <div className="wizard-actions">
         <button type="button" onClick={() => { onClose(); setShowCraneDropdown(false); }} className="btn-secondary">Cancel</button>
-        <button type="submit" disabled={saving} className="btn-primary">
-          {saving ? 'Saving...' : (initial?._id ? 'Update' : 'Create')}
-        </button>
+        {step > 1 && (
+          <button type="button" onClick={() => setStep(prev => Math.max(prev - 1, 1))} className="btn-secondary">Back</button>
+        )}
+        {step < steps.length ? (
+          <button type="button" onClick={() => setStep(prev => Math.min(prev + 1, steps.length))} className="btn-primary">Next</button>
+        ) : (
+          <button type="submit" disabled={saving} className="btn-primary">{saving ? 'Saving...' : (initial?._id ? 'Update' : 'Create')}</button>
+        )}
       </div>
     </form>
   );

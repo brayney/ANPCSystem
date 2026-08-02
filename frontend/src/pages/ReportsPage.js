@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { PageHeader, Spinner, StatusBadge, EmptyState } from '../components/common';
+import { PageHeader, StatusBadge, EmptyState, TableSkeleton } from '../components/common';
 import { fetchWithCache } from '../utils/dataCache';
 import { format, subDays, startOfMonth } from 'date-fns';
 import { MagnifyingGlassIcon, ArrowDownTrayIcon, FunnelIcon } from '@heroicons/react/24/outline';
@@ -260,7 +260,7 @@ export default function ReportsPage() {
               <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Scroll horizontally for more columns</span>
             </div>
             {loading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}><Spinner size="lg" /></div>
+              <TableSkeleton rows={8} cols={10} />
             ) : data.length === 0 ? (
               <EmptyState message="No records found" hint="Try adjusting your filters or selecting a different time range" />
             ) : (
@@ -306,7 +306,7 @@ export default function ReportsPage() {
           <div className="card">
             <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px' }}>Top Cranes by Rental Count</h3>
             {loading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}><Spinner size="lg" /></div>
+              <TableSkeleton rows={8} cols={10} />
             ) : utilData.length === 0 ? (
               <EmptyState message="No transaction data yet" />
             ) : (
@@ -383,7 +383,7 @@ export default function ReportsPage() {
           <div className="card">
             <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px' }}>Equipment Distribution</h3>
             {loading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}><Spinner size="lg" /></div>
+              <TableSkeleton rows={8} cols={10} />
             ) : !inventoryData ? (
               <EmptyState message="No inventory data available" />
             ) : (

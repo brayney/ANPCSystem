@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { PageHeader, StatusBadge, Pagination, EmptyState, Modal, ConfirmDialog, TableSkeleton } from '../common';
@@ -6,6 +6,24 @@ import CSVImport from '../common/CSVImport';
 import { fetchWithCache, invalidateCache } from '../../utils/dataCache';
 import api from '../../utils/api';
 import { useAuth } from '../../hooks/useAuth';
+
+const STATUS_GROUPS = {
+  'Cranes': ['Available', 'On Hire', 'Standby', 'Under Maintenance', 'Out of Yard', 'Reserved'],
+  'Counterweights': ['Available', 'In Use', 'Under Maintenance', 'Out of Yard'],
+  'Boom Sections': ['Available', 'In Use', 'Under Maintenance', 'Out of Yard'],
+  'Hooks': ['Available', 'Allocated', 'In Use', 'Under Maintenance', 'Out of Yard'],
+};
+
+const STATUS_COLORS = {
+  'Available': { bg: 'bg-[var(--success-bg)]', text: 'text-[var(--success)]', bar: 'var(--success)' },
+  'On Hire': { bg: 'bg-[var(--accent-subtle)]', text: 'text-[var(--accent-text)]', bar: 'var(--accent)' },
+  'Standby': { bg: 'bg-[var(--warning-bg)]', text: 'text-[var(--warning)]', bar: 'var(--warning)' },
+  'Under Maintenance': { bg: 'bg-[var(--orange-bg)]', text: 'text-[var(--orange)]', bar: 'var(--orange)' },
+  'Out of Yard': { bg: 'bg-[var(--danger-bg)]', text: 'text-[var(--danger)]', bar: 'var(--danger)' },
+  'Reserved': { bg: 'bg-[var(--purple-bg)]', text: 'text-[var(--purple)]', bar: 'var(--purple)' },
+  'In Use': { bg: 'bg-[var(--accent-subtle)]', text: 'text-[var(--accent-text)]', bar: 'var(--accent)' },
+  'Allocated': { bg: 'bg-[var(--purple-bg)]', text: 'text-[var(--purple)]', bar: 'var(--purple)' },
+};
 
 export function createEquipmentPage({ title, endpoint, columns, FormComponent, buildQuery, templateUrl, filters = [] }) {
   return function EquipmentPage() {
@@ -88,6 +106,17 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
       setSelectedIds(prev => prev.includes(id) ? prev.filter(itemId => itemId !== id) : [...prev, id]);
     };
 
+    const statusCounts = useMemo(() => {
+      const counts = {};
+      items.forEach(item => {
+        const status = item.status || 'Unknown';
+        counts[status] = (counts[status] || 0) + 1;
+      });
+      return counts;
+    }, [items]);
+
+    const allStatuses = STATUS_GROUPS[title] || [];
+
     return (
       <div className="animate-fade-in">
         <PageHeader title={title} subtitle={`${total} total records`}
@@ -100,6 +129,33 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
             </div>
           )}
         />
+
+{/* All Status Cards Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          {allStatuses.map(status => {
+            const colorConfig = STATUS_COLORS[status] || { bg: 'bg-[var(--surface-2)]', text: 'text-[var(--text-secondary)]', bar: 'var(--text-muted)' };
+            const count = statusCounts[status] || 0;
+            return (
+              <div key={status} className="card" style={{ padding: '12px 14px', textAlign: 'center', borderTop: `3px solid ${colorConfig.bar}` }}>
+                <p style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>{status}</p>
+                <p style={{ fontSize: '28px', fontWeight: 900, color: 'var(--text-primary)', margin: '6px 0 0' }}>{count}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Selection Info Card */}
+        {selectionMode && selectedIds.length > 0 && (
+          <div className="card" style={{ padding: '10px 16px', marginBottom: '16px', background: 'var(--accent-subtle)', border: '1px solid var(--accent)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--accent-text)' }}>{selectedIds.length} item{selectedIds.length === 1 ? '' : 's'} selected</span>
+            {canEditOrDelete && (
+              <button type="button" onClick={() => setBulkDeleteOpen(true)} className="btn-danger" style={{ fontSize: '12px', padding: '4px 10px' }}>
+                <TrashIcon style={{ width: '12px', height: '12px', display: 'inline', marginRight: '4px' }} />Delete Selected
+              </button>
+            )}
+            <button type="button" onClick={() => { setSelectionMode(false); setSelectedIds([]); }} className="btn-secondary" style={{ fontSize: '12px', padding: '4px 10px' }}>Clear</button>
+          </div>
+        )}
 
         {/* Search */}
         <div className="card" style={{ padding: '14px 16px', marginBottom: '16px' }}>
@@ -137,7 +193,7 @@ export function createEquipmentPage({ title, endpoint, columns, FormComponent, b
             )}
             {canEditOrDelete && selectionMode && selectedIds.length > 0 && (
               <button type="button" onClick={() => setBulkDeleteOpen(true)} className="btn-danger" style={{ fontSize: '12px' }}>
-                <TrashIcon style={{ width: '13px', height: '13px' }} /> Delete Selected ({selectedIds.length})
+                <TrashIcon style={{ width: '13px', height: '13px' }} /> Delete ({selectedIds.length})
               </button>
             )}
           </div>

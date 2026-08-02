@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { PageHeader, Spinner, ConfirmDialog } from '../components/common';
+import { PageHeader, Spinner, TableSkeleton, ConfirmDialog } from '../components/common';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../i18n/useTranslation';
 import api from '../utils/api';
@@ -618,160 +618,158 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {activeTab === 'accounts' && (
-            <div className="animate-fade-in">
-              <div className="card" style={{ marginBottom: user?.role === 'admin' ? '20px' : 0 }}>
-                <div style={{ marginBottom: '18px' }}>
-                  <h2 style={sectionHeaderStyle}>Account preferences</h2>
-                  <p style={sectionSubtitleStyle}>Control what is saved on this device and how in-app alerts appear.</p>
-                </div>
-                {[
-                  { icon: DevicePhoneMobileIcon, title: 'Save account on this device', description: 'Show your avatar at the selected branch so you only need to enter your password.', enabled: deviceAccountSaved, onChange: toggleDeviceAccount },
-                  { icon: BellAlertIcon, title: 'In-app notifications', description: 'Show the notifications bell and alerts while you are signed in on this device.', enabled: notificationsEnabled, onChange: toggleNotifications },
-                ].map(({ icon: Icon, title, description, enabled, onChange }, index) => (
-                  <div key={title} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: index ? '18px 0 0' : 0, marginTop: index ? '18px' : 0, borderTop: index ? '1px solid var(--border-muted)' : 'none' }}>
-                    <div style={{ width: 38, height: 38, borderRadius: '10px', background: 'var(--accent-subtle)', color: 'var(--accent-text)', display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon style={{ width: 19, height: 19 }} /></div>
-                    <div style={{ minWidth: 0, flex: 1 }}><strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{title}</strong><p style={{ margin: '3px 0 0', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>{description}</p></div>
-                    <button type="button" role="switch" aria-checked={enabled} aria-label={title} onClick={onChange} className={`settings-toggle${enabled ? ' enabled' : ''}`}><span /></button>
-                  </div>
-                ))}
-              </div>
-              {user?.role === 'admin' && (
-                <>
-              <div style={{ marginBottom: '18px' }}>
-                <h2 style={sectionHeaderStyle}>Created Accounts</h2>
-                <p style={sectionSubtitleStyle}>{accounts.length} account{accounts.length === 1 ? '' : 's'} registered</p>
-              </div>
+{activeTab === 'accounts' && (
+             <div className="animate-fade-in">
+               {user?.role === 'admin' && (
+                 <>
+               <div style={{ marginBottom: '18px' }}>
+                 <h2 style={sectionHeaderStyle}>Created Accounts</h2>
+                 <p style={sectionSubtitleStyle}>{accounts.length} account{accounts.length === 1 ? '' : 's'} registered</p>
+               </div>
 
-              {loadingAccounts ? (
-                <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)', padding: '20px' }}>
-                  <Spinner size="sm" /> Loading accounts...
-                </div>
-              ) : accounts.length === 0 ? (
-                <div className="card" style={{ textAlign: 'center', padding: '40px 20px' }}>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>No created accounts found.</p>
-                </div>
-              ) : (
-                <div style={{ display: 'grid', gap: '12px' }}>
-                  {accounts.map(account => {
-                    const isCurrentUser = account._id === user?._id;
-                    const isPrimaryAccount = account.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL;
-                    const canDeleteAccount = isAdmin && !isCurrentUser && !isPrimaryAccount;
-                    const isExpanded = expandedAccountId === account._id;
-                    const lastLoginDate = account.lastLogin ? new Date(account.lastLogin) : null;
-                    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-                    const isStale = !lastLoginDate || lastLoginDate < oneWeekAgo;
-                    const isLoggedIn = isCurrentUser ? true : account.isLoggedIn;
-                    const statusLabel = account.isActive === false
-                      ? 'Inactive'
-                      : isLoggedIn === false
-                        ? (isStale ? 'Inactive' : 'Logged out')
-                        : (isStale ? 'Inactive' : 'Active');
-                    const statusColors = statusLabel === 'Active'
-                      ? { text: 'var(--success)', bg: 'var(--success-bg)' }
-                      : statusLabel === 'Logged out'
-                        ? { text: 'var(--text-secondary)', bg: 'var(--surface-2)' }
-                        : { text: 'var(--text-muted)', bg: 'var(--surface-2)' };
-                    const accountRows = [
-                      ['Email', account.email || 'Not available'],
-                      ['Role', formatRole(account.role)],
-                      ['Status', statusLabel],
-                      ['Last Login', formatDateTime(account.lastLogin)],
-                      ['Created', formatDateTime(account.createdAt)],
-                    ];
+{loadingAccounts ? (
+                 <TableSkeleton rows={4} cols={6} />
+               ) : accounts.length === 0 ? (
+               <div className="card" style={{ textAlign: 'center', padding: '40px 20px' }}>
+                 <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>No created accounts found.</p>
+               </div>
+             ) : (
+               <div style={{ display: 'grid', gap: '12px' }}>
+                 {accounts.map(account => {
+                   const isCurrentUser = account._id === user?._id;
+                   const isPrimaryAccount = account.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL;
+                   const canDeleteAccount = isAdmin && !isCurrentUser && !isPrimaryAccount;
+                   const isExpanded = expandedAccountId === account._id;
+                   const lastLoginDate = account.lastLogin ? new Date(account.lastLogin) : null;
+                   const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                   const isStale = !lastLoginDate || lastLoginDate < oneWeekAgo;
+                   const isLoggedIn = isCurrentUser ? true : account.isLoggedIn;
+                   const statusLabel = account.isActive === false
+                     ? 'Inactive'
+                     : isLoggedIn === false
+                       ? (isStale ? 'Inactive' : 'Logged out')
+                       : (isStale ? 'Inactive' : 'Active');
+                   const statusColors = statusLabel === 'Active'
+                     ? { text: 'var(--success)', bg: 'var(--success-bg)' }
+                     : statusLabel === 'Logged out'
+                       ? { text: 'var(--text-secondary)', bg: 'var(--surface-2)' }
+                       : { text: 'var(--text-muted)', bg: 'var(--surface-2)' };
+                   const accountRows = [
+                     ['Email', account.email || 'Not available'],
+                     ['Role', formatRole(account.role)],
+                     ['Status', statusLabel],
+                     ['Last Login', formatDateTime(account.lastLogin)],
+                     ['Created', formatDateTime(account.createdAt)],
+                   ];
 
-                    return (
-                      <div key={account._id} className="card" style={{ overflow: 'hidden', borderRadius: '14px', padding: 0 }}>
-                        <button
-                          type="button"
-                          onClick={() => setExpandedAccountId(isExpanded ? null : account._id)}
-                          style={{
-                            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px',
-                            padding: '18px 20px', background: 'var(--surface)', border: 'none', cursor: 'pointer', textAlign: 'left'
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
-                            <div style={{
-                              width: '44px', height: '44px', borderRadius: '12px',
-                              background: account.isActive === false ? 'var(--surface-3)' : 'var(--accent-subtle)',
-                              color: account.isActive === false ? 'var(--text-muted)' : 'var(--accent-text)',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: '17px', fontWeight: 800, flexShrink: 0
-                            }}>
-                              {account.name?.[0]?.toUpperCase() || '?'}
-                            </div>
-                            <div style={{ minWidth: 0 }}>
-                              <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{account.name || 'Unnamed Account'}</h3>
-                              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{account.email || 'No email available'}</p>
-                            </div>
-                          </div>
+                   return (
+                     <div key={account._id} className="card" style={{ overflow: 'hidden', borderRadius: '14px', padding: 0 }}>
+                       <button
+                         type="button"
+                         onClick={() => setExpandedAccountId(isExpanded ? null : account._id)}
+                         style={{
+                           width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px',
+                           padding: '18px 20px', background: 'var(--surface)', border: 'none', cursor: 'pointer', textAlign: 'left'
+                         }}
+                       >
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+                           <div style={{
+                             width: '44px', height: '44px', borderRadius: '12px',
+                             background: account.isActive === false ? 'var(--surface-3)' : 'var(--accent-subtle)',
+                             color: account.isActive === false ? 'var(--text-muted)' : 'var(--accent-text)',
+                             display: 'flex', alignItems: 'center', justifyContent: 'center',
+                             fontSize: '17px', fontWeight: 800, flexShrink: 0
+                           }}>
+                             {account.name?.[0]?.toUpperCase() || '?'}
+                           </div>
+                           <div style={{ minWidth: 0 }}>
+                             <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{account.name || 'Unnamed Account'}</h3>
+                             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{account.email || 'No email available'}</p>
+                           </div>
+                         </div>
 
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                            <span style={{
-                              padding: '5px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 700,
-                              color: statusColors.text, background: statusColors.bg, border: '1px solid var(--border-muted)'
-                            }}>
-                              {statusLabel}
-                            </span>
-                            {isExpanded ? <ChevronUpIcon style={{ width: '18px', height: '18px', color: 'var(--text-secondary)' }} /> : <ChevronDownIcon style={{ width: '18px', height: '18px', color: 'var(--text-secondary)' }} />}
-                          </div>
-                        </button>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                           <span style={{
+                             padding: '5px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 700,
+                             color: statusColors.text, background: statusColors.bg, border: '1px solid var(--border-muted)'
+                           }}>
+                             {statusLabel}
+                           </span>
+                           {isExpanded ? <ChevronUpIcon style={{ width: '18px', height: '18px', color: 'var(--text-secondary)' }} /> : <ChevronDownIcon style={{ width: '18px', height: '18px', color: 'var(--text-secondary)' }} />}
+                         </div>
+                       </button>
 
-                        {isExpanded && (
-                          <div style={{ padding: '20px', borderTop: '1px solid var(--border-muted)', background: 'var(--surface)' }}>
-                            <div style={{ display: 'grid', gap: '10px' }}>
-                              {accountRows.map(([label, value], index) => (
-                                <div key={label} style={{
-                                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                  gap: '12px', padding: '10px 0',
-                                  borderBottom: index === accountRows.length - 1 ? 'none' : '1px solid var(--border-muted)'
-                                }}>
-                                  <span style={{
-                                    fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)',
-                                    textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0
-                                  }}>{label}</span>
-                                  <span style={{
-                                    fontSize: '13px', fontWeight: 500,
-                                    color: label === 'Status' && value === 'Active' ? 'var(--success)' : 'var(--text-primary)',
-                                    textAlign: 'right', maxWidth: '65%', wordBreak: 'break-word'
-                                  }}>{value}</span>
-                                </div>
-                              ))}
-                            </div>
+                       {isExpanded && (
+                         <div style={{ padding: '20px', borderTop: '1px solid var(--border-muted)', background: 'var(--surface)' }}>
+                           <div style={{ display: 'grid', gap: '10px' }}>
+                             {accountRows.map(([label, value], index) => (
+                               <div key={label} style={{
+                                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                 gap: '12px', padding: '10px 0',
+                                 borderBottom: index === accountRows.length - 1 ? 'none' : '1px solid var(--border-muted)'
+                               }}>
+                                 <span style={{
+                                   fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)',
+                                   textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0
+                                 }}>{label}</span>
+                                 <span style={{
+                                   fontSize: '13px', fontWeight: 500,
+                                   color: label === 'Status' && value === 'Active' ? 'var(--success)' : 'var(--text-primary)',
+                                   textAlign: 'right', maxWidth: '65%', wordBreak: 'break-word'
+                                 }}>{value}</span>
+                               </div>
+                             ))}
+                           </div>
 
-                            {canDeleteAccount && (
-                              <div style={{ marginTop: '18px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggleAccountStatus(account)}
-                                  disabled={togglingStatusId === account._id}
-                                  className={account.isActive ? 'btn-danger' : 'btn-success'}
-                                  style={{ opacity: togglingStatusId === account._id ? 0.55 : 1 }}
-                                >
-                                  {togglingStatusId === account._id ? <><Spinner size="sm" /> Processing...</> : (account.isActive ? 'Deactivate' : 'Activate')}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteAccount(account)}
-                                  disabled={deletingAccountId === account._id}
-                                  className="btn-danger"
-                                  style={{ opacity: deletingAccountId === account._id ? 0.55 : 1 }}
-                                >
-                                  {deletingAccountId === account._id ? <><Spinner size="sm" /> Deleting...</> : 'Delete Account'}
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-                </>
-              )}
-            </div>
-          )}
+                           {canDeleteAccount && (
+                             <div style={{ marginTop: '18px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                               <button
+                                 type="button"
+                                 onClick={() => handleToggleAccountStatus(account)}
+                                 disabled={togglingStatusId === account._id}
+                                 className={account.isActive ? 'btn-danger' : 'btn-success'}
+                                 style={{ opacity: togglingStatusId === account._id ? 0.55 : 1 }}
+                               >
+                                 {togglingStatusId === account._id ? <><Spinner size="sm" /> Processing...</> : (account.isActive ? 'Deactivate' : 'Activate')}
+                               </button>
+                               <button
+                                 type="button"
+                                 onClick={() => handleDeleteAccount(account)}
+                                 disabled={deletingAccountId === account._id}
+                                 className="btn-danger"
+                                 style={{ opacity: deletingAccountId === account._id ? 0.55 : 1 }}
+                               >
+                                 {deletingAccountId === account._id ? <><Spinner size="sm" /> Deleting...</> : 'Delete Account'}
+                               </button>
+                             </div>
+                           )}
+                         </div>
+                       )}
+                     </div>
+                   );
+                 })}
+               </div>
+             )}
+               </>
+             )}
+               <div className="card" style={{ marginBottom: user?.role === 'admin' ? '20px' : 0 }}>
+                 <div style={{ marginBottom: '18px' }}>
+                   <h2 style={sectionHeaderStyle}>Account preferences</h2>
+                   <p style={sectionSubtitleStyle}>Control what is saved on this device and how in-app alerts appear.</p>
+                 </div>
+                 {[
+                   { icon: DevicePhoneMobileIcon, title: 'Save account on this device', description: 'Show your avatar at the selected branch so you only need to enter your password.', enabled: deviceAccountSaved, onChange: toggleDeviceAccount },
+                   { icon: BellAlertIcon, title: 'In-app notifications', description: 'Show the notifications bell and alerts while you are signed in on this device.', enabled: notificationsEnabled, onChange: toggleNotifications },
+                 ].map(({ icon: Icon, title, description, enabled, onChange }, index) => (
+                   <div key={title} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: index ? '18px 0 0' : 0, marginTop: index ? '18px' : 0, borderTop: index ? '1px solid var(--border-muted)' : 'none' }}>
+                     <div style={{ width: 38, height: 38, borderRadius: '10px', background: 'var(--accent-subtle)', color: 'var(--accent-text)', display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon style={{ width: 19, height: 19 }} /></div>
+                     <div style={{ minWidth: 0, flex: 1 }}><strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{title}</strong><p style={{ margin: '3px 0 0', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>{description}</p></div>
+                     <button type="button" role="switch" aria-checked={enabled} aria-label={title} onClick={onChange} className={`settings-toggle${enabled ? ' enabled' : ''}`}><span /></button>
+                   </div>
+                 ))}
+               </div>
+             </div>
+           )}
 
           {user?.role === 'admin' && activeTab === 'create' && (
             <div className="card animate-fade-in">
@@ -803,11 +801,9 @@ export default function SettingsPage() {
                 <p style={sectionSubtitleStyle}>Upload up to 10 images at a time to create the login-page slideshow. Images fade smoothly every 8 seconds. Supported formats: JPEG, PNG, GIF, WebP. Maximum size: 5MB per image.</p>
               </div>
 
-              {loadingBackground ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)', padding: '20px' }}>
-                  <Spinner size="sm" /> Loading background...
-                </div>
-              ) : (
+{loadingBackground ? (
+                  <TableSkeleton rows={4} cols={6} />
+                ) : (
                 <>
                   {pendingFiles.length > 0 ? (
                     <div style={{ marginBottom: '20px' }}>
