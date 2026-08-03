@@ -1,5 +1,5 @@
 // Branch administration page
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { UserIcon, HomeIcon, BuildingOffice2Icon, Bars3Icon, MapPinIcon, TrashIcon } from '@heroicons/react/24/outline';
@@ -15,6 +15,96 @@ const number = new Intl.NumberFormat().format;
 const statusColor = (status) => status === 'Active' ? 'var(--accent-text)' : status === 'Returned' ? 'var(--success)' : 'var(--text-secondary)';
 const locationList = (payload) => Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : []);
 const hasCoordinates = (branch) => ['latitude', 'longitude'].every(key => branch[key] !== null && branch[key] !== undefined && branch[key] !== '' && Number.isFinite(Number(branch[key])));
+
+const SearchableSelect = ({ value, onChange, options = [], placeholder, disabled = false, emptyText = 'No options available', required = false }) => {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef(null);
+
+  const normalizedOptions = useMemo(() => options.map((option) => {
+    if (typeof option === 'string') {
+      return { label: option, value: option };
+    }
+
+    const label = option.label || option.name || option.value || '';
+    return {
+      label,
+      value: option.value ?? option.name ?? option.code ?? label,
+      code: option.code ?? option.iso3 ?? option.value ?? label,
+    };
+  }), [options]);
+
+  useEffect(() => {
+    const selectedOption = normalizedOptions.find((option) => option.value === value);
+    setQuery(selectedOption ? selectedOption.label : '');
+  }, [normalizedOptions, value]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleClick = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  const filteredOptions = useMemo(() => {
+    const search = query.trim().toLowerCase();
+    if (!search) return normalizedOptions;
+    return normalizedOptions.filter((option) => option.label.toLowerCase().includes(search));
+  }, [normalizedOptions, query]);
+
+  const handleInputChange = (event) => {
+    setQuery(event.target.value);
+    setOpen(true);
+    if (!event.target.value.trim()) {
+      onChange('');
+    }
+  };
+
+  const handleSelect = (option) => {
+    setQuery(option.label);
+    onChange(option.value);
+    setOpen(false);
+  };
+
+  return (
+    <div className="location-picker" ref={wrapperRef}>
+      <input
+        type="text"
+        className="input-field location-picker-input"
+        value={query}
+        onChange={handleInputChange}
+        onFocus={() => setOpen(true)}
+        placeholder={placeholder}
+        disabled={disabled}
+        autoComplete="off"
+        required={required}
+      />
+      {open && !disabled && (
+        <div className="location-picker-dropdown" role="listbox">
+          {filteredOptions.length > 0 ? filteredOptions.map((option) => (
+            <button
+              key={`${option.value}-${option.code || option.label}`}
+              type="button"
+              className="location-picker-option"
+              onMouseDown={(event) => {
+                event.preventDefault();
+                handleSelect(option);
+              }}
+            >
+              <span>{option.label}</span>
+            </button>
+          )) : <div className="location-picker-empty">{emptyText}</div>}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function BranchAdministrationPage() {
   const navigate = useNavigate();
@@ -398,19 +488,33 @@ export default function BranchAdministrationPage() {
                   <div key={key}>
                     <label className="label">{label} *</label>
                     {type === 'select' && key === 'country' ? (
-                      <select required className="input-field" value={form.country} onChange={e => setForm({ ...form, country: e.target.value, region: '', city: '' })}>
-                        {countries.map(item => <option key={item.iso3} value={item.name}>{item.name}</option>)}
-                      </select>
+                      <SearchableSelect
+                        value={form.country}
+                        onChange={value => setForm({ ...form, country: value, region: '', city: '' })}
+                        options={countries.map(item => ({ label: item.name, value: item.name, code: item.iso3 }))}
+                        placeholder="Type country name"
+                        required
+                      />
                     ) : type === 'select' && key === 'region' ? (
-                      <select required className="input-field" value={form.region} onChange={e => setForm({ ...form, region: e.target.value, province: '', city: '' })}>
-                        <option value="">Select region</option>
-                        {regions.map(item => <option key={item.code} value={item.name}>{item.name}</option>)}
-                      </select>
+                      <SearchableSelect
+                        value={form.region}
+                        onChange={value => setForm({ ...form, region: value, province: '', city: '' })}
+                        options={regions.map(item => ({ label: item.name, value: item.name, code: item.code }))}
+                        placeholder="Type state / province / region"
+                        disabled={!form.country}
+                        emptyText="No regions found"
+                        required
+                      />
                     ) : type === 'select' && key === 'city' ? (
-                      <select required disabled={!form.country} className="input-field" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })}>
-                        <option value="">Select city</option>
-                        {cities.map(item => <option key={typeof item === 'string' ? item : item.code} value={typeof item === 'string' ? item : item.name}>{typeof item === 'string' ? item : item.name}</option>)}
-                      </select>
+                      <SearchableSelect
+                        value={form.city}
+                        onChange={value => setForm({ ...form, city: value })}
+                        options={cities.map(item => ({ label: typeof item === 'string' ? item : item.name, value: typeof item === 'string' ? item : item.name, code: typeof item === 'string' ? item : item.code }))}
+                        placeholder="Type city"
+                        disabled={!form.country}
+                        emptyText="No cities found"
+                        required
+                      />
                     ) : (
                       <input required className="input-field" type={type} value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} />
                     )}
@@ -536,15 +640,37 @@ export default function BranchAdministrationPage() {
                   </div>
                   <div>
                     <label className="label">Country</label>
-                    <select required className="input-field" value={edit.country} onChange={e => setEdit({ ...edit, country: e.target.value, region: '', city: '' })}>{countries.map(item => <option key={item.iso3} value={item.name}>{item.name}</option>)}</select>
+                    <SearchableSelect
+                      value={edit.country}
+                      onChange={value => setEdit({ ...edit, country: value, region: '', city: '' })}
+                      options={countries.map(item => ({ label: item.name, value: item.name, code: item.iso3 }))}
+                      placeholder="Type country name"
+                      required
+                    />
                   </div>
                   <div>
                     <label className="label">State / province / region</label>
-                    <select required className="input-field" value={edit.region} onChange={e => setEdit({ ...edit, region: e.target.value, province: '' })}><option value="">Select state / province / region</option>{(countries.find(item => item.name === edit.country)?.states || []).map(item => <option key={item.state_code || item.name} value={item.name}>{item.name}</option>)}</select>
+                    <SearchableSelect
+                      value={edit.region}
+                      onChange={value => setEdit({ ...edit, region: value, province: '', city: '' })}
+                      options={(countries.find(item => item.name === edit.country)?.states || []).map(item => ({ label: item.name, value: item.name, code: item.state_code || item.name }))}
+                      placeholder="Type state / province / region"
+                      disabled={!edit.country}
+                      emptyText="No regions found"
+                      required
+                    />
                   </div>
                   <div>
                     <label className="label">City</label>
-                    <select required disabled={!edit.country} className="input-field" value={edit.city} onChange={e => setEdit({ ...edit, city: e.target.value })}><option value="">Select city</option>{editCities.map(item => <option key={typeof item === 'string' ? item : item.code} value={typeof item === 'string' ? item : item.name}>{typeof item === 'string' ? item : item.name}</option>)}</select>
+                    <SearchableSelect
+                      value={edit.city}
+                      onChange={value => setEdit({ ...edit, city: value })}
+                      options={editCities.map(item => ({ label: typeof item === 'string' ? item : item.name, value: typeof item === 'string' ? item : item.name, code: typeof item === 'string' ? item : item.code }))}
+                      placeholder="Type city"
+                      disabled={!edit.country}
+                      emptyText="No cities found"
+                      required
+                    />
                   </div>
                   <button className="btn-primary">Save</button>
                 </form>}

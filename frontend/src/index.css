@@ -256,6 +256,56 @@
     box-shadow: var(--shadow-sm);
   }
 
+  .location-picker {
+    position: relative;
+    width: 100%;
+  }
+
+  .location-picker-input {
+    width: 100%;
+  }
+
+  .location-picker-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 30;
+    display: grid;
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
+  .location-picker-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-primary);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .location-picker-option:hover {
+    background: var(--surface-2);
+  }
+
+  .location-picker-empty {
+    padding: 8px 10px;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
   .wizard-header {
     display: flex;
     justify-content: space-between;
