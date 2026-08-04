@@ -36,12 +36,18 @@ const SidebarContent = ({ setSidebarOpen, onLogoutClick, collapsed = false }) =>
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--sidebar-bg)', alignItems: collapsed ? 'center' : 'stretch' }}>
       {/* Logo */}
-      <div style={{ width: '100%', padding: collapsed ? '14px 0 12px' : '20px 20px 16px', borderBottom: '1px solid var(--sidebar-border)', flexShrink: 0, display: 'flex', justifyContent: collapsed ? 'center' : 'flex-start' }}>
+      <div style={{ width: '100%', padding: collapsed ? '14px 0 12px' : '20px 20px 16px', borderBottom: '1px solid var(--sidebar-border)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start', gap: collapsed ? 0 : '12px' }}>
         <img
-          src="/logo.png"
+          src="/webconlog.png"
           alt="NASS Logo"
-          style={{ width: collapsed ? '40px' : 'auto', height: collapsed ? '40px' : '40px', objectFit: 'contain', flexShrink: 0, filter: 'brightness(1.15) contrast(1.1)', transition: 'all 0.32s cubic-bezier(0.22, 1, 0.36, 1)' }}
+          style={{ width: collapsed ? '40px' : '42px', height: collapsed ? '40px' : '42px', objectFit: 'contain', flexShrink: 0, filter: 'brightness(1.15) contrast(1.1)', transition: 'all 0.32s cubic-bezier(0.22, 1, 0.36, 1)' }}
         />
+        {!collapsed && (
+          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1, minWidth: 0 }}>
+            <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--sidebar-text)', letterSpacing: '0.01em' }}>SARENS</span>
+            <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)' }}>Yard Operations</span>
+          </div>
+        )}
       </div>
 
       {/* Nav Section Label */}
@@ -212,10 +218,10 @@ export default function Layout() {
   const closeMobileSidebar = () => {
     if (sidebarClosing) return;
     setSidebarClosing(true);
-    setTimeout(() => {
+    window.setTimeout(() => {
       setSidebarOpen(false);
       setSidebarClosing(false);
-    }, 260);
+    }, 240);
   };
 
   const cancelLogout = () => {
@@ -244,10 +250,10 @@ export default function Layout() {
       </aside>
 
       {/* Mobile Sidebar */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden no-print">
-          <div className={`sidebar-overlay ${sidebarClosing ? 'closing' : ''}`} style={{ position: 'fixed', inset: 0, background: 'rgba(1,4,9,0.7)', backdropFilter: 'blur(3px)' }} onClick={closeMobileSidebar} />
-          <div className={`sidebar-drawer ${sidebarClosing ? 'closing' : ''}`} style={{ position: 'fixed', top: 0, left: 0, width: '220px', height: '100%', flexShrink: 0, borderRight: '1px solid var(--sidebar-border)', overflow: 'hidden' }}>
+      {(sidebarOpen || sidebarClosing) && (
+        <div className={`sidebar-mobile-shell ${sidebarOpen && !sidebarClosing ? 'open' : ''} ${sidebarClosing ? 'closing' : ''}`} style={{ position: 'fixed', inset: 0, zIndex: 50, pointerEvents: sidebarOpen && !sidebarClosing ? 'auto' : 'none' }}>
+          <div className="sidebar-overlay" onClick={closeMobileSidebar} />
+          <div className="sidebar-drawer" style={{ position: 'fixed', top: 0, left: 0, width: '220px', height: '100%', flexShrink: 0, borderRight: '1px solid var(--sidebar-border)', overflow: 'hidden' }}>
             <SidebarContent setSidebarOpen={closeMobileSidebar} onLogoutClick={handleLogout} />
             <button onClick={closeMobileSidebar} style={{ position: 'absolute', top: '14px', right: '14px', padding: '4px', background: 'var(--sidebar-hover)', border: '1px solid var(--sidebar-border)', borderRadius: '6px', cursor: 'pointer', color: 'var(--sidebar-text)' }}>
               <XMarkIcon style={{ width: '14px', height: '14px' }} />

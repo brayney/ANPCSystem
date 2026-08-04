@@ -193,7 +193,7 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-shrink-0 sm:items-center">
             <QRCodeSVG value={publicUrl} size={qrSize} className="public-transaction-qr" />
             <div>
-              <img src="/logo.png" alt="NASS Logo" className="public-transaction-logo" style={{ height: `${logoHeight}px`, objectFit: 'contain', marginBottom: '4px' }} />
+              <img src="/webconlog.png" alt="NASS Logo" className="public-transaction-logo" style={{ height: `${logoHeight}px`, objectFit: 'contain', marginBottom: '4px' }} />
               <p className="text-sm text-gray-500">EQUIPMENT PULL-OUT / RENTAL FORM</p>
             </div>
           </div>

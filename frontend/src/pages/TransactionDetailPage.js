@@ -51,7 +51,7 @@ const PrintView = React.forwardRef(({ txn }, ref) => {
         <div className="flex gap-3 items-center">
           <QRCodeSVG value={publicUrl} size={90} />
           <div>
-            <img src="/logo.png" alt="NASS Logo" style={{ height: '70px', objectFit: 'contain', marginBottom: '4px' }} />
+            <img src="/webconlog.png" alt="NASS Logo" style={{ height: '70px', objectFit: 'contain', marginBottom: '4px' }} />
             <p className="text-sm text-gray-500">EQUIPMENT PULL-OUT / RENTAL FORM</p>
           </div>
         </div>

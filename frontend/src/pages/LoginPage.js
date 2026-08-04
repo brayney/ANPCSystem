@@ -7,7 +7,7 @@ import LogoSplash from '../components/common/LogoSplash';
 import { clearPendingDeviceAccount, getPendingDeviceAccount, getSavedDeviceAccounts, saveDeviceAccount, setPendingDeviceAccount } from '../utils/deviceAccounts';
 
 const LogoMark = () => (
-  <img src="/logo.png" alt="ANPC Logo" style={{ height: 52, objectFit: 'contain' }} />
+  <img src="/webconlog.png" alt="SARENS Logo" style={{ height: 88, objectFit: 'contain' }} />
 );
 
 const EyeIcon = ({ open }) => (
@@ -374,22 +374,22 @@ export default function LoginPage() {
             <div
               style={{
                 fontFamily: "'Fraunces', serif",
-                fontSize: '1.125rem',
-                fontWeight: 600,
+                fontSize: '1.8rem',
+                fontWeight: 700,
                 color: '#e8eaf6',
-                letterSpacing: '-0.01em',
+                letterSpacing: '-0.02em',
                 lineHeight: 1,
               }}
             >
-              ANPC
+              SARENS
             </div>
             <div
               style={{
-                fontSize: '0.625rem',
-                letterSpacing: '0.14em',
-                color: 'rgba(232,234,246,0.4)',
+                fontSize: '0.8rem',
+                letterSpacing: '0.16em',
+                color: 'rgba(232,234,246,0.7)',
                 textTransform: 'uppercase',
-                marginTop: 2,
+                marginTop: 6,
               }}
             >
               Yard Operations
@@ -433,7 +433,7 @@ export default function LoginPage() {
                 textTransform: 'uppercase',
               }}
             >
-              Now Online — SarensNass
+              Now Online — Sarens
             </span>
           </div>
 
@@ -480,7 +480,7 @@ export default function LoginPage() {
               maxWidth: '36rem',
             }}
           >
-            ANPC brings crane rental operations into one secure, real-time command center where teams can manage equipment, track transactions, monitor availability, and keep every workflow aligned from planning to delivery.
+            SARENS brings crane rental operations into one secure, real-time command center where teams can manage equipment, track transactions, monitor availability, and keep every workflow aligned from planning to delivery.
           </p>
 
         </div>
@@ -580,7 +580,7 @@ export default function LoginPage() {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.5rem' }}>
             <LogoMark />
-            <span style={{ fontFamily: "'Fraunces', serif", fontSize: '1rem', fontWeight: 600, color: '#e8eaf6' }}>ANPC</span>
+            <span style={{ fontFamily: "'Fraunces', serif", fontSize: '1rem', fontWeight: 600, color: '#e8eaf6' }}>SARENS</span>
           </div>
           <h2
             style={{

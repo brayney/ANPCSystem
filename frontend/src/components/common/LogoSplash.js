@@ -29,7 +29,7 @@ const LogoSplash = ({ label }) => {
         />
         {/* Logo centered inside the circle */}
         <img
-          src="/logo.png"
+          src="/webconlog.png"
           alt="ANPC Logo"
           style={{
             width: '58px',

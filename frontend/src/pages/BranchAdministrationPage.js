@@ -731,8 +731,8 @@ export default function BranchAdministrationPage() {
     <div className={`company-admin-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       <aside className="company-admin-sidebar">
         <div className="company-admin-sidebar-brand">
-          <img src="/logo.png" alt="ANPC Logo" />
-          {!sidebarCollapsed && <div><strong>ANPC</strong><span>Company Admin</span></div>}
+          <img src="/webconlog.png" alt="SARENS Logo" />
+          {!sidebarCollapsed && <div><strong>SARENS</strong><span>Company Admin</span></div>}
         </div>
         <div className="company-admin-sidebar-label">{!sidebarCollapsed && 'Navigation'}</div>
         <nav className="company-admin-sidebar-nav" aria-label="Company administration">
