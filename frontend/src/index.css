@@ -514,7 +514,7 @@
   .saved-login-account-name, .saved-login-account-email { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .saved-login-account-name { font-size: 0.74rem; font-weight: 700; }
   .saved-login-account-email { margin-top: 2px; color: rgba(232,234,246,0.5); font-size: 0.64rem; }
-  .save-login-prompt-backdrop { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 20px; background: rgba(5,7,19,0.72); backdrop-filter: blur(8px); }
+  .save-login-prompt-backdrop { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 20px; background: rgba(5,7,19,0.72); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
   .save-login-prompt { width: min(100%, 390px); padding: 28px; border: 1px solid rgba(196,181,253,0.3); border-radius: 20px; background: linear-gradient(145deg, #1e1a40, #111329); color: #f0f2ff; box-shadow: 0 24px 70px rgba(0,0,0,.45); text-align: center; }
   .save-login-prompt-avatar { width: 62px; height: 62px; margin: 0 auto 14px; border: 3px solid rgba(196,181,253,0.6); }
   .save-login-prompt h2 { margin: 0; color: #f8fafc; font-size: 1.12rem; }
